@@ -9,6 +9,11 @@ especificação técnica.
 
 ### Adicionado
 
+- **Unidades exibidas** nos rótulos do inspetor (comprimento, e vazão em
+  volume/tempo) e seletor de unidades (volume/comprimento) na barra.
+- Botão **✨ Novo** para começar um projeto em branco (com confirmação).
+- **Cores de válvula** nos tubos: registro (quadrado) e boia (círculo) —
+  verde = aberto, vermelho = fechado; boia mostra o estado ao vivo na execução.
 - Novo tipo de peça **`consumo`**: ponto de saída/demanda com vazão de saída
   configurável (retira água do reservatório de origem e descarta).
 - Campo **`rotulo`** em `Peca` — renomear peças pela UI (o `id` permanece estável).

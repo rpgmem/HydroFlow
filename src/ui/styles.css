@@ -230,6 +230,26 @@ button.ativo {
   color: var(--muted);
 }
 
+.unidade {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.unidades-sel {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.unidades-sel select,
+.toolbar select {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
 .telemetry strong {
   color: var(--text);
 }

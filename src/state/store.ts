@@ -40,6 +40,7 @@ export interface EstadoApp {
   vazoes: Record<string, number>;
   overflow: string[];
   bombasASeco: string[];
+  boiasFechadas: string[];
   /** id da peça selecionada no inspetor (ou null). */
   selecionada: string | null;
   /** id da conexão selecionada (para exclusão), ou null. */
@@ -80,6 +81,7 @@ export function estadoInicial(projeto: ProjetoSimulacao): EstadoApp {
     vazoes: {},
     overflow: [],
     bombasASeco: [],
+    boiasFechadas: [],
     selecionada: null,
     conexaoSelecionada: null,
     snapshotEdicao: null,
@@ -233,6 +235,7 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
         vazoes: {},
         overflow: [],
         bombasASeco: [],
+        boiasFechadas: [],
         projeto: estado.snapshotEdicao ?? estado.projeto,
         snapshotEdicao: null,
       };
@@ -253,6 +256,7 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
         vazoes: {},
         overflow: [],
         bombasASeco: [],
+        boiasFechadas: [],
         projeto: estado.snapshotEdicao ?? estado.projeto,
       };
 
@@ -270,6 +274,7 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
         vazoes: r.vazoes,
         overflow: r.overflow,
         bombasASeco: r.bombasASeco,
+        boiasFechadas: r.boiasFechadas,
         tempo: r.tempo,
       };
     }

@@ -10,8 +10,10 @@ import { Group, Rect, Circle, Line, Text } from 'react-konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 import {
   isReservatorio,
+  isTubo,
   type Peca,
   type PropsReservatorio,
+  type PropsTubo,
 } from '../domain/types';
 
 /** Metade da "pegada" de cada tipo, usada para desenhar e ancorar conexões. */
@@ -41,11 +43,17 @@ interface Props {
   vazao: number | undefined;
   overflow: boolean;
   aSeco: boolean;
+  boiaFechada: boolean;
   onSelect: () => void;
   onMove: (x: number, y: number) => void;
   onStartConnection: (id: string) => void;
   onEndConnection: (id: string) => void;
 }
+
+// Cores de estado de válvula: verde = aberto, vermelho = fechado.
+const COR_ABERTO = '#34d399';
+const COR_FECHADO = '#f87171';
+const COR_BOIA_EDICAO = '#38bdf8'; // em edição o estado da boia é dinâmico
 
 const COR: Record<Peca['tipo'], string> = {
   reservatorio: '#1e3a52',
@@ -64,6 +72,7 @@ export function PecaView({
   vazao,
   overflow,
   aSeco,
+  boiaFechada,
   onSelect,
   onMove,
   onStartConnection,
@@ -98,16 +107,16 @@ export function PecaView({
           stroke={borda}
           strokeWidth={larguraBorda}
         />
-      ) : peca.tipo === 'tubo' ? (
-        <Rect
-          x={-w / 2}
-          y={-h / 2}
-          width={w}
-          height={h}
-          cornerRadius={4}
-          fill={vazao && Math.abs(vazao) > 0 ? '#2b8fe0' : COR.tubo}
-          stroke={borda}
-          strokeWidth={larguraBorda}
+      ) : isTubo(peca) ? (
+        <TuboView
+          props={peca.props}
+          w={w}
+          h={h}
+          borda={borda}
+          larguraBorda={larguraBorda}
+          vazao={vazao}
+          emExecucao={emExecucao}
+          boiaFechada={boiaFechada}
         />
       ) : peca.tipo === 'sensor' || peca.tipo === 'juncao' ? (
         <Circle radius={w / 2} fill={COR[peca.tipo]} stroke={borda} strokeWidth={larguraBorda} />
@@ -164,6 +173,70 @@ export function PecaView({
         />
       )}
     </Group>
+  );
+}
+
+/**
+ * Tubo com indicador de válvula:
+ *  - registro → quadrado verde (aberto) / vermelho (fechado);
+ *  - boia → círculo verde (aberta) / vermelho (fechada) em execução; azul em
+ *    edição (o estado da boia depende do nível, conhecido só na simulação).
+ */
+function TuboView({
+  props,
+  w,
+  h,
+  borda,
+  larguraBorda,
+  vazao,
+  emExecucao,
+  boiaFechada,
+}: {
+  props: PropsTubo;
+  w: number;
+  h: number;
+  borda: string;
+  larguraBorda: number;
+  vazao: number | undefined;
+  emExecucao: boolean;
+  boiaFechada: boolean;
+}) {
+  const fluindo = vazao !== undefined && Math.abs(vazao) > 1e-9;
+  const registroFechado = props.registro !== undefined && !props.registro.aberto;
+  return (
+    <>
+      <Rect
+        x={-w / 2}
+        y={-h / 2}
+        width={w}
+        height={h}
+        cornerRadius={4}
+        fill={fluindo ? '#2b8fe0' : COR.tubo}
+        stroke={borda}
+        strokeWidth={larguraBorda}
+      />
+      {props.boia ? (
+        // Boia = círculo (float). Verde aberta / vermelho fechada (execução).
+        <Circle
+          radius={6}
+          fill={emExecucao ? (boiaFechada ? COR_FECHADO : COR_ABERTO) : COR_BOIA_EDICAO}
+          stroke="#0d1620"
+          strokeWidth={1}
+        />
+      ) : props.registro ? (
+        // Registro = quadrado (manopla). Verde aberto / vermelho fechado.
+        <Rect
+          x={-5}
+          y={-5}
+          width={10}
+          height={10}
+          cornerRadius={2}
+          fill={registroFechado ? COR_FECHADO : COR_ABERTO}
+          stroke="#0d1620"
+          strokeWidth={1}
+        />
+      ) : null}
+    </>
   );
 }
 

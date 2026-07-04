@@ -357,6 +357,11 @@ describe('boia em tubo entre reservatórios', () => {
     const b = r.projeto.pecas.find((x) => x.id === 'B')!.props as PropsReservatorio;
     expect(b.nivel!).toBeLessThanOrEqual(2.05); // segurou perto do máximo (2)
   });
+
+  it('reporta a boia como fechada quando o destino está cheio (para a UI)', () => {
+    expect(tick(cenario(3)).boiasFechadas).toContain('T'); // 3 ≥ máximo
+    expect(tick(cenario(0)).boiasFechadas).not.toContain('T'); // vazio → aberta
+  });
 });
 
 // ===========================================================================

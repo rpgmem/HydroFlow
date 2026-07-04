@@ -58,6 +58,8 @@ export interface ResultadoTick {
   overflow: string[];
   /** Bombas desligadas por proteção contra funcionamento a seco. */
   bombasASeco: string[];
+  /** Tubos cuja boia está fechada neste tick (destino cheio). */
+  boiasFechadas: string[];
   /** Tempo de simulação acumulado (s) após este tick. */
   tempo: number;
 }
@@ -242,13 +244,24 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     }
   }
 
+  // Estado das boias (para a UI colorir): fechada quando o reservatório de
+  // destino está cheio. Avaliado sobre os níveis do início do tick.
+  const boiasFechadas: string[] = [];
+  for (const p of proj.pecas) {
+    if (!isTubo(p) || !p.props.boia) continue;
+    const down = idx.resolverReservatorio(p.id, 'down');
+    if (down && !boiaAberta(p.props.boia, down.props.nivel ?? 0, true)) {
+      boiasFechadas.push(p.id);
+    }
+  }
+
   // ---- (4 + 5) Atualização de volume e overflow ------------------------
   const overflow = aplicarFluxos(proj, fluxos, dt);
 
   // Persiste estado dos sensores (ultimaTroca / pedindoLigar) p/ delay.
   atualizarEstadoSensores(proj, idx, tempoFim);
 
-  return { projeto: proj, vazoes, overflow, bombasASeco, tempo: tempoFim };
+  return { projeto: proj, vazoes, overflow, bombasASeco, boiasFechadas, tempo: tempoFim };
 }
 
 // ---------------------------------------------------------------------------
@@ -496,6 +509,7 @@ export function rodarTicks(
     vazoes: {},
     overflow: [],
     bombasASeco: [],
+    boiasFechadas: [],
     tempo,
   };
   for (let i = 0; i < n; i++) {

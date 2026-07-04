@@ -34,6 +34,7 @@ export function Canvas({ estado, dispatch, largura, altura }: Props) {
 
   const overflowSet = new Set(estado.overflow);
   const secoSet = new Set(estado.bombasASeco);
+  const boiaFechadaSet = new Set(estado.boiasFechadas);
 
   // Tecla Delete/Backspace exclui a conexão selecionada (fora de execução).
   useEffect(() => {
@@ -160,6 +161,7 @@ export function Canvas({ estado, dispatch, largura, altura }: Props) {
               vazao={estado.vazoes[peca.id]}
               overflow={overflowSet.has(peca.id)}
               aSeco={secoSet.has(peca.id)}
+              boiaFechada={boiaFechadaSet.has(peca.id)}
               onSelect={() => dispatch({ tipo: 'SELECIONAR', id: peca.id })}
               onMove={(x, y) => dispatch({ tipo: 'MOVER_PECA', id: peca.id, x, y })}
               onStartConnection={iniciarConexao}

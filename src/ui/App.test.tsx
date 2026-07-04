@@ -161,6 +161,52 @@ describe('modo execução — validação e transição (Sprint 4)', () => {
   });
 });
 
+describe('unidades e novo projeto', () => {
+  it('exibe a unidade de comprimento no rótulo dos campos', () => {
+    render(<App />);
+    const id = adicionar('Reservatório');
+    fireEvent.click(screen.getByTestId(`peca-${id}`));
+    // O rótulo visível de "Altura máxima" traz o sufixo de unidade (m por padrão).
+    const label = screen.getByText('Altura máxima').closest('label')!;
+    expect(label.textContent).toContain('(m)');
+  });
+
+  it('troca a unidade de comprimento e o sufixo acompanha', () => {
+    render(<App />);
+    const id = adicionar('Reservatório');
+    fireEvent.click(screen.getByTestId(`peca-${id}`));
+    fireEvent.change(screen.getByLabelText('Unidade de comprimento'), { target: { value: 'cm' } });
+    const label = screen.getByText('Altura máxima').closest('label')!;
+    expect(label.textContent).toContain('(cm)');
+  });
+
+  it('mostra vazão em volume/tempo (L/s) na fonte', () => {
+    render(<App />);
+    const id = adicionar('Fonte');
+    fireEvent.click(screen.getByTestId(`peca-${id}`));
+    const label = screen.getByText('Vazão fixa').closest('label')!;
+    expect(label.textContent).toContain('(L/s)');
+  });
+
+  it('o botão Novo limpa o projeto (após confirmar)', () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    render(<App />);
+    expect(idsPecas().length).toBeGreaterThan(0); // exemplo carregado
+    fireEvent.click(screen.getByText('✨ Novo'));
+    expect(idsPecas().length).toBe(0);
+    confirmSpy.mockRestore();
+  });
+
+  it('Novo não limpa se o usuário cancelar', () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    render(<App />);
+    const antes = idsPecas().length;
+    fireEvent.click(screen.getByText('✨ Novo'));
+    expect(idsPecas().length).toBe(antes);
+    confirmSpy.mockRestore();
+  });
+});
+
 describe('persistência — salvar (Sprint 5)', () => {
   it('dispara o download ao clicar em Salvar', () => {
     // jsdom não implementa URL.createObjectURL/anchor.click totalmente.

@@ -21,6 +21,13 @@ import {
   type PropsSensor,
   type PropsTubo,
 } from '../domain/types';
+import { labelComprimento, labelVazao } from '../domain/unidades';
+
+/** Rótulos de unidade derivados das unidades do projeto. */
+interface UniLabel {
+  comp: string;
+  vazao: string;
+}
 
 interface Props {
   peca: Peca | undefined;
@@ -35,16 +42,22 @@ function Num({
   onChange,
   disabled,
   step = 0.1,
+  unidade,
 }: {
   label: string;
   value: number | undefined;
   onChange: (v: number) => void;
   disabled?: boolean;
   step?: number;
+  /** Sufixo de unidade exibido no rótulo (não faz parte do aria-label). */
+  unidade?: string;
 }) {
   return (
     <div className="field">
-      <label>{label}</label>
+      <label>
+        {label}
+        {unidade ? <span className="unidade"> ({unidade})</span> : null}
+      </label>
       <input
         type="number"
         step={step}
@@ -70,6 +83,11 @@ export function Inspector({ peca, projeto, emExecucao, dispatch }: Props) {
   const upd = (props: Record<string, unknown>): void =>
     dispatch({ tipo: 'ATUALIZAR_PROPS', id: peca.id, props: props as never });
 
+  const u: UniLabel = {
+    comp: labelComprimento(projeto.unidades),
+    vazao: labelVazao(projeto.unidades),
+  };
+
   return (
     <div className="panel right">
       <h3>
@@ -90,17 +108,13 @@ export function Inspector({ peca, projeto, emExecucao, dispatch }: Props) {
       </div>
 
       {isReservatorio(peca) && (
-        <ReservatorioForm props={peca.props} emExecucao={emExecucao} upd={upd} />
+        <ReservatorioForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />
       )}
-      {isTubo(peca) && <TuboForm props={peca.props} emExecucao={emExecucao} upd={upd} />}
-      {isBomba(peca) && (
-        <BombaForm props={peca.props} emExecucao={emExecucao} upd={upd} />
-      )}
-      {isFonte(peca) && <FonteForm props={peca.props} emExecucao={emExecucao} upd={upd} />}
-      {isConsumo(peca) && <ConsumoForm props={peca.props} emExecucao={emExecucao} upd={upd} />}
-      {isSensor(peca) && (
-        <SensorForm props={peca.props} projeto={projeto} upd={upd} />
-      )}
+      {isTubo(peca) && <TuboForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
+      {isBomba(peca) && <BombaForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
+      {isFonte(peca) && <FonteForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
+      {isConsumo(peca) && <ConsumoForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
+      {isSensor(peca) && <SensorForm props={peca.props} projeto={projeto} upd={upd} u={u} />}
 
       {!emExecucao && (
         <button
@@ -121,10 +135,12 @@ function ReservatorioForm({
   props,
   emExecucao,
   upd,
+  u,
 }: {
   props: PropsReservatorio;
   emExecucao: boolean;
   upd: Upd;
+  u: UniLabel;
 }) {
   return (
     <>
@@ -141,25 +157,25 @@ function ReservatorioForm({
         </select>
       </div>
       {props.formato === 'cilindro' ? (
-        <Num label="Raio" value={props.raio} disabled={emExecucao} onChange={(v) => upd({ raio: v })} />
+        <Num label="Raio" unidade={u.comp} value={props.raio} disabled={emExecucao} onChange={(v) => upd({ raio: v })} />
       ) : (
         <>
-          <Num label="Largura" value={props.largura} disabled={emExecucao} onChange={(v) => upd({ largura: v })} />
-          <Num label="Comprimento" value={props.comprimento} disabled={emExecucao} onChange={(v) => upd({ comprimento: v })} />
+          <Num label="Largura" unidade={u.comp} value={props.largura} disabled={emExecucao} onChange={(v) => upd({ largura: v })} />
+          <Num label="Comprimento" unidade={u.comp} value={props.comprimento} disabled={emExecucao} onChange={(v) => upd({ comprimento: v })} />
         </>
       )}
-      <Num label="Altura máxima" value={props.alturaMaxima} disabled={emExecucao} onChange={(v) => upd({ alturaMaxima: v })} />
-      <Num label="Cota da base" value={props.cotaBase} disabled={emExecucao} onChange={(v) => upd({ cotaBase: v })} />
-      <Num label="Nível atual" value={props.nivel} onChange={(v) => upd({ nivel: v })} />
+      <Num label="Altura máxima" unidade={u.comp} value={props.alturaMaxima} disabled={emExecucao} onChange={(v) => upd({ alturaMaxima: v })} />
+      <Num label="Cota da base" unidade={u.comp} value={props.cotaBase} disabled={emExecucao} onChange={(v) => upd({ cotaBase: v })} />
+      <Num label="Nível atual" unidade={u.comp} value={props.nivel} onChange={(v) => upd({ nivel: v })} />
     </>
   );
 }
 
-function TuboForm({ props, emExecucao, upd }: { props: PropsTubo; emExecucao: boolean; upd: Upd }) {
+function TuboForm({ props, emExecucao, upd, u }: { props: PropsTubo; emExecucao: boolean; upd: Upd; u: UniLabel }) {
   const temBoia = props.boia !== undefined;
   return (
     <>
-      <Num label="Diâmetro" value={props.diametro} disabled={emExecucao} step={0.01} onChange={(v) => upd({ diametro: v })} />
+      <Num label="Diâmetro" unidade={u.comp} value={props.diametro} disabled={emExecucao} step={0.01} onChange={(v) => upd({ diametro: v })} />
       {/* Com boia, o registro manual perde o sentido (a boia governa a abertura). */}
       {!temBoia && (
         <label className="checkbox">
@@ -183,7 +199,7 @@ function TuboForm({ props, emExecucao, upd }: { props: PropsTubo; emExecucao: bo
         Check valve (anti-refluxo)
       </label>
       {/* Ao ativar a boia, garante o registro aberto para a boia poder operar. */}
-      <BoiaFields boia={props.boia} upd={upd} aoAtivar={{ registro: { aberto: true } }} />
+      <BoiaFields boia={props.boia} upd={upd} unidade={u.comp} aoAtivar={{ registro: { aberto: true } }} />
     </>
   );
 }
@@ -196,10 +212,12 @@ function TuboForm({ props, emExecucao, upd }: { props: PropsTubo; emExecucao: bo
 function BoiaFields({
   boia,
   upd,
+  unidade,
   aoAtivar = {},
 }: {
   boia: NivelControle | undefined;
   upd: Upd;
+  unidade?: string;
   aoAtivar?: Record<string, unknown>;
 }) {
   const ativa = boia !== undefined;
@@ -224,11 +242,13 @@ function BoiaFields({
         <>
           <Num
             label="Boia: abre com nível ≤"
+            unidade={unidade}
             value={boia.nivelMinimo}
             onChange={(v) => upd({ boia: { ...boia, nivelMinimo: v } })}
           />
           <Num
             label="Boia: fecha com nível ≥"
+            unidade={unidade}
             value={boia.nivelMaximo}
             onChange={(v) => upd({ boia: { ...boia, nivelMaximo: v } })}
           />
@@ -238,10 +258,10 @@ function BoiaFields({
   );
 }
 
-function BombaForm({ props, emExecucao, upd }: { props: PropsBomba; emExecucao: boolean; upd: Upd }) {
+function BombaForm({ props, emExecucao, upd, u }: { props: PropsBomba; emExecucao: boolean; upd: Upd; u: UniLabel }) {
   return (
     <>
-      <Num label="Vazão nominal" value={props.vazaoNominal} disabled={emExecucao} onChange={(v) => upd({ vazaoNominal: v })} />
+      <Num label="Vazão nominal" unidade={u.vazao} value={props.vazaoNominal} disabled={emExecucao} onChange={(v) => upd({ vazaoNominal: v })} />
       <Num
         label="Curva k (0 = sem curva)"
         value={props.curva?.k ?? 0}
@@ -251,6 +271,7 @@ function BombaForm({ props, emExecucao, upd }: { props: PropsBomba; emExecucao: 
       />
       <Num
         label="Proteção a seco: desliga se origem ≤"
+        unidade={u.comp}
         value={props.protecaoSeco ?? 0}
         onChange={(v) => upd({ protecaoSeco: v })}
       />
@@ -271,15 +292,18 @@ function ConsumoForm({
   props,
   emExecucao,
   upd,
+  u,
 }: {
   props: PropsConsumo;
   emExecucao: boolean;
   upd: Upd;
+  u: UniLabel;
 }) {
   return (
     <>
       <Num
         label="Vazão de saída"
+        unidade={u.vazao}
         value={props.vazaoDemanda}
         disabled={emExecucao}
         onChange={(v) => upd({ vazaoDemanda: v })}
@@ -297,11 +321,11 @@ function ConsumoForm({
   );
 }
 
-function FonteForm({ props, emExecucao, upd }: { props: PropsFonte; emExecucao: boolean; upd: Upd }) {
+function FonteForm({ props, emExecucao, upd, u }: { props: PropsFonte; emExecucao: boolean; upd: Upd; u: UniLabel }) {
   return (
     <>
-      <Num label="Vazão fixa" value={props.vazaoFixa} disabled={emExecucao} onChange={(v) => upd({ vazaoFixa: v })} />
-      <BoiaFields boia={props.boia} upd={upd} />
+      <Num label="Vazão fixa" unidade={u.vazao} value={props.vazaoFixa} disabled={emExecucao} onChange={(v) => upd({ vazaoFixa: v })} />
+      <BoiaFields boia={props.boia} upd={upd} unidade={u.comp} />
     </>
   );
 }
@@ -310,10 +334,12 @@ function SensorForm({
   props,
   projeto,
   upd,
+  u,
 }: {
   props: PropsSensor;
   projeto: ProjetoSimulacao;
   upd: Upd;
+  u: UniLabel;
 }) {
   const bombas = projeto.pecas.filter(isBomba);
   return (
@@ -333,8 +359,8 @@ function SensorForm({
           ))}
         </select>
       </div>
-      <Num label="Nível mínimo (liga)" value={props.nivelMinimo} onChange={(v) => upd({ nivelMinimo: v })} />
-      <Num label="Nível máximo (desliga)" value={props.nivelMaximo} onChange={(v) => upd({ nivelMaximo: v })} />
+      <Num label="Nível mínimo (liga)" unidade={u.comp} value={props.nivelMinimo} onChange={(v) => upd({ nivelMinimo: v })} />
+      <Num label="Nível máximo (desliga)" unidade={u.comp} value={props.nivelMaximo} onChange={(v) => upd({ nivelMaximo: v })} />
       <label className="checkbox">
         <input
           type="checkbox"
