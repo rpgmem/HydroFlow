@@ -1,1 +1,172 @@
 # HydroFlow
+
+Simulador visual de **reservatórios, tubos e bombas**. O usuário monta um sistema
+hidráulico estilo Lego (drag-and-drop) e simula o comportamento físico
+**simplificado** do líquido entre as peças.
+
+> Escopo explícito: simulação simplificada (**Torricelli + continuidade de
+> volume**), **não** CFD/Navier-Stokes. Ver [Fora de escopo](#fora-de-escopo).
+
+## Stack
+
+| Camada | Tecnologia |
+| --- | --- |
+| UI / canvas | React + TypeScript, [react-konva](https://konvajs.org/docs/react/) |
+| Motor de simulação | TypeScript puro, desacoplado de React (testável isolado) |
+| Testes | [Vitest](https://vitest.dev) + React Testing Library |
+| Qualidade | ESLint + TypeScript `strict` |
+| Persistência | export/import manual de `.json` (sem backend) |
+
+## Como rodar
+
+```bash
+npm install
+npm run dev        # ambiente de desenvolvimento (Vite)
+npm test           # testes unitários + integração (Vitest)
+npm run lint       # ESLint (0 warnings)
+npm run typecheck  # tsc --noEmit
+npm run build      # build de produção
+```
+
+A aplicação abre com um projeto de exemplo (uma caixa d'água elevada abastecida
+por bomba controlada por sensor). Clique em **▶ Executar** para validar o grafo e
+entrar em modo de simulação; depois **▶ Play**.
+
+## Arquitetura
+
+```
+src/
+├── domain/         # Sprint 1 — modelo de domínio e schema
+│   ├── types.ts        # todas as interfaces (ProjetoSimulacao, Peca, Conexao…)
+│   ├── schema.ts       # validação e versionamento de .json (robusto a lixo)
+│   ├── factory.ts      # fábricas de peças/projeto com defaults
+│   └── exemplo.ts      # projeto de demonstração
+├── engine/         # Sprint 2 — motor de simulação (puro, sem UI)
+│   ├── geometria.ts       # relação nível↔volume (seção constante)
+│   ├── arbitragem.ts      # sensores/boias e arbitragem de bombas
+│   ├── simulador.ts       # tick(): cálculo de vazão e atualização de estado
+│   └── validacaoGrafo.ts  # validação de grafo (seção 5)
+├── state/          # Sprint 4 — reducer central (modos edição/execução)
+│   └── store.ts
+├── persistence/    # Sprint 5 — export/import .json
+│   └── arquivo.ts
+└── ui/             # Sprint 3/4/5 — componentes React + konva
+    ├── App.tsx, Toolbar.tsx, Palette.tsx, Canvas.tsx, PecaView.tsx, Inspector.tsx
+    └── useSimulationLoop.ts
+```
+
+O motor não depende de React nem do DOM: `tick(projeto)` recebe um
+`ProjetoSimulacao` e devolve o próximo estado. Isso permite testá-lo de forma
+determinística (nenhum uso de `Date.now()`/`Math.random()` no motor).
+
+## Schema (`ProjetoSimulacao`)
+
+Versão atual do schema: **`1.0.0`** (constante `SCHEMA_VERSION`). O carregamento
+compara o componente **MAJOR** do semver: MAJOR igual é compatível (MINOR
+diferente apenas emite aviso); MAJOR diferente/ausente/desconhecido é recusado.
+
+```ts
+interface ProjetoSimulacao {
+  nome: string;
+  versao: string;                       // versionamento de schema
+  unidades: { volume: 'litros' | 'm3'; comprimento: 'cm' | 'm' };
+  configuracaoSimulacao: { dt: number; g: number };  // passo (s) e gravidade
+  pecas: Peca[];
+  conexoes: Conexao[];
+}
+
+interface Peca {
+  id: string;                           // uuid
+  tipo: 'reservatorio' | 'tubo' | 'bomba' | 'fonte' | 'sensor' | 'juncao';
+  x: number; y: number;                 // posição no canvas
+  rotacao?: number;                     // tubo/bomba
+  portas?: string[];                    // ex.: ['topo', 'base']
+  props: PropsPorTipo;                  // ver abaixo
+}
+
+interface Conexao {
+  id: string;
+  origem: string;  origemPorta?: string;
+  destino: string; destinoPorta?: string;
+  vazaoAlocada?: number;                // obrigatório: fonte com múltiplos destinos
+}
+
+interface NivelControle {
+  nivelMinimo?: number;
+  nivelMaximo?: number;
+  histerese?: boolean;                  // só sensor eletrônico
+  delay?: number;                       // só sensor eletrônico (s)
+}
+```
+
+### Props por tipo de peça
+
+| Tipo | Campos |
+| --- | --- |
+| `reservatorio` | `formato` (`cilindro`\|`retangular`), `raio?`/`largura?`/`comprimento?`, `alturaMaxima`, `cotaBase`, `nivel?` |
+| `tubo` | `diametro`, `checkValve?`, `registro?: {aberto}`, `boia?: NivelControle` |
+| `bomba` | `vazaoNominal`, `curva?: {k}`, `sensores: string[]`, `ligada?` |
+| `fonte` | `vazaoFixa`, `boia?: NivelControle` |
+| `sensor` | `NivelControle & { bombaAlvo: string }` |
+| `juncao` | `{}` (só distribui vazão, sem volume próprio) |
+
+`cotaBase` é a elevação física da base do reservatório — permite **empilhamento**
+e entra no cálculo de carga hidráulica.
+
+## Física (motor de simulação)
+
+Fórmulas implementadas em `src/engine/simulador.ts`:
+
+- **Vazão por gravidade (tubo)** — Torricelli:
+  `v = √(2·g·Δh)`, `A = π·(diametro/2)²`, `Q = A·v`.
+- **Carga hidráulica** — `Δh = (cotaBase + nivel)origem − (cotaBase + nivel)destino`
+  (sempre a carga total; **nunca** só o nível bruto).
+- **Bomba** — `Q = vazaoNominal` (sem curva) ou `Q = vazaoNominal − k·Δh_lift`
+  (com curva). Sentido **forçado** pela conexão, independe do Δh natural; `Q ≥ 0`.
+- **Fonte** — vazão fixa constante, externa ao grafo; múltiplos destinos usam
+  `vazaoAlocada`.
+- **Overflow** — nível > `alturaMaxima` → excedente se perde (transborda), sem
+  gerar erro nem travar o tick.
+- **Bomba a seco** — se o reservatório de origem está vazio, a bomba desliga
+  independentemente dos sensores.
+- **Check valve / registro / boia** — refluxo bloqueado; registro on/off manual;
+  boia mecânica fecha ao encher o destino.
+
+### Ordem de avaliação no `tick()`
+
+1. Sensores e boias avaliam com base no **estado do tick anterior**.
+2. Arbitragem de bombas (**desligar > ligar**; entre "ligar" basta um — OR lógico).
+3. Cálculo de vazão de cada aresta (tubo, bomba, fonte).
+4. Atualização de volume/nível de cada reservatório.
+5. Aplicação de overflow (clipping na `alturaMaxima`).
+
+## Validação de grafo
+
+Executada apenas na transição **edição → execução** (não incrementalmente).
+Se falhar, permanece em edição e exibe os erros.
+
+**Bloqueia:** nó órfão · aresta sem origem/destino · ciclo bomba→…→origem sem
+dreno (moto-perpétuo) · fonte com `Σ vazaoAlocada > vazaoFixa`.
+**Permite:** fonte com múltiplos destinos · múltiplos sensores por bomba.
+
+## Modos de operação
+
+- **`edicao`** — grafo mutável (add/remove peça, conexão, mover no canvas).
+- **`execucao`** — grafo estruturalmente imutável; só valores mudam (nível, vazão,
+  registro, bomba on/off, thresholds de sensor). Voltar à edição exige pause/reset.
+- **Controle de velocidade** — 1x / 2x / 5x roda N ticks por frame **sem alterar o
+  `dt`** da física (seção 7).
+
+## Persistência
+
+Export/import manual via `.json`: **Salvar** baixa `{nome}.json`; **Carregar**
+valida a versão do schema e reconstrói o grafo. Um `.json` malformado ou
+incompatível nunca quebra a aplicação — é recusado com mensagens de erro.
+
+## Fora de escopo
+
+CFD real (Navier-Stokes) · perda de carga por atrito (Darcy-Weisbach) ·
+evaporação/temperatura · reservatórios de seção variável (cone, esfera) ·
+prioridade manual entre sensores · backend/nuvem · app mobile/desktop nativo.
+
+Ver [`CHANGELOG.md`](./CHANGELOG.md) para a evolução por sprint.
