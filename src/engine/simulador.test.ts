@@ -201,6 +201,35 @@ describe('bomba', () => {
     expect(r.vazoes['P']).toBeCloseTo(9, 9); // 3 + 6
   });
 
+  it('manda a vazão cheia pela saída aberta quando a outra está fechada', () => {
+    const r = tick(
+      projeto(
+        [
+          res('A', { nivel: 5 }),
+          res('B', {}),
+          res('C', {}),
+          bomba('P', { ligada: true, vazaoNominal: 8 }),
+          tubo('rec_b', { registro: { aberto: false } }), // saída para B fechada
+          tubo('rec_c', { registro: { aberto: true } }),
+        ],
+        [
+          criarConexao('A', 'P'),
+          criarConexao('P', 'rec_b'),
+          criarConexao('rec_b', 'B'),
+          criarConexao('P', 'rec_c'),
+          criarConexao('rec_c', 'C'),
+        ],
+      ),
+    );
+    // C (única saída aberta) recebe os 8 inteiros — a saída fechada não
+    // desperdiça metade da vazão.
+    expect(r.vazoes['P']).toBeCloseTo(8, 9);
+    const b = r.projeto.pecas.find((x) => x.id === 'B')!.props as PropsReservatorio;
+    const c = r.projeto.pecas.find((x) => x.id === 'C')!.props as PropsReservatorio;
+    expect(b.nivel ?? 0).toBe(0); // B não recebe nada
+    expect(c.nivel!).toBeCloseTo((8 * 0.1) / 100, 9);
+  });
+
   it('registro fechado num cano de recalque em série interrompe a bomba', () => {
     const p = projeto(
       [res('A', { nivel: 5 }), res('B', {}), bomba('P', { ligada: true }), tubo('rec', { registro: { aberto: false } })],
