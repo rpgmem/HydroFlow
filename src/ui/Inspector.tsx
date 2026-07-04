@@ -11,6 +11,7 @@ import {
   isReservatorio,
   isSensor,
   isTubo,
+  type NivelControle,
   type Peca,
   type ProjetoSimulacao,
   type PropsBomba,
@@ -177,6 +178,45 @@ function TuboForm({ props, emExecucao, upd }: { props: PropsTubo; emExecucao: bo
         />
         Check valve (anti-refluxo)
       </label>
+      <BoiaFields boia={props.boia} upd={upd} />
+    </>
+  );
+}
+
+/**
+ * Boia mecânica (válvula de nível embutida na aresta). Monitora o reservatório
+ * de destino: fecha ao encher (nível ≥ máximo), abre ao baixar (nível ≤ mínimo).
+ * Sem histerese/delay (isso é exclusivo do sensor eletrônico).
+ */
+function BoiaFields({ boia, upd }: { boia: NivelControle | undefined; upd: Upd }) {
+  const ativa = boia !== undefined;
+  return (
+    <>
+      <label className="checkbox" style={{ marginTop: 8 }}>
+        <input
+          type="checkbox"
+          checked={ativa}
+          aria-label="Boia (válvula de nível)"
+          onChange={(e) =>
+            upd({ boia: e.target.checked ? { nivelMinimo: 0, nivelMaximo: 1 } : undefined })
+          }
+        />
+        Boia (válvula de nível)
+      </label>
+      {ativa && (
+        <>
+          <Num
+            label="Boia: abre com nível ≤"
+            value={boia.nivelMinimo}
+            onChange={(v) => upd({ boia: { ...boia, nivelMinimo: v } })}
+          />
+          <Num
+            label="Boia: fecha com nível ≥"
+            value={boia.nivelMaximo}
+            onChange={(v) => upd({ boia: { ...boia, nivelMaximo: v } })}
+          />
+        </>
+      )}
     </>
   );
 }
@@ -242,7 +282,10 @@ function ConsumoForm({
 
 function FonteForm({ props, emExecucao, upd }: { props: PropsFonte; emExecucao: boolean; upd: Upd }) {
   return (
-    <Num label="Vazão fixa" value={props.vazaoFixa} disabled={emExecucao} onChange={(v) => upd({ vazaoFixa: v })} />
+    <>
+      <Num label="Vazão fixa" value={props.vazaoFixa} disabled={emExecucao} onChange={(v) => upd({ vazaoFixa: v })} />
+      <BoiaFields boia={props.boia} upd={upd} />
+    </>
   );
 }
 

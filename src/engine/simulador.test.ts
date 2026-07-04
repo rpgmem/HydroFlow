@@ -193,6 +193,27 @@ describe('bomba', () => {
     );
     expect(r.vazoes['P']).toBeCloseTo(9, 9); // 3 + 6
   });
+
+  it('registro fechado num cano de recalque em série interrompe a bomba', () => {
+    const p = projeto(
+      [res('A', { nivel: 5 }), res('B', {}), bomba('P', { ligada: true }), tubo('rec', { registro: { aberto: false } })],
+      [criarConexao('A', 'P'), criarConexao('P', 'rec'), criarConexao('rec', 'B')],
+    );
+    expect(tick(p).vazoes['P']).toBe(0); // registro fechado ⇒ bomba não empurra
+    // Abrindo o registro, volta a fluir.
+    (p.pecas.find((x) => x.id === 'rec')!.props as PropsTubo).registro = { aberto: true };
+    expect(tick(p).vazoes['P']).toBeGreaterThan(0);
+  });
+
+  it('registro fechado no cano de sucção impede a bomba', () => {
+    const r = tick(
+      projeto(
+        [res('A', { nivel: 5 }), res('B', {}), bomba('P', { ligada: true }), tubo('suc', { registro: { aberto: false } })],
+        [criarConexao('A', 'suc'), criarConexao('suc', 'P'), criarConexao('P', 'B')],
+      ),
+    );
+    expect(r.vazoes['P']).toBe(0);
+  });
 });
 
 // ===========================================================================

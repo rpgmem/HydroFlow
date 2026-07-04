@@ -118,6 +118,18 @@ describe('inspetor — edição de props (Sprint 3/4)', () => {
     fireEvent.change(prot, { target: { value: '0.2' } });
     expect((screen.getByLabelText(/Proteção a seco/) as HTMLInputElement).value).toBe('0.2');
   });
+
+  it('permite inserir uma boia (válvula de nível) no tubo', () => {
+    render(<App />);
+    const id = adicionar('Tubo');
+    fireEvent.click(screen.getByTestId(`peca-${id}`));
+    // Antes de ativar, os campos de nível da boia não existem.
+    expect(screen.queryByLabelText(/Boia: fecha/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText('Boia (válvula de nível)'));
+    // Ativada → aparecem os limiares.
+    expect(screen.getByLabelText(/Boia: abre/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Boia: fecha/)).toBeInTheDocument();
+  });
 });
 
 describe('modo execução — validação e transição (Sprint 4)', () => {

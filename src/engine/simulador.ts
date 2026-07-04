@@ -93,12 +93,18 @@ class GrafoIndex {
   }
 
   /**
-   * Caminha em uma direção atravessando junções até achar um reservatório.
-   * 'up' segue arestas de entrada; 'down' segue arestas de saída.
+   * Caminha em uma direção atravessando junções/condutores até achar um
+   * reservatório. 'up' segue arestas de entrada; 'down' segue arestas de saída.
+   *
+   * Com `bloquearFechados`, um tubo de **registro fechado** é intransponível —
+   * usado nas resoluções de FLUXO (bomba/fonte/consumo) para que fechar o
+   * registro de um cano em série realmente interrompa o fluxo que passa por ele.
+   * Resoluções que só observam nível (sensores) usam `false`.
    */
   resolverReservatorio(
     start: string,
     dir: 'up' | 'down',
+    bloquearFechados = false,
     visitado = new Set<string>(),
   ): PecaDe<'reservatorio'> | null {
     if (visitado.has(start)) return null;
@@ -106,11 +112,20 @@ class GrafoIndex {
     const peca = this.porId.get(start);
     if (!peca) return null;
     if (isReservatorio(peca)) return peca;
+    // Tubo com registro fechado corta o caminho do fluxo.
+    if (
+      bloquearFechados &&
+      isTubo(peca) &&
+      peca.props.registro &&
+      !peca.props.registro.aberto
+    ) {
+      return null;
+    }
     // Junção (ou qualquer nó de passagem) → continua atravessando.
     const arestas = dir === 'up' ? this.entrada.get(start) : this.saida.get(start);
     for (const c of arestas ?? []) {
       const prox = dir === 'up' ? c.origem : c.destino;
-      const r = this.resolverReservatorio(prox, dir, visitado);
+      const r = this.resolverReservatorio(prox, dir, bloquearFechados, visitado);
       if (r) return r;
     }
     return null;
@@ -203,8 +218,8 @@ function calcularTubo(
   const { registro, boia, checkValve, diametro } = tubo.props;
   if (registro && !registro.aberto) return 0; // registro fechado
 
-  const up = idx.resolverReservatorio(tubo.id, 'up');
-  const down = idx.resolverReservatorio(tubo.id, 'down');
+  const up = idx.resolverReservatorio(tubo.id, 'up', true);
+  const down = idx.resolverReservatorio(tubo.id, 'down', true);
   if (!up && !down) return 0;
 
   const hUp = up ? carga(up) : 0;
@@ -241,8 +256,11 @@ function calcularBomba(
 ): number {
   if (!bomba.props.ligada) return 0;
 
-  const up = idx.resolverReservatorio(bomba.id, 'up');
-  const hUp = up ? carga(up) : 0;
+  // Fonte de sucção respeitando registros fechados: sem origem alcançável, a
+  // bomba não move nada (ex.: registro do cano de sucção fechado).
+  const up = idx.resolverReservatorio(bomba.id, 'up', true);
+  if (!up) return 0;
+  const hUp = carga(up);
 
   // Uma bomba pode alimentar múltiplas saídas (ex.: recalque para dois
   // reservatórios). A vazão nominal é dividida entre elas — por `vazaoAlocada`
@@ -253,16 +271,18 @@ function calcularBomba(
 
   let total = 0;
   for (const c of saidas) {
-    const down = idx.resolverReservatorio(c.destino, 'down');
-    const hDown = down ? carga(down) : 0;
-    const lift = hDown - hUp; // carga que a bomba precisa vencer nesta saída
+    // Destino inalcançável (registro fechado no cano de recalque, ou sem
+    // reservatório a jusante) → aquela saída não conduz nada.
+    const down = idx.resolverReservatorio(c.destino, 'down', true);
+    if (!down) continue;
+    const lift = carga(down) - hUp; // carga que a bomba precisa vencer nesta saída
 
     const base = n > 1 ? (c.vazaoAlocada ?? bomba.props.vazaoNominal / n) : bomba.props.vazaoNominal;
     let q = bomba.props.curva ? base - bomba.props.curva.k * lift : base;
     q = Math.max(0, q); // bomba não gera vazão negativa
 
     if (q > 0) {
-      fluxos.push({ origem: up?.id ?? null, destino: down?.id ?? null, vazao: q });
+      fluxos.push({ origem: up.id, destino: down.id, vazao: q });
       total += q;
     }
   }
@@ -279,7 +299,9 @@ function calcularFonte(
 
   let total = 0;
   for (const c of saidas) {
-    const down = idx.resolverReservatorio(c.destino, 'down');
+    // Destino inalcançável (registro fechado no caminho) → não abastece.
+    const down = idx.resolverReservatorio(c.destino, 'down', true);
+    if (!down) continue;
     // Múltiplos destinos: usa vazaoAlocada; destino único usa vazaoFixa.
     const qAlvo =
       saidas.length > 1
@@ -288,12 +310,12 @@ function calcularFonte(
 
     // Boia da fonte: fecha quando o destino está cheio.
     let q = qAlvo;
-    if (fonte.props.boia && down) {
+    if (fonte.props.boia) {
       const aberta = boiaAberta(fonte.props.boia, down.props.nivel ?? 0, true);
       if (!aberta) q = 0;
     }
     if (q > 0) {
-      fluxos.push({ origem: null, destino: down?.id ?? null, vazao: q });
+      fluxos.push({ origem: null, destino: down.id, vazao: q });
       total += q;
     }
   }
@@ -306,8 +328,8 @@ function calcularConsumo(
   fluxos: FluxoResolvido[],
 ): number {
   if (consumo.props.aberto === false) return 0; // saída fechada
-  const up = idx.resolverReservatorio(consumo.id, 'up');
-  if (!up) return 0; // sem reservatório de origem, nada a consumir
+  const up = idx.resolverReservatorio(consumo.id, 'up', true);
+  if (!up) return 0; // sem reservatório de origem (ou registro fechado no caminho)
   const q = Math.max(0, consumo.props.vazaoDemanda);
   // destino null → volume sai do grafo (descartado); a limitação pelo volume
   // disponível é aplicada em aplicarFluxos (escala de saídas).
