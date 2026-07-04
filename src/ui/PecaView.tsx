@@ -44,6 +44,8 @@ interface Props {
   overflow: boolean;
   aSeco: boolean;
   boiaFechada: boolean;
+  /** Tubo ladrão em transbordo neste tick. */
+  ladraoAtivo: boolean;
   /** Decisão corrente do sensor ('ligar'|'desligar'|'manter'), se em execução. */
   sensorEstado?: string;
   onSelect: () => void;
@@ -84,6 +86,7 @@ export function PecaView({
   overflow,
   aSeco,
   boiaFechada,
+  ladraoAtivo,
   sensorEstado,
   onSelect,
   onMove,
@@ -128,6 +131,7 @@ export function PecaView({
           larguraBorda={larguraBorda}
           vazao={vazao}
           boiaFechada={boiaFechada}
+          ladraoAtivo={ladraoAtivo}
         />
       ) : peca.tipo === 'sensor' ? (
         <Circle
@@ -207,6 +211,7 @@ function TuboView({
   larguraBorda,
   vazao,
   boiaFechada,
+  ladraoAtivo,
 }: {
   props: PropsTubo;
   w: number;
@@ -215,9 +220,12 @@ function TuboView({
   larguraBorda: number;
   vazao: number | undefined;
   boiaFechada: boolean;
+  ladraoAtivo: boolean;
 }) {
   const fluindo = vazao !== undefined && Math.abs(vazao) > 1e-9;
   const registroFechado = props.registro !== undefined && !props.registro.aberto;
+  // Ladrão transbordando pinta o cano de laranja (alerta).
+  const corTubo = props.ladrao && ladraoAtivo ? '#f59e0b' : fluindo ? '#2b8fe0' : COR.tubo;
   return (
     <>
       <Rect
@@ -226,11 +234,20 @@ function TuboView({
         width={w}
         height={h}
         cornerRadius={4}
-        fill={fluindo ? '#2b8fe0' : COR.tubo}
+        fill={corTubo}
         stroke={borda}
         strokeWidth={larguraBorda}
       />
-      {props.boia ? (
+      {props.ladrao ? (
+        // Ladrão = losango. Laranja aceso quando transbordando; âmbar em repouso.
+        <Line
+          closed
+          points={[0, -6, 6, 0, 0, 6, -6, 0]}
+          fill={ladraoAtivo ? '#f59e0b' : COR_BOIA_ABERTA}
+          stroke="#0d1620"
+          strokeWidth={1}
+        />
+      ) : props.boia ? (
         // Boia = círculo (float). Amarelo aberta / vermelho fechada.
         <Circle
           radius={6}

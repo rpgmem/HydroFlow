@@ -33,6 +33,8 @@ interface Props {
   peca: Peca | undefined;
   projeto: ProjetoSimulacao;
   emExecucao: boolean;
+  /** Vazão atual da peça selecionada (unidade de volume/s), se houver. */
+  vazao?: number;
   dispatch: React.Dispatch<Acao>;
 }
 
@@ -70,7 +72,7 @@ function Num({
   );
 }
 
-export function Inspector({ peca, projeto, emExecucao, dispatch }: Props) {
+export function Inspector({ peca, projeto, emExecucao, vazao, dispatch }: Props) {
   if (!peca) {
     return (
       <div className="panel right">
@@ -97,6 +99,12 @@ export function Inspector({ peca, projeto, emExecucao, dispatch }: Props) {
       {emExecucao && (
         <p className="telemetry" style={{ marginTop: 0 }}>
           Somente leitura durante a execução. Volte à edição para alterar valores.
+        </p>
+      )}
+
+      {vazao !== undefined && Math.abs(vazao) > 1e-9 && (
+        <p className="telemetry" style={{ marginTop: 0 }}>
+          Vazão atual: <strong>{vazao.toFixed(2)} {u.vazao}</strong>
         </p>
       )}
 
@@ -183,9 +191,10 @@ function ReservatorioForm({
 
 function TuboForm({ props, emExecucao, upd, u }: { props: PropsTubo; emExecucao: boolean; upd: Upd; u: UniLabel }) {
   const temBoia = props.boia !== undefined;
+  const temLadrao = props.ladrao !== undefined;
   return (
     <>
-      <Num label="Diâmetro" unidade={u.comp} value={props.diametro} disabled={emExecucao} step={0.01} onChange={(v) => upd({ diametro: v })} />
+      <Num label="Diâmetro" unidade="mm" value={props.diametro} disabled={emExecucao} step={1} onChange={(v) => upd({ diametro: v })} />
       {/* Com boia, o registro manual perde o sentido (a boia governa a abertura). */}
       {!temBoia && (
         <label className="checkbox">
@@ -208,8 +217,33 @@ function TuboForm({ props, emExecucao, upd, u }: { props: PropsTubo; emExecucao:
         />
         Check valve (anti-refluxo)
       </label>
-      {/* Ao ativar a boia, garante o registro aberto para a boia poder operar. */}
-      <BoiaFields boia={props.boia} upd={upd} unidade={u.comp} aoAtivar={{ registro: { aberto: true } }} />
+      {/* Boia e ladrão são mutuamente exclusivos (papéis de válvula distintos). */}
+      {!temLadrao && (
+        <BoiaFields boia={props.boia} upd={upd} unidade={u.comp} aoAtivar={{ registro: { aberto: true } }} />
+      )}
+      {!temBoia && (
+        <>
+          <label className="checkbox" style={{ marginTop: 8 }}>
+            <input
+              type="checkbox"
+              checked={temLadrao}
+              disabled={emExecucao}
+              aria-label="Ladrão (dreno de transbordo)"
+              onChange={(e) => upd({ ladrao: e.target.checked ? { nivel: 0 } : undefined })}
+            />
+            Ladrão (dreno de transbordo)
+          </label>
+          {temLadrao && (
+            <Num
+              label="Ladrão: escoa acima de"
+              unidade={u.comp}
+              value={props.ladrao?.nivel}
+              disabled={emExecucao}
+              onChange={(v) => upd({ ladrao: { nivel: v } })}
+            />
+          )}
+        </>
+      )}
     </>
   );
 }

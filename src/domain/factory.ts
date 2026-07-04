@@ -76,7 +76,8 @@ export function criarPeca(
         },
       };
     case 'tubo':
-      return { ...base, props: { diametro: 0.1, registro: { aberto: true } } };
+      // diâmetro em milímetros (50 mm — cano comum).
+      return { ...base, props: { diametro: 50, registro: { aberto: true } } };
     case 'bomba':
       return { ...base, props: { vazaoNominal: 10, sensores: [], ligada: false } };
     case 'fonte':

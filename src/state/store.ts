@@ -28,7 +28,9 @@ import {
   type PropsPorTipo,
 } from '../domain/types';
 
-export type Velocidade = 1 | 2 | 5;
+// Multiplicador de ticks por frame. Valores altos permitem acompanhar cenários
+// realistas (vazões em L/s enchendo tanques de milhares de litros) em segundos.
+export type Velocidade = 1 | 5 | 30 | 120;
 
 export interface EstadoApp {
   projeto: ProjetoSimulacao;
@@ -42,6 +44,7 @@ export interface EstadoApp {
   overflow: string[];
   bombasASeco: string[];
   boiasFechadas: string[];
+  ladroesAtivos: string[];
   sensores: Record<string, Decisao>;
   /** id da peça selecionada no inspetor (ou null). */
   selecionada: string | null;
@@ -84,6 +87,7 @@ export function estadoInicial(projeto: ProjetoSimulacao): EstadoApp {
     overflow: [],
     bombasASeco: [],
     boiasFechadas: [],
+    ladroesAtivos: [],
     sensores: {},
     selecionada: null,
     conexaoSelecionada: null,
@@ -239,6 +243,7 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
         overflow: [],
         bombasASeco: [],
         boiasFechadas: [],
+        ladroesAtivos: [],
         sensores: {},
         projeto: estado.snapshotEdicao ?? estado.projeto,
         snapshotEdicao: null,
@@ -261,6 +266,7 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
         overflow: [],
         bombasASeco: [],
         boiasFechadas: [],
+        ladroesAtivos: [],
         sensores: {},
         projeto: estado.snapshotEdicao ?? estado.projeto,
       };
@@ -280,6 +286,7 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
         overflow: r.overflow,
         bombasASeco: r.bombasASeco,
         boiasFechadas: r.boiasFechadas,
+        ladroesAtivos: r.ladroesAtivos,
         sensores: r.sensores,
         tempo: r.tempo,
       };

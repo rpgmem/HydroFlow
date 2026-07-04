@@ -33,7 +33,8 @@ function res(id: string, over: Partial<PropsReservatorio>): Peca {
   return { id, tipo: 'reservatorio', x: 0, y: 0, props };
 }
 function tubo(id: string, over: Partial<PropsTubo> = {}): Peca {
-  return { id, tipo: 'tubo', x: 0, y: 0, props: { diametro: 0.1, ...over } };
+  // diâmetro em MILÍMETROS (100 mm = 0,1 m).
+  return { id, tipo: 'tubo', x: 0, y: 0, props: { diametro: 100, ...over } };
 }
 function bomba(id: string, over: Partial<PropsBomba> = {}): Peca {
   return {
@@ -57,7 +58,13 @@ function sensor(id: string, over: Partial<PropsSensor>): Peca {
   };
 }
 function projeto(pecas: Peca[], conexoes = projetoVazio().conexoes): ProjetoSimulacao {
-  return { ...projetoVazio(), pecas, conexoes };
+  // Testes em m³ + m → fatores de unidade 1 (física direta em SI).
+  return {
+    ...projetoVazio(),
+    unidades: { volume: 'm3', comprimento: 'm' },
+    pecas,
+    conexoes,
+  };
 }
 
 // ===========================================================================
@@ -69,7 +76,7 @@ describe('vazão por gravidade em tubo', () => {
       [
         res('A', { cotaBase: 10, nivel: 2 }), // carga 12
         res('B', { cotaBase: 0, nivel: 0 }), // carga 0
-        tubo('T', { diametro: 0.1 }),
+        tubo('T', { diametro: 100 }), // 100 mm = 0,1 m
       ],
       [criarConexao('A', 'T'), criarConexao('T', 'B')],
     );
@@ -93,7 +100,7 @@ describe('vazão por gravidade em tubo', () => {
           [criarConexao('A', 'T'), criarConexao('T', 'B')],
         ),
       ).vazoes['T']!;
-    expect(mk(0.2)).toBeCloseTo(mk(0.1) * 4, 6); // diâmetro 2x → vazão 4x
+    expect(mk(200)).toBeCloseTo(mk(100) * 4, 6); // diâmetro 2x → vazão 4x
   });
 
   it('não flui sem desnível (Δh = 0)', () => {
@@ -341,7 +348,7 @@ describe('boia em tubo entre reservatórios', () => {
     projeto(
       [
         res('A', { cotaBase: 10, nivel: 5 }), // alto e cheio
-        tubo('T', { diametro: 0.1, boia: { nivelMinimo: 1, nivelMaximo: 2 } }),
+        tubo('T', { diametro: 100, boia: { nivelMinimo: 1, nivelMaximo: 2 } }),
         res('B', { cotaBase: 0, nivel: nivelB, alturaMaxima: 5 }),
       ],
       [criarConexao('A', 'T'), criarConexao('T', 'B')],
@@ -361,6 +368,46 @@ describe('boia em tubo entre reservatórios', () => {
   it('reporta a boia como fechada quando o destino está cheio (para a UI)', () => {
     expect(tick(cenario(3)).boiasFechadas).toContain('T'); // 3 ≥ máximo
     expect(tick(cenario(0)).boiasFechadas).not.toContain('T'); // vazio → aberta
+  });
+});
+
+// ===========================================================================
+// Tubo ladrão (dreno de transbordo)
+// ===========================================================================
+describe('tubo ladrão', () => {
+  it('só escoa quando o nível de origem passa do nível de acionamento', () => {
+    const acima = tick(
+      projeto(
+        [res('A', { cotaBase: 0, nivel: 3, alturaMaxima: 6 }), tubo('L', { ladrao: { nivel: 2 } })],
+        [criarConexao('A', 'L')],
+      ),
+    );
+    expect(acima.vazoes['L']).toBeGreaterThan(0);
+    expect(acima.ladroesAtivos).toContain('L');
+
+    const abaixo = tick(
+      projeto(
+        [res('A', { cotaBase: 0, nivel: 1.5, alturaMaxima: 6 }), tubo('L', { ladrao: { nivel: 2 } })],
+        [criarConexao('A', 'L')],
+      ),
+    );
+    expect(abaixo.vazoes['L']).toBe(0);
+    expect(abaixo.ladroesAtivos).not.toContain('L');
+  });
+
+  it('segura o reservatório perto do nível de ladrão (autolimitante)', () => {
+    const p = projeto(
+      [
+        fonte('F', { vazaoFixa: 0.02 }),
+        res('A', { nivel: 3, alturaMaxima: 6 }),
+        tubo('L', { diametro: 150, ladrao: { nivel: 3 } }),
+      ],
+      [criarConexao('F', 'A'), criarConexao('A', 'L')],
+    );
+    const r = rodarTicks(p, 300);
+    const a = r.projeto.pecas.find((x) => x.id === 'A')!.props as PropsReservatorio;
+    expect(a.nivel!).toBeGreaterThanOrEqual(3);
+    expect(a.nivel!).toBeLessThan(3.5); // ladrão drenou o excedente
   });
 });
 
@@ -400,6 +447,24 @@ describe('consumo', () => {
     );
     const a = r.projeto.pecas.find((x) => x.id === 'A')!.props as PropsReservatorio;
     expect(a.nivel!).toBeGreaterThanOrEqual(0);
+  });
+
+  it('estrangula a saída pela capacidade do cano no caminho (realismo)', () => {
+    const r = tick(
+      projeto(
+        [
+          res('A', { cotaBase: 0, nivel: 1 }),
+          tubo('T', { diametro: 5 }), // cano fino: 5 mm
+          { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: 1000, aberto: true } },
+        ],
+        [criarConexao('A', 'T'), criarConexao('T', 'C')],
+      ),
+    );
+    // capacidade do cano de 5 mm com carga de 1 m (Torricelli), não a demanda 1000
+    const area = Math.PI * (0.005 / 2) ** 2;
+    const cap = area * Math.sqrt(2 * 9.81 * 1);
+    expect(r.vazoes['C']).toBeCloseTo(cap, 9);
+    expect(r.vazoes['C']).toBeLessThan(1); // muito abaixo da demanda
   });
 });
 

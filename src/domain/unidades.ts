@@ -19,3 +19,15 @@ export function labelVolume(u: Unidades): string {
 export function labelVazao(u: Unidades): string {
   return `${labelVolume(u)}/s`;
 }
+
+// --- Fatores de conversão para a física interna (SI: metros, m³) ------------
+
+/** Metros por unidade de comprimento (cm → 0,01; m → 1). */
+export function metrosPorComprimento(u: Unidades): number {
+  return u.comprimento === 'cm' ? 0.01 : 1;
+}
+
+/** Metros cúbicos por unidade de volume (litros → 0,001; m³ → 1). */
+export function m3PorVolume(u: Unidades): number {
+  return u.volume === 'litros' ? 0.001 : 1;
+}

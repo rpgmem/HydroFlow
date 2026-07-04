@@ -36,16 +36,25 @@ import {
   type PecaDe,
   type ProjetoSimulacao,
 } from '../domain/types';
-import { areaSecao, nivelDeVolume, volumeMaximo } from './geometria';
+import {
+  areaTuboM2,
+  nivelDeVolumeM3,
+  vazaoDeM3,
+  vazaoParaM3,
+  volumeM3DeNivel,
+  volumeMaximoM3,
+} from './geometria';
+import { metrosPorComprimento } from '../domain/unidades';
 import { arbitrarBomba, avaliarSensor, boiaAberta, type Decisao } from './arbitragem';
+import type { Unidades } from '../domain/types';
 
-/** Um movimento de líquido resolvido para um tick. */
+/** Um movimento de líquido resolvido para um tick (vazão em m³/s). */
 interface FluxoResolvido {
   /** Reservatório de onde sai o volume (null = fonte externa). */
   origem: string | null;
   /** Reservatório para onde entra o volume (null = descarte externo). */
   destino: string | null;
-  /** Vazão volumétrica (unidade de volume / segundo), sempre ≥ 0. */
+  /** Vazão volumétrica em m³/s, sempre ≥ 0. */
   vazao: number;
 }
 
@@ -60,15 +69,17 @@ export interface ResultadoTick {
   bombasASeco: string[];
   /** Tubos cuja boia está fechada neste tick (destino cheio). */
   boiasFechadas: string[];
+  /** Tubos ladrão em transbordo neste tick (origem acima do nível de ladrão). */
+  ladroesAtivos: string[];
   /** Decisão corrente de cada sensor (id → 'ligar' | 'desligar' | 'manter'). */
   sensores: Record<string, Decisao>;
   /** Tempo de simulação acumulado (s) após este tick. */
   tempo: number;
 }
 
-/** Carga hidráulica total de um reservatório: cotaBase + nível. */
-function carga(peca: PecaDe<'reservatorio'>): number {
-  return peca.props.cotaBase + (peca.props.nivel ?? 0);
+/** Carga hidráulica total de um reservatório em METROS: (cotaBase + nível)·kL. */
+function cargaM(peca: PecaDe<'reservatorio'>, kL: number): number {
+  return (peca.props.cotaBase + (peca.props.nivel ?? 0)) * kL;
 }
 
 /**
@@ -228,23 +239,26 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     p.props.ligada = ligada;
   }
 
-  // ---- (3) Cálculo de vazão de cada aresta condutora -------------------
+  // ---- (3) Cálculo de vazão de cada aresta condutora (em m³/s) ---------
+  const u = proj.unidades;
   const fluxos: FluxoResolvido[] = [];
-  const vazoes: Record<string, number> = {};
+  const vazoesM3: Record<string, number> = {};
 
   // Elementos ATIVOS primeiro: além da própria vazão, anotam a vazão nos tubos
   // em série pelos quais empurram a água (para a telemetria/animação refletir o
   // fluxo que passa por esses canos).
   for (const p of proj.pecas) {
-    if (isBomba(p)) vazoes[p.id] = calcularBomba(idx, p, fluxos, vazoes);
-    else if (isFonte(p)) vazoes[p.id] = calcularFonte(idx, p, fluxos, vazoes);
-    else if (isConsumo(p)) vazoes[p.id] = calcularConsumo(idx, p, fluxos, vazoes);
+    if (isBomba(p)) vazoesM3[p.id] = calcularBomba(idx, p, g, u, fluxos, vazoesM3);
+    else if (isFonte(p)) vazoesM3[p.id] = calcularFonte(idx, p, u, fluxos, vazoesM3);
+    else if (isConsumo(p)) vazoesM3[p.id] = calcularConsumo(idx, p, g, u, fluxos, vazoesM3);
   }
-  // Tubos por gravidade: só os que ainda não foram atribuídos por um elemento
-  // ativo (um cano alimentado por fonte/bomba tem sua vazão dada pelo driver).
+  // Tubos por gravidade / ladrão: só os que ainda não foram atribuídos por um
+  // elemento ativo (um cano alimentado por fonte/bomba tem sua vazão dada pelo
+  // driver).
+  const ladroesAtivos: string[] = [];
   for (const p of proj.pecas) {
-    if (isTubo(p) && vazoes[p.id] === undefined) {
-      vazoes[p.id] = calcularTubo(idx, p, g, fluxos);
+    if (isTubo(p) && vazoesM3[p.id] === undefined) {
+      vazoesM3[p.id] = calcularTubo(idx, p, g, u, fluxos, ladroesAtivos);
     }
   }
 
@@ -260,12 +274,25 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   }
 
   // ---- (4 + 5) Atualização de volume e overflow ------------------------
-  const overflow = aplicarFluxos(proj, fluxos, dt);
+  const overflow = aplicarFluxos(proj, u, fluxos, dt);
 
   // Persiste estado dos sensores (ultimaTroca / pedindoLigar) p/ delay.
   atualizarEstadoSensores(proj, idx, tempoFim);
 
-  return { projeto: proj, vazoes, overflow, bombasASeco, boiasFechadas, sensores, tempo: tempoFim };
+  // Telemetria: converte as vazões de m³/s para a unidade do usuário (volume/s).
+  const vazoes: Record<string, number> = {};
+  for (const [id, q] of Object.entries(vazoesM3)) vazoes[id] = vazaoDeM3(q, u);
+
+  return {
+    projeto: proj,
+    vazoes,
+    overflow,
+    bombasASeco,
+    boiasFechadas,
+    ladroesAtivos,
+    sensores,
+    tempo: tempoFim,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -276,9 +303,11 @@ function calcularTubo(
   idx: GrafoIndex,
   tubo: PecaDe<'tubo'>,
   g: number,
+  u: Unidades,
   fluxos: FluxoResolvido[],
+  ladroesAtivos: string[],
 ): number {
-  const { registro, boia, checkValve, diametro } = tubo.props;
+  const { registro, boia, checkValve, diametro, ladrao } = tubo.props;
   if (registro && !registro.aberto) return 0; // registro fechado
 
   const up = idx.resolverReservatorio(tubo.id, 'up', true);
@@ -288,8 +317,23 @@ function calcularTubo(
   // move a água é esse elemento ativo — o tubo não deve inventar refluxo.
   if (!up) return 0;
 
-  const hUp = carga(up);
-  const hDown = down ? carga(down) : 0; // destino ausente = saída ao ambiente (cota 0)
+  const kL = metrosPorComprimento(u);
+  const areaM2 = areaTuboM2(diametro);
+
+  // Tubo ladrão: só escoa o EXCEDENTE acima do nível de acionamento (a coluna
+  // acima do lábio é a carga que empurra o transbordo — autolimitante).
+  if (ladrao && Number.isFinite(ladrao.nivel)) {
+    const excesso = (up.props.nivel ?? 0) - ladrao.nivel;
+    if (excesso <= 1e-9) return 0; // abaixo do lábio → sem transbordo
+    const v = Math.sqrt(2 * g * excesso * kL);
+    const q = areaM2 * v;
+    fluxos.push({ origem: up.id, destino: down?.id ?? null, vazao: q });
+    ladroesAtivos.push(tubo.id);
+    return q;
+  }
+
+  const hUp = cargaM(up, kL);
+  const hDown = down ? cargaM(down, kL) : 0; // destino ausente = saída ao ambiente
   const deltaH = hUp - hDown;
 
   // Boia mecânica: monitora o reservatório de destino (fecha quando cheio).
@@ -300,9 +344,8 @@ function calcularTubo(
 
   if (Math.abs(deltaH) < 1e-12) return 0;
 
-  const area = Math.PI * (diametro / 2) ** 2;
   const v = Math.sqrt(2 * g * Math.abs(deltaH));
-  const q = area * v;
+  const q = areaM2 * v;
 
   if (deltaH > 0) {
     // Fluxo natural origem→destino.
@@ -315,7 +358,7 @@ function calcularTubo(
   return -q; // sinal indica sentido reverso na telemetria
 }
 
-/** Anota a vazão de um caminho nos tubos em série (telemetria/animação). */
+/** Anota a vazão (m³/s) de um caminho nos tubos em série (telemetria/animação). */
 function anotarTubos(vazoes: Record<string, number>, tubos: string[], q: number): void {
   for (const t of tubos) vazoes[t] = (vazoes[t] ?? 0) + q;
 }
@@ -323,6 +366,8 @@ function anotarTubos(vazoes: Record<string, number>, tubos: string[], q: number)
 function calcularBomba(
   idx: GrafoIndex,
   bomba: PecaDe<'bomba'>,
+  g: number,
+  u: Unidades,
   fluxos: FluxoResolvido[],
   vazoes: Record<string, number>,
 ): number {
@@ -333,7 +378,8 @@ function calcularBomba(
   const upPath = idx.resolverFluxo(bomba.id, 'up');
   if (!upPath.res || !upPath.aberto) return 0;
   const up = upPath.res;
-  const hUp = carga(up);
+  const kL = metrosPorComprimento(u);
+  const hUp = cargaM(up, kL);
 
   // Uma bomba pode alimentar múltiplas saídas (ex.: recalque para dois
   // reservatórios). A vazão nominal é dividida entre elas — por `vazaoAlocada`
@@ -341,6 +387,7 @@ function calcularBomba(
   const saidas = idx.saida.get(bomba.id) ?? [];
   const n = saidas.length;
   if (n === 0) return 0; // bomba sem recalque não move nada
+  void g; // a bomba é forçada (não usa Torricelli); g mantém a assinatura uniforme
 
   let total = 0;
   for (const c of saidas) {
@@ -348,15 +395,14 @@ function calcularBomba(
     // saída não conduz nada.
     const dp = idx.resolverFluxo(c.destino, 'down');
     if (!dp.res || !dp.aberto) continue;
-    const down = dp.res;
-    const lift = carga(down) - hUp; // carga que a bomba precisa vencer nesta saída
+    const liftM = cargaM(dp.res, kL) - hUp; // carga (m) a vencer nesta saída
 
     const base = n > 1 ? (c.vazaoAlocada ?? bomba.props.vazaoNominal / n) : bomba.props.vazaoNominal;
-    let q = bomba.props.curva ? base - bomba.props.curva.k * lift : base;
-    q = Math.max(0, q); // bomba não gera vazão negativa
+    const qUser = bomba.props.curva ? base - bomba.props.curva.k * liftM : base;
+    const q = vazaoParaM3(Math.max(0, qUser), u); // bomba não gera vazão negativa
 
     if (q > 0) {
-      fluxos.push({ origem: up.id, destino: down.id, vazao: q });
+      fluxos.push({ origem: up.id, destino: dp.res.id, vazao: q });
       anotarTubos(vazoes, dp.tubos, q); // canos de recalque desta saída
       total += q;
     }
@@ -368,6 +414,7 @@ function calcularBomba(
 function calcularFonte(
   idx: GrafoIndex,
   fonte: PecaDe<'fonte'>,
+  u: Unidades,
   fluxos: FluxoResolvido[],
   vazoes: Record<string, number>,
 ): number {
@@ -387,11 +434,12 @@ function calcularFonte(
         : (c.vazaoAlocada ?? fonte.props.vazaoFixa);
 
     // Boia da própria fonte: fecha quando o destino está cheio.
-    let q = qAlvo;
+    let qUser = qAlvo;
     if (fonte.props.boia) {
       const aberta = boiaAberta(fonte.props.boia, down.props.nivel ?? 0, true);
-      if (!aberta) q = 0;
+      if (!aberta) qUser = 0;
     }
+    const q = vazaoParaM3(Math.max(0, qUser), u);
     if (q > 0) {
       fluxos.push({ origem: null, destino: down.id, vazao: q });
       anotarTubos(vazoes, dp.tubos, q); // canos entre a fonte e o destino
@@ -404,6 +452,8 @@ function calcularFonte(
 function calcularConsumo(
   idx: GrafoIndex,
   consumo: PecaDe<'consumo'>,
+  g: number,
+  u: Unidades,
   fluxos: FluxoResolvido[],
   vazoes: Record<string, number>,
 ): number {
@@ -411,9 +461,22 @@ function calcularConsumo(
   const cp = idx.resolverFluxo(consumo.id, 'up');
   if (!cp.res || !cp.aberto) return 0; // sem origem, ou registro fechado no caminho
   const up = cp.res;
-  const q = Math.max(0, consumo.props.vazaoDemanda);
-  // destino null → volume sai do grafo (descartado); a limitação pelo volume
-  // disponível é aplicada em aplicarFluxos (escala de saídas).
+  const kL = metrosPorComprimento(u);
+
+  let q = vazaoParaM3(Math.max(0, consumo.props.vazaoDemanda), u);
+  // Realismo: a saída é limitada pela CAPACIDADE do cano mais estreito no
+  // caminho (Torricelli pelo diâmetro e pela carga). Canos finos estrangulam.
+  if (cp.tubos.length > 0) {
+    const headM = cargaM(up, kL); // carga do reservatório até a saída (cota 0)
+    let capMin = Infinity;
+    for (const tid of cp.tubos) {
+      const t = idx.porId.get(tid);
+      if (t && isTubo(t)) {
+        capMin = Math.min(capMin, areaTuboM2(t.props.diametro) * Math.sqrt(2 * g * Math.max(0, headM)));
+      }
+    }
+    q = Math.min(q, capMin);
+  }
   if (q > 0) {
     fluxos.push({ origem: up.id, destino: null, vazao: q });
     anotarTubos(vazoes, cp.tubos, q); // canos entre o reservatório e o consumo
@@ -422,19 +485,20 @@ function calcularConsumo(
 }
 
 // ---------------------------------------------------------------------------
-// Aplicação de fluxos → volumes → overflow
+// Aplicação de fluxos → volumes → overflow (tudo em m³)
 // ---------------------------------------------------------------------------
 
 function aplicarFluxos(
   proj: ProjetoSimulacao,
+  u: Unidades,
   fluxos: FluxoResolvido[],
   dt: number,
 ): string[] {
-  // Volume atual por reservatório.
+  // Volume atual (m³) por reservatório.
   const volume = new Map<string, number>();
   for (const p of proj.pecas) {
     if (isReservatorio(p)) {
-      volume.set(p.id, areaSecao(p.props) * Math.max(0, p.props.nivel ?? 0));
+      volume.set(p.id, volumeM3DeNivel(p.props, p.props.nivel ?? 0, u));
     }
   }
 
@@ -466,13 +530,13 @@ function aplicarFluxos(
   for (const p of proj.pecas) {
     if (!isReservatorio(p)) continue;
     let vol = volume.get(p.id) ?? 0;
-    const vMax = volumeMaximo(p.props);
+    const vMax = volumeMaximoM3(p.props, u);
     if (vol > vMax) {
       overflow.push(p.id); // excedente se perde (transborda), sem travar o tick
       vol = vMax;
     }
     if (vol < 0) vol = 0;
-    p.props.nivel = nivelDeVolume(p.props, vol);
+    p.props.nivel = nivelDeVolumeM3(p.props, vol, u);
   }
   return overflow;
 }
@@ -514,6 +578,7 @@ export function rodarTicks(
     overflow: [],
     bombasASeco: [],
     boiasFechadas: [],
+    ladroesAtivos: [],
     sensores: {},
     tempo,
   };

@@ -26,8 +26,29 @@ body {
 
 .app {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto 1fr auto;
   height: 100vh;
+}
+
+.rodape {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 14px;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.rodape a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.rodape a:hover {
+  text-decoration: underline;
 }
 
 .toolbar {

@@ -50,7 +50,7 @@ function canoComRetencao(id: string, rotulo: string, x: number, y: number): Peca
   // checkValve nos canos da bomba: impede refluxo por gravidade (a bomba é quem
   // move a água contra o desnível dos reservatórios empilhados).
   Object.assign(t.props as PropsTubo, {
-    diametro: 0.15,
+    diametro: 150, // mm
     checkValve: true,
     registro: { aberto: true },
   });
@@ -60,7 +60,9 @@ function canoComRetencao(id: string, rotulo: string, x: number, y: number): Peca
 function canoGravidade(id: string, rotulo: string, x: number, y: number): Peca {
   const t = criarPeca('tubo', x, y, id);
   t.rotulo = rotulo;
-  Object.assign(t.props as PropsTubo, { diametro: 0.06, registro: { aberto: true } });
+  // Saída estreita (10 mm): a alta carga dos tanques elevados faria um cano
+  // largo esvaziar num átimo — o diâmetro pequeno estrangula a vazão (realismo).
+  Object.assign(t.props as PropsTubo, { diametro: 10, registro: { aberto: true } });
   return t;
 }
 

@@ -71,9 +71,24 @@ export function App() {
           peca={selecionada}
           projeto={estado.projeto}
           emExecucao={emExecucao}
+          vazao={selecionada ? estado.vazoes[selecionada.id] : undefined}
           dispatch={dispatch}
         />
       </div>
+
+      <footer className="rodape">
+        <span>
+          <strong>HydroFlow</strong> — simulador hidráulico simplificado (Torricelli +
+          continuidade de volume)
+        </span>
+        <a
+          href="https://github.com/rpgmem/HydroFlow"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          ★ Código no GitHub
+        </a>
+      </footer>
     </div>
   );
 }

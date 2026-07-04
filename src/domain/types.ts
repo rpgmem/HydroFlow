@@ -65,6 +65,7 @@ export interface PropsReservatorio {
 }
 
 export interface PropsTubo {
+  /** Diâmetro interno em MILÍMETROS. */
   diametro: number;
   /** Impede refluxo (fluxo apenas origem→destino). */
   checkValve?: boolean;
@@ -72,6 +73,11 @@ export interface PropsTubo {
   registro?: { aberto: boolean };
   /** Válvula mecânica embutida na aresta (sem histerese/delay). */
   boia?: NivelControle;
+  /**
+   * Tubo ladrão (dreno de transbordo): só escoa o excedente quando o nível do
+   * reservatório de origem passa de `nivel` (na unidade de comprimento).
+   */
+  ladrao?: { nivel: number };
 }
 
 export interface PropsBomba {

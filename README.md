@@ -112,7 +112,7 @@ interface NivelControle {
 | Tipo | Campos |
 | --- | --- |
 | `reservatorio` | `formato` (`cilindro`\|`retangular`), `raio?`/`largura?`/`comprimento?`, `alturaMaxima`, `cotaBase`, `nivel?` |
-| `tubo` | `diametro`, `checkValve?`, `registro?: {aberto}`, `boia?: NivelControle` |
+| `tubo` | `diametro` (**mm**), `checkValve?`, `registro?: {aberto}`, `boia?: NivelControle`, `ladrao?: {nivel}` (dreno de transbordo) |
 | `bomba` | `vazaoNominal`, `curva?: {k}`, `sensores: string[]`, `ligada?`, `protecaoSeco?` |
 | `fonte` | `vazaoFixa`, `boia?: NivelControle` |
 | `consumo` | `vazaoDemanda`, `aberto?` (ponto de saída/demanda; retira água e descarta) |
@@ -137,7 +137,18 @@ Fórmulas implementadas em `src/engine/simulador.ts`:
 - **Fonte** — vazão fixa constante, externa ao grafo; múltiplos destinos usam
   `vazaoAlocada`.
 - **Consumo** — ponto de saída/demanda: retira `vazaoDemanda` do reservatório de
-  origem e descarta (externo ao grafo), limitado pelo volume disponível.
+  origem e descarta (externo ao grafo), **limitado pela capacidade do cano** mais
+  estreito no caminho (Torricelli pelo diâmetro/Δh) e pelo volume disponível.
+- **Tubo ladrão** — dreno de transbordo: só escoa o excedente acima de
+  `ladrao.nivel` (a coluna acima do lábio é a carga; autolimitante).
+
+### Unidades
+
+A física roda em **SI** (metros, m³, s). Os valores das peças ficam nas unidades
+escolhidas e são convertidos internamente: comprimentos pela unidade de
+comprimento (m/cm), volume/vazão em litros ou m³, e **diâmetro de tubo sempre em
+milímetros**. O multiplicador de velocidade (1x…120x) permite acompanhar cenários
+realistas (vazões em L/s enchendo tanques de milhares de litros) em segundos.
 - **Overflow** — nível > `alturaMaxima` → excedente se perde (transborda), sem
   gerar erro nem travar o tick.
 - **Bomba a seco** — a bomba desliga quando o nível de origem fica ≤ `protecaoSeco`

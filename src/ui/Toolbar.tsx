@@ -14,7 +14,7 @@ interface Props {
   onErroImport: (msg: string) => void;
 }
 
-const VELOCIDADES: Velocidade[] = [1, 2, 5];
+const VELOCIDADES: Velocidade[] = [1, 5, 30, 120];
 
 export function Toolbar({ estado, dispatch, onErroImport }: Props) {
   const inputFile = useRef<HTMLInputElement>(null);
