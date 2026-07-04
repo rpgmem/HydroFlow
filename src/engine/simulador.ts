@@ -26,6 +26,7 @@
 
 import {
   isBomba,
+  isConsumo,
   isFonte,
   isReservatorio,
   isSensor,
@@ -156,7 +157,8 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     let ligada = arbitrarBomba(decisoes, p.props.ligada ?? false);
 
     const origem = idx.resolverReservatorio(p.id, 'up');
-    if (ligada && origem && (origem.props.nivel ?? 0) <= 0) {
+    const limiteSeco = p.props.protecaoSeco ?? 0;
+    if (ligada && origem && (origem.props.nivel ?? 0) <= limiteSeco) {
       ligada = false; // bomba a seco: desliga independentemente dos sensores
       bombasASeco.push(p.id);
     }
@@ -174,6 +176,8 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
       vazoes[p.id] = calcularBomba(idx, p, fluxos);
     } else if (isFonte(p)) {
       vazoes[p.id] = calcularFonte(idx, p, fluxos);
+    } else if (isConsumo(p)) {
+      vazoes[p.id] = calcularConsumo(idx, p, fluxos);
     }
   }
 
@@ -238,22 +242,31 @@ function calcularBomba(
   if (!bomba.props.ligada) return 0;
 
   const up = idx.resolverReservatorio(bomba.id, 'up');
-  const down = idx.resolverReservatorio(bomba.id, 'down');
-
   const hUp = up ? carga(up) : 0;
-  const hDown = down ? carga(down) : 0;
-  const lift = hDown - hUp; // carga que a bomba precisa vencer
 
-  let q = bomba.props.vazaoNominal;
-  if (bomba.props.curva) {
-    q = bomba.props.vazaoNominal - bomba.props.curva.k * lift;
-  }
-  q = Math.max(0, q); // bomba não gera vazão negativa
+  // Uma bomba pode alimentar múltiplas saídas (ex.: recalque para dois
+  // reservatórios). A vazão nominal é dividida entre elas — por `vazaoAlocada`
+  // se informada, senão igualmente — espelhando a lógica da fonte multi-destino.
+  const saidas = idx.saida.get(bomba.id) ?? [];
+  const n = saidas.length;
+  if (n === 0) return 0; // bomba sem recalque não move nada
 
-  if (q > 0) {
-    fluxos.push({ origem: up?.id ?? null, destino: down?.id ?? null, vazao: q });
+  let total = 0;
+  for (const c of saidas) {
+    const down = idx.resolverReservatorio(c.destino, 'down');
+    const hDown = down ? carga(down) : 0;
+    const lift = hDown - hUp; // carga que a bomba precisa vencer nesta saída
+
+    const base = n > 1 ? (c.vazaoAlocada ?? bomba.props.vazaoNominal / n) : bomba.props.vazaoNominal;
+    let q = bomba.props.curva ? base - bomba.props.curva.k * lift : base;
+    q = Math.max(0, q); // bomba não gera vazão negativa
+
+    if (q > 0) {
+      fluxos.push({ origem: up?.id ?? null, destino: down?.id ?? null, vazao: q });
+      total += q;
+    }
   }
-  return q;
+  return total;
 }
 
 function calcularFonte(
@@ -285,6 +298,21 @@ function calcularFonte(
     }
   }
   return total;
+}
+
+function calcularConsumo(
+  idx: GrafoIndex,
+  consumo: PecaDe<'consumo'>,
+  fluxos: FluxoResolvido[],
+): number {
+  if (consumo.props.aberto === false) return 0; // saída fechada
+  const up = idx.resolverReservatorio(consumo.id, 'up');
+  if (!up) return 0; // sem reservatório de origem, nada a consumir
+  const q = Math.max(0, consumo.props.vazaoDemanda);
+  // destino null → volume sai do grafo (descartado); a limitação pelo volume
+  // disponível é aplicada em aplicarFluxos (escala de saídas).
+  if (q > 0) fluxos.push({ origem: up.id, destino: null, vazao: q });
+  return q;
 }
 
 // ---------------------------------------------------------------------------

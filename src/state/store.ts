@@ -42,6 +42,8 @@ export interface EstadoApp {
   bombasASeco: string[];
   /** id da peça selecionada no inspetor (ou null). */
   selecionada: string | null;
+  /** id da conexão selecionada (para exclusão), ou null. */
+  conexaoSelecionada: string | null;
   /** Snapshot do projeto ao entrar em execução, para RESET. */
   snapshotEdicao: ProjetoSimulacao | null;
 }
@@ -53,7 +55,9 @@ export type Acao =
   | { tipo: 'ADD_CONEXAO'; conexao: Conexao }
   | { tipo: 'REMOVER_CONEXAO'; id: string }
   | { tipo: 'ATUALIZAR_PROPS'; id: string; props: Partial<PropsPorTipo> }
+  | { tipo: 'RENOMEAR_PECA'; id: string; rotulo: string }
   | { tipo: 'SELECIONAR'; id: string | null }
+  | { tipo: 'SELECIONAR_CONEXAO'; id: string | null }
   | { tipo: 'SET_NOME'; nome: string }
   | { tipo: 'SET_UNIDADES'; unidades: ProjetoSimulacao['unidades'] }
   | { tipo: 'CARREGAR_PROJETO'; projeto: ProjetoSimulacao }
@@ -77,6 +81,7 @@ export function estadoInicial(projeto: ProjetoSimulacao): EstadoApp {
     overflow: [],
     bombasASeco: [],
     selecionada: null,
+    conexaoSelecionada: null,
     snapshotEdicao: null,
   };
 }
@@ -158,6 +163,8 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
           ...estado.projeto,
           conexoes: estado.projeto.conexoes.filter((c) => c.id !== acao.id),
         },
+        conexaoSelecionada:
+          estado.conexaoSelecionada === acao.id ? null : estado.conexaoSelecionada,
       };
 
     case 'ATUALIZAR_PROPS':
@@ -171,8 +178,21 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
         })),
       };
 
+    case 'RENOMEAR_PECA':
+      return {
+        ...estado,
+        projeto: atualizarPeca(estado.projeto, acao.id, (p) => ({
+          ...p,
+          rotulo: acao.rotulo,
+        })),
+      };
+
     case 'SELECIONAR':
-      return { ...estado, selecionada: acao.id };
+      // Selecionar uma peça limpa a seleção de conexão (e vice-versa).
+      return { ...estado, selecionada: acao.id, conexaoSelecionada: null };
+
+    case 'SELECIONAR_CONEXAO':
+      return { ...estado, conexaoSelecionada: acao.id, selecionada: null };
 
     case 'SET_NOME':
       return { ...estado, projeto: { ...estado.projeto, nome: acao.nome } };

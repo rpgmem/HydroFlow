@@ -1,70 +1,148 @@
 /**
- * Projeto de exemplo carregado ao abrir a aplicação: uma caixa d'água elevada
- * abastecida por uma bomba (controlada por um sensor de nível) que puxa de uma
- * cisterna, e um tubo por gravidade que leva a água da caixa a um ponto de uso.
+ * Projeto de exemplo carregado ao abrir a aplicação.
+ *
+ * Cenário: três reservatórios cilíndricos EMPILHados (cotaBase crescente).
+ *  - O inferior (≈75.000 L) recebe água de uma fonte externa e alimenta a bomba
+ *    por um cano de sucção.
+ *  - A bomba recalca para o reservatório do meio (≈55.000 L) e para o superior
+ *    (≈55.000 L) por dois canos — a vazão nominal é dividida entre as saídas.
+ *  - Dois canos (um do superior, um do meio) escoam por gravidade até um único
+ *    ponto de consumo.
+ *  - Um sensor no reservatório superior liga/desliga a bomba.
+ *
+ * Dimensões em metros → volume em m³ (1 m³ = 1.000 L). Cilindro de raio 2 m tem
+ * área ≈ 12,566 m²; a alturaMaxima é escolhida para dar a capacidade desejada.
  */
 import { criarConexao, criarPeca, projetoVazio } from './factory';
 import type {
+  Peca,
   ProjetoSimulacao,
   PropsBomba,
+  PropsConsumo,
+  PropsFonte,
   PropsReservatorio,
   PropsSensor,
   PropsTubo,
 } from './types';
 
-export function projetoExemplo(): ProjetoSimulacao {
-  const cisterna = criarPeca('reservatorio', 140, 380, 'cisterna');
-  Object.assign(cisterna.props as PropsReservatorio, {
-    formato: 'retangular',
-    largura: 2,
-    comprimento: 2,
-    alturaMaxima: 2,
-    cotaBase: 0,
-    nivel: 1.5,
-    raio: undefined,
-  });
-
-  const bomba = criarPeca('bomba', 320, 300, 'bomba');
-  Object.assign(bomba.props as PropsBomba, { vazaoNominal: 8, sensores: ['sensor'], ligada: false });
-
-  const caixa = criarPeca('reservatorio', 500, 140, 'caixa');
-  Object.assign(caixa.props as PropsReservatorio, {
+function reservatorioCilindrico(
+  id: string,
+  rotulo: string,
+  x: number,
+  y: number,
+  over: Partial<PropsReservatorio>,
+): Peca {
+  const p = criarPeca('reservatorio', x, y, id);
+  p.rotulo = rotulo;
+  Object.assign(p.props as PropsReservatorio, {
     formato: 'cilindro',
-    raio: 0.8,
-    alturaMaxima: 1.2,
-    cotaBase: 8,
-    nivel: 0.2,
+    raio: 2,
+    largura: undefined,
+    comprimento: undefined,
+    ...over,
+  });
+  return p;
+}
+
+function canoComRetencao(id: string, rotulo: string, x: number, y: number): Peca {
+  const t = criarPeca('tubo', x, y, id);
+  t.rotulo = rotulo;
+  // checkValve nos canos da bomba: impede refluxo por gravidade (a bomba é quem
+  // move a água contra o desnível dos reservatórios empilhados).
+  Object.assign(t.props as PropsTubo, {
+    diametro: 0.15,
+    checkValve: true,
+    registro: { aberto: true },
+  });
+  return t;
+}
+
+function canoGravidade(id: string, rotulo: string, x: number, y: number): Peca {
+  const t = criarPeca('tubo', x, y, id);
+  t.rotulo = rotulo;
+  Object.assign(t.props as PropsTubo, { diametro: 0.06, registro: { aberto: true } });
+  return t;
+}
+
+export function projetoExemplo(): ProjetoSimulacao {
+  // Reservatórios empilhados: cotaBase cresce do inferior ao superior.
+  const inferior = reservatorioCilindrico('inferior', 'Inferior (75.000 L)', 500, 560, {
+    alturaMaxima: 5.97, // 12,566 · 5,97 ≈ 75,0 m³
+    cotaBase: 0,
+    nivel: 4,
+  });
+  const meio = reservatorioCilindrico('meio', 'Meio (55.000 L)', 500, 360, {
+    alturaMaxima: 4.38, // ≈ 55,0 m³
+    cotaBase: 6,
+    nivel: 0.5,
+  });
+  const superior = reservatorioCilindrico('superior', 'Superior (55.000 L)', 500, 160, {
+    alturaMaxima: 4.38,
+    cotaBase: 10.4,
+    nivel: 0.5,
   });
 
-  const sensor = criarPeca('sensor', 620, 120, 'sensor');
+  const fonte = criarPeca('fonte', 260, 560, 'fonte');
+  fonte.rotulo = 'Fonte externa';
+  Object.assign(fonte.props as PropsFonte, { vazaoFixa: 4 });
+
+  const bomba = criarPeca('bomba', 260, 380, 'bomba');
+  bomba.rotulo = 'Bomba';
+  Object.assign(bomba.props as PropsBomba, {
+    vazaoNominal: 4, // dividida entre as duas saídas (≈2 para cada)
+    sensores: ['sensor_sup'],
+    ligada: false,
+  });
+
+  const succao = canoComRetencao('succao', 'Cano de sucção', 380, 470);
+  const recalqueMeio = canoComRetencao('recalque_meio', 'Recalque → meio', 380, 370);
+  const recalqueSup = canoComRetencao('recalque_sup', 'Recalque → superior', 340, 270);
+
+  const consumo = criarPeca('consumo', 760, 300, 'consumo');
+  consumo.rotulo = 'Consumo';
+  // Escoamento por gravidade pelos canos de saída (Torricelli); demanda ativa 0.
+  Object.assign(consumo.props as PropsConsumo, { vazaoDemanda: 0, aberto: true });
+
+  const saidaSup = canoGravidade('saida_sup', 'Saída superior', 650, 200);
+  const saidaMeio = canoGravidade('saida_meio', 'Saída meio', 650, 380);
+
+  const sensor = criarPeca('sensor', 700, 120, 'sensor_sup');
+  sensor.rotulo = 'Sensor superior';
   Object.assign(sensor.props as PropsSensor, {
     bombaAlvo: 'bomba',
-    nivelMinimo: 0.3,
-    nivelMaximo: 1.0,
-  });
-
-  const tubo = criarPeca('tubo', 500, 340, 'descida');
-  Object.assign(tubo.props as PropsTubo, { diametro: 0.05, registro: { aberto: true } });
-
-  const uso = criarPeca('reservatorio', 500, 500, 'ponto_uso');
-  Object.assign(uso.props as PropsReservatorio, {
-    formato: 'retangular',
-    largura: 1,
-    comprimento: 1,
-    alturaMaxima: 1,
-    cotaBase: 0,
-    nivel: 0,
+    nivelMinimo: 1,
+    nivelMaximo: 3.5,
   });
 
   return {
-    ...projetoVazio('Caixa d’água elevada'),
-    pecas: [cisterna, bomba, caixa, sensor, tubo, uso],
+    ...projetoVazio('Reservatórios empilhados'),
+    pecas: [
+      inferior,
+      meio,
+      superior,
+      fonte,
+      bomba,
+      succao,
+      recalqueMeio,
+      recalqueSup,
+      consumo,
+      saidaSup,
+      saidaMeio,
+      sensor,
+    ],
     conexoes: [
-      criarConexao('cisterna', 'bomba'),
-      criarConexao('bomba', 'caixa'),
-      criarConexao('sensor', 'caixa'),
-      criarConexao('caixa', 'descida'),
-      criarConexao('descida', 'ponto_uso'),
+      criarConexao('fonte', 'inferior'),
+      criarConexao('inferior', 'succao'),
+      criarConexao('succao', 'bomba'),
+      criarConexao('bomba', 'recalque_meio'),
+      criarConexao('recalque_meio', 'meio'),
+      criarConexao('bomba', 'recalque_sup'),
+      criarConexao('recalque_sup', 'superior'),
+      criarConexao('superior', 'saida_sup'),
+      criarConexao('saida_sup', 'consumo'),
+      criarConexao('meio', 'saida_meio'),
+      criarConexao('saida_meio', 'consumo'),
+      criarConexao('sensor_sup', 'superior'),
     ],
   };
 }

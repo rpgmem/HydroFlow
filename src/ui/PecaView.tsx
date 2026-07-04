@@ -1,6 +1,10 @@
 /**
  * Desenho de uma peça no canvas (Sprint 3). Cada peça é um Group arrastável.
  * Reservatórios mostram o nível de líquido proporcional à alturaMaxima.
+ *
+ * Conexão deliberada (estilo N8N): cada peça tem uma alça de saída (o ponto à
+ * direita). O usuário arrasta a partir dela até outra peça para criar a aresta —
+ * clicar no corpo apenas seleciona. Isso evita conexões acidentais.
  */
 import { Group, Rect, Circle, Line, Text } from 'react-konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
@@ -21,6 +25,8 @@ function tamanhoPeca(tipo: Peca['tipo']): { w: number; h: number } {
       return { w: 46, h: 46 };
     case 'fonte':
       return { w: 48, h: 48 };
+    case 'consumo':
+      return { w: 44, h: 44 };
     case 'sensor':
       return { w: 30, h: 30 };
     case 'juncao':
@@ -37,6 +43,8 @@ interface Props {
   aSeco: boolean;
   onSelect: () => void;
   onMove: (x: number, y: number) => void;
+  onStartConnection: (id: string) => void;
+  onEndConnection: (id: string) => void;
 }
 
 const COR: Record<Peca['tipo'], string> = {
@@ -44,6 +52,7 @@ const COR: Record<Peca['tipo'], string> = {
   tubo: '#8aa0b2',
   bomba: '#334a5e',
   fonte: '#2b6cb0',
+  consumo: '#5a3d2b',
   sensor: '#3b3b6d',
   juncao: '#44566a',
 };
@@ -57,6 +66,8 @@ export function PecaView({
   aSeco,
   onSelect,
   onMove,
+  onStartConnection,
+  onEndConnection,
 }: Props) {
   const { w, h } = tamanhoPeca(peca.tipo);
   const borda = selecionada ? '#38bdf8' : '#0d1620';
@@ -74,6 +85,8 @@ export function PecaView({
       onClick={onSelect}
       onTap={onSelect}
       onDragEnd={handleDragEnd}
+      onMouseUp={() => onEndConnection(peca.id)}
+      onTouchEnd={() => onEndConnection(peca.id)}
       name={`peca-${peca.id}`}
     >
       {isReservatorio(peca) ? (
@@ -98,6 +111,15 @@ export function PecaView({
         />
       ) : peca.tipo === 'sensor' || peca.tipo === 'juncao' ? (
         <Circle radius={w / 2} fill={COR[peca.tipo]} stroke={borda} strokeWidth={larguraBorda} />
+      ) : peca.tipo === 'consumo' ? (
+        // Triângulo apontando para baixo (dreno/saída).
+        <Line
+          closed
+          points={[-w / 2, -h / 2, w / 2, -h / 2, 0, h / 2]}
+          fill={COR.consumo}
+          stroke={borda}
+          strokeWidth={larguraBorda}
+        />
       ) : (
         <Rect
           x={-w / 2}
@@ -116,16 +138,38 @@ export function PecaView({
         fontSize={11}
         fill="#cfe0ee"
         align="center"
-        width={Math.max(w, 80)}
-        offsetX={Math.max(w, 80) / 2}
+        width={Math.max(w, 90)}
+        offsetX={Math.max(w, 90) / 2}
         y={h / 2 + 4}
       />
+
+      {/* Alça de saída para iniciar conexões (só em edição). */}
+      {!emExecucao && (
+        <Circle
+          x={w / 2 + 8}
+          y={0}
+          radius={6}
+          fill="#22d3ee"
+          stroke="#0d1620"
+          strokeWidth={1}
+          name={`port-out-${peca.id}`}
+          onMouseDown={(e) => {
+            e.cancelBubble = true; // não arrasta a peça
+            onStartConnection(peca.id);
+          }}
+          onTouchStart={(e) => {
+            e.cancelBubble = true;
+            onStartConnection(peca.id);
+          }}
+        />
+      )}
     </Group>
   );
 }
 
 function rotulo(peca: Peca, vazao: number | undefined): string {
-  const base = `${icone(peca.tipo)} ${peca.id}`;
+  const nome = peca.rotulo && peca.rotulo.trim() ? peca.rotulo : peca.id;
+  const base = `${icone(peca.tipo)} ${nome}`;
   if (vazao !== undefined && Math.abs(vazao) > 1e-6) {
     return `${base}\nQ=${vazao.toFixed(2)}`;
   }
@@ -133,7 +177,15 @@ function rotulo(peca: Peca, vazao: number | undefined): string {
 }
 
 function icone(tipo: Peca['tipo']): string {
-  return { reservatorio: '🛢️', tubo: '━', bomba: '⚙️', fonte: '🚰', sensor: '📡', juncao: '⌥' }[tipo];
+  return {
+    reservatorio: '🛢️',
+    tubo: '━',
+    bomba: '⚙️',
+    fonte: '🚰',
+    consumo: '🕳️',
+    sensor: '📡',
+    juncao: '⌥',
+  }[tipo];
 }
 
 function Reservatorio({

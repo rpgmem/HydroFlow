@@ -164,6 +164,35 @@ describe('bomba', () => {
     );
     expect(r.vazoes['P']).toBe(0);
   });
+
+  it('divide a vazão nominal igualmente entre múltiplas saídas', () => {
+    const r = tick(
+      projeto(
+        [res('A', { nivel: 5 }), res('B', {}), res('C', {}), bomba('P', { ligada: true, vazaoNominal: 8 })],
+        [criarConexao('A', 'P'), criarConexao('P', 'B'), criarConexao('P', 'C')],
+      ),
+    );
+    expect(r.vazoes['P']).toBeCloseTo(8, 9); // total preservado
+    const dt = 0.1;
+    const b = r.projeto.pecas.find((x) => x.id === 'B')!.props as PropsReservatorio;
+    const c = r.projeto.pecas.find((x) => x.id === 'C')!.props as PropsReservatorio;
+    expect(b.nivel!).toBeCloseTo((4 * dt) / 100, 9); // 8/2 = 4 para cada
+    expect(c.nivel!).toBeCloseTo((4 * dt) / 100, 9);
+  });
+
+  it('respeita vazaoAlocada por saída quando informada', () => {
+    const r = tick(
+      projeto(
+        [res('A', { nivel: 5 }), res('B', {}), res('C', {}), bomba('P', { ligada: true, vazaoNominal: 10 })],
+        [
+          criarConexao('A', 'P'),
+          criarConexao('P', 'B', { vazaoAlocada: 3 }),
+          criarConexao('P', 'C', { vazaoAlocada: 6 }),
+        ],
+      ),
+    );
+    expect(r.vazoes['P']).toBeCloseTo(9, 9); // 3 + 6
+  });
 });
 
 // ===========================================================================
@@ -228,6 +257,56 @@ describe('bomba a seco', () => {
     expect(r.bombasASeco).toContain('P');
     const p = r.projeto.pecas.find((x) => x.id === 'P')!.props as PropsBomba;
     expect(p.ligada).toBe(false);
+  });
+
+  it('respeita um limiar de proteção a seco configurável', () => {
+    const r = tick(
+      projeto(
+        [res('A', { nivel: 0.5 }), res('B', {}), bomba('P', { ligada: true, protecaoSeco: 1 })],
+        [criarConexao('A', 'P'), criarConexao('P', 'B')],
+      ),
+    );
+    expect(r.bombasASeco).toContain('P'); // 0.5 ≤ 1 → desliga antes de esvaziar
+    expect(r.vazoes['P']).toBe(0);
+  });
+});
+
+// ===========================================================================
+// Ponto de consumo (saída de água sem destino)
+// ===========================================================================
+describe('consumo', () => {
+  it('retira a vazão de demanda do reservatório de origem e descarta', () => {
+    const r = tick(
+      projeto(
+        [res('A', { nivel: 2 }), { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: 5, aberto: true } }],
+        [criarConexao('A', 'C')],
+      ),
+    );
+    expect(r.vazoes['C']).toBe(5);
+    const a = r.projeto.pecas.find((x) => x.id === 'A')!.props as PropsReservatorio;
+    // área 100, volume 200 - 5·0.1 = 199.5 → nível 1.995
+    expect(a.nivel!).toBeCloseTo(1.995, 9);
+  });
+
+  it('não retira nada quando a saída está fechada', () => {
+    const r = tick(
+      projeto(
+        [res('A', { nivel: 2 }), { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: 5, aberto: false } }],
+        [criarConexao('A', 'C')],
+      ),
+    );
+    expect(r.vazoes['C']).toBe(0);
+  });
+
+  it('não drena abaixo de zero (limitado pelo volume disponível)', () => {
+    const r = tick(
+      projeto(
+        [res('A', { nivel: 0.001 }), { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: 1000, aberto: true } }],
+        [criarConexao('A', 'C')],
+      ),
+    );
+    const a = r.projeto.pecas.find((x) => x.id === 'A')!.props as PropsReservatorio;
+    expect(a.nivel!).toBeGreaterThanOrEqual(0);
   });
 });
 

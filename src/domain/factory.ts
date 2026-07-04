@@ -48,6 +48,8 @@ export function portasPadrao(tipo: TipoPeca): string[] {
       return ['entrada', 'saida'];
     case 'fonte':
       return ['saida'];
+    case 'consumo':
+      return ['entrada'];
     case 'sensor':
       return ['sonda'];
   }
@@ -79,6 +81,8 @@ export function criarPeca(
       return { ...base, props: { vazaoNominal: 10, sensores: [], ligada: false } };
     case 'fonte':
       return { ...base, props: { vazaoFixa: 5 } };
+    case 'consumo':
+      return { ...base, props: { vazaoDemanda: 3, aberto: true } };
     case 'sensor':
       return { ...base, props: { bombaAlvo: '', nivelMinimo: 1, nivelMaximo: 4 } };
     case 'juncao':

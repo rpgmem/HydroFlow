@@ -6,6 +6,7 @@
 import type { Acao } from '../state/store';
 import {
   isBomba,
+  isConsumo,
   isFonte,
   isReservatorio,
   isSensor,
@@ -13,6 +14,7 @@ import {
   type Peca,
   type ProjetoSimulacao,
   type PropsBomba,
+  type PropsConsumo,
   type PropsFonte,
   type PropsReservatorio,
   type PropsSensor,
@@ -73,6 +75,19 @@ export function Inspector({ peca, projeto, emExecucao, dispatch }: Props) {
         {peca.tipo} <span className="telemetry">#{peca.id}</span>
       </h3>
 
+      <div className="field">
+        <label>Nome</label>
+        <input
+          type="text"
+          aria-label="Nome"
+          placeholder={peca.id}
+          value={peca.rotulo ?? ''}
+          onChange={(e) =>
+            dispatch({ tipo: 'RENOMEAR_PECA', id: peca.id, rotulo: e.target.value })
+          }
+        />
+      </div>
+
       {isReservatorio(peca) && (
         <ReservatorioForm props={peca.props} emExecucao={emExecucao} upd={upd} />
       )}
@@ -81,6 +96,7 @@ export function Inspector({ peca, projeto, emExecucao, dispatch }: Props) {
         <BombaForm props={peca.props} emExecucao={emExecucao} upd={upd} />
       )}
       {isFonte(peca) && <FonteForm props={peca.props} emExecucao={emExecucao} upd={upd} />}
+      {isConsumo(peca) && <ConsumoForm props={peca.props} emExecucao={emExecucao} upd={upd} />}
       {isSensor(peca) && (
         <SensorForm props={peca.props} projeto={projeto} upd={upd} />
       )}
@@ -176,6 +192,11 @@ function BombaForm({ props, emExecucao, upd }: { props: PropsBomba; emExecucao: 
         step={0.1}
         onChange={(v) => upd({ curva: v > 0 ? { k: v } : undefined })}
       />
+      <Num
+        label="Proteção a seco: desliga se origem ≤"
+        value={props.protecaoSeco ?? 0}
+        onChange={(v) => upd({ protecaoSeco: v })}
+      />
       <label className="checkbox">
         <input
           type="checkbox"
@@ -184,6 +205,36 @@ function BombaForm({ props, emExecucao, upd }: { props: PropsBomba; emExecucao: 
           onChange={(e) => upd({ ligada: e.target.checked })}
         />
         Ligada (manual)
+      </label>
+    </>
+  );
+}
+
+function ConsumoForm({
+  props,
+  emExecucao,
+  upd,
+}: {
+  props: PropsConsumo;
+  emExecucao: boolean;
+  upd: Upd;
+}) {
+  return (
+    <>
+      <Num
+        label="Vazão de saída"
+        value={props.vazaoDemanda}
+        disabled={emExecucao}
+        onChange={(v) => upd({ vazaoDemanda: v })}
+      />
+      <label className="checkbox">
+        <input
+          type="checkbox"
+          checked={props.aberto ?? true}
+          aria-label="Saída aberta"
+          onChange={(e) => upd({ aberto: e.target.checked })}
+        />
+        Saída aberta
       </label>
     </>
   );

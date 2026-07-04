@@ -5,6 +5,27 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 [SemVer](https://semver.org/lang/pt-BR/). As versões espelham os sprints da
 especificação técnica.
 
+## [1.1.0] — Feedback pós-uso
+
+### Adicionado
+
+- Novo tipo de peça **`consumo`**: ponto de saída/demanda com vazão de saída
+  configurável (retira água do reservatório de origem e descarta).
+- Campo **`rotulo`** em `Peca` — renomear peças pela UI (o `id` permanece estável).
+- **Divisão de vazão da bomba** entre múltiplas saídas (por `vazaoAlocada` ou
+  igualmente), permitindo uma bomba alimentar vários reservatórios.
+- **Proteção contra bomba a seco configurável** (`protecaoSeco`): desliga a bomba
+  quando a origem cai a/abaixo de um nível ajustável.
+- Novo projeto de exemplo padrão: três reservatórios cilíndricos empilhados com
+  bomba de saída dividida e ponto de consumo por gravidade.
+
+### Alterado
+
+- **Conexões agora são deliberadas** (estilo N8N): arrastar da alça de saída de
+  uma peça até outra, em vez de conexão automática ao clicar. Corrige criação
+  acidental de linhas.
+- Conexões podem ser **selecionadas e excluídas** (clique + Delete ou botão).
+
 ## [1.0.0] — Sprint 5: Persistência e Polimento
 
 ### Adicionado

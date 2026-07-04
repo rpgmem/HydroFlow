@@ -16,6 +16,7 @@ export type TipoPeca =
   | 'tubo'
   | 'bomba'
   | 'fonte'
+  | 'consumo'
   | 'sensor'
   | 'juncao';
 
@@ -81,11 +82,26 @@ export interface PropsBomba {
   sensores: string[];
   /** Estado atual liga/desliga (mutável durante a execução). */
   ligada?: boolean;
+  /**
+   * Proteção contra funcionamento a seco: a bomba desliga quando o nível do
+   * reservatório de origem fica em/abaixo deste valor. Default 0 (só desliga
+   * com a origem totalmente vazia).
+   */
+  protecaoSeco?: number;
 }
 
 export interface PropsFonte {
   vazaoFixa: number;
   boia?: NivelControle;
+}
+
+// consumo — ponto de saída/demanda: retira água do reservatório de origem a uma
+// vazão configurável e a descarta (sem destino no grafo). É o oposto da Fonte.
+export interface PropsConsumo {
+  /** Vazão de saída desejada (limitada pelo que houver disponível). */
+  vazaoDemanda: number;
+  /** Controle manual on/off da saída. */
+  aberto?: boolean;
 }
 
 export type PropsSensor = NivelControle & {
@@ -105,6 +121,7 @@ export type PropsPorTipo =
   | PropsTubo
   | PropsBomba
   | PropsFonte
+  | PropsConsumo
   | PropsSensor
   | PropsJuncao;
 
@@ -113,8 +130,10 @@ export type PropsPorTipo =
 // ---------------------------------------------------------------------------
 
 export interface Peca {
-  id: string; // uuid
+  id: string; // uuid (identidade estável — referenciada por conexões/sensores)
   tipo: TipoPeca;
+  /** Nome amigável exibido na UI. Se ausente, mostra o id. Editável. */
+  rotulo?: string;
   x: number;
   y: number;
   rotacao?: number; // tubo/bomba
@@ -156,9 +175,11 @@ export type PecaDe<T extends TipoPeca> = Peca & {
         ? PropsBomba
         : T extends 'fonte'
           ? PropsFonte
-          : T extends 'sensor'
-            ? PropsSensor
-            : PropsJuncao;
+          : T extends 'consumo'
+            ? PropsConsumo
+            : T extends 'sensor'
+              ? PropsSensor
+              : PropsJuncao;
 };
 
 export const isReservatorio = (p: Peca): p is PecaDe<'reservatorio'> =>
@@ -166,5 +187,7 @@ export const isReservatorio = (p: Peca): p is PecaDe<'reservatorio'> =>
 export const isTubo = (p: Peca): p is PecaDe<'tubo'> => p.tipo === 'tubo';
 export const isBomba = (p: Peca): p is PecaDe<'bomba'> => p.tipo === 'bomba';
 export const isFonte = (p: Peca): p is PecaDe<'fonte'> => p.tipo === 'fonte';
+export const isConsumo = (p: Peca): p is PecaDe<'consumo'> =>
+  p.tipo === 'consumo';
 export const isSensor = (p: Peca): p is PecaDe<'sensor'> => p.tipo === 'sensor';
 export const isJuncao = (p: Peca): p is PecaDe<'juncao'> => p.tipo === 'juncao';

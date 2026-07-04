@@ -1,15 +1,16 @@
 /**
  * Canvas do editor (Sprint 3). react-konva com:
  *  - arrastar peças (modo edição)
- *  - criar conexões clicando em duas peças (com feedback visual)
+ *  - criar conexões arrastando da alça de saída de uma peça até outra (N8N-like)
+ *  - selecionar e excluir conexões
  *  - visualização de níveis e vazões (modo execução)
  */
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Stage, Layer, Line, Arrow } from 'react-konva';
+import type { KonvaEventObject } from 'konva/lib/Node';
 import { PecaView } from './PecaView';
 import { criarConexao } from '../domain/factory';
 import type { Acao, EstadoApp } from '../state/store';
-import type { Peca } from '../domain/types';
 
 interface Props {
   estado: EstadoApp;
@@ -20,7 +21,10 @@ interface Props {
 
 export function Canvas({ estado, dispatch, largura, altura }: Props) {
   const emExecucao = estado.modo === 'execucao';
-  const [origemConexao, setOrigemConexao] = useState<string | null>(null);
+  const [conectando, setConectando] = useState<string | null>(null);
+  const [ponteiro, setPonteiro] = useState<{ x: number; y: number } | null>(null);
+  const conectandoRef = useRef<string | null>(null);
+  conectandoRef.current = conectando;
 
   const pecaPorId = new Map(estado.projeto.pecas.map((p) => [p.id, p]));
   const centro = (id: string): { x: number; y: number } => {
@@ -31,35 +35,81 @@ export function Canvas({ estado, dispatch, largura, altura }: Props) {
   const overflowSet = new Set(estado.overflow);
   const secoSet = new Set(estado.bombasASeco);
 
-  const clicarPeca = (peca: Peca): void => {
-    if (emExecucao) {
-      dispatch({ tipo: 'SELECIONAR', id: peca.id });
-      return;
+  // Tecla Delete/Backspace exclui a conexão selecionada (fora de execução).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (emExecucao) return;
+      if ((e.key === 'Delete' || e.key === 'Backspace') && estado.conexaoSelecionada) {
+        dispatch({ tipo: 'REMOVER_CONEXAO', id: estado.conexaoSelecionada });
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [emExecucao, estado.conexaoSelecionada, dispatch]);
+
+  const iniciarConexao = (id: string): void => {
+    if (emExecucao) return;
+    setConectando(id);
+    setPonteiro(centro(id));
+  };
+
+  const terminarConexao = (id: string): void => {
+    const from = conectandoRef.current;
+    if (from && from !== id && !emExecucao) {
+      dispatch({ tipo: 'ADD_CONEXAO', conexao: criarConexao(from, id) });
     }
-    if (origemConexao === null) {
-      dispatch({ tipo: 'SELECIONAR', id: peca.id });
-      setOrigemConexao(peca.id);
-    } else if (origemConexao === peca.id) {
-      setOrigemConexao(null); // clicar de novo cancela
-    } else {
-      dispatch({
-        tipo: 'ADD_CONEXAO',
-        conexao: criarConexao(origemConexao, peca.id),
-      });
-      setOrigemConexao(null);
+    setConectando(null);
+    setPonteiro(null);
+  };
+
+  const onStageMouseMove = (e: KonvaEventObject<MouseEvent>): void => {
+    if (!conectandoRef.current) return;
+    const pos = e.target.getStage()?.getPointerPosition();
+    if (pos) setPonteiro({ x: pos.x, y: pos.y });
+  };
+
+  const onStageMouseUp = (): void => {
+    // Solto no vazio → cancela (se soltou sobre uma peça, o Group já tratou).
+    setConectando(null);
+    setPonteiro(null);
+  };
+
+  const onStageClick = (e: KonvaEventObject<MouseEvent>): void => {
+    // Clique no fundo vazio limpa a seleção.
+    if (e.target === e.target.getStage()) {
+      dispatch({ tipo: 'SELECIONAR', id: null });
     }
   };
 
+  const hint = emExecucao
+    ? null
+    : conectando
+      ? `Conectando a partir de "${rotuloDe(pecaPorId.get(conectando))}" — solte sobre a peça de destino`
+      : 'Arraste do ponto ciano (saída) de uma peça até outra para conectar. Clique numa linha para selecioná-la e apague com Delete.';
+
   return (
     <div className="canvas-wrap" data-testid="canvas">
-      {!emExecucao && (
-        <div className="hint">
-          {origemConexao
-            ? `Conectando a partir de "${origemConexao}" — clique no destino (ou nele mesmo p/ cancelar)`
-            : 'Clique numa peça para selecionar; clique em outra para conectar. Arraste para mover.'}
-        </div>
+      {hint && <div className="hint">{hint}</div>}
+
+      {!emExecucao && estado.conexaoSelecionada && (
+        <button
+          className="danger excluir-conexao"
+          onClick={() =>
+            dispatch({ tipo: 'REMOVER_CONEXAO', id: estado.conexaoSelecionada! })
+          }
+        >
+          ✕ Excluir conexão (Del)
+        </button>
       )}
-      <Stage width={largura} height={altura}>
+
+      <Stage
+        width={largura}
+        height={altura}
+        onMouseMove={onStageMouseMove}
+        onMouseUp={onStageMouseUp}
+        onClick={onStageClick}
+        onTap={onStageClick}
+      >
         {/* Conexões desenhadas atrás das peças. */}
         <Layer>
           {estado.projeto.conexoes.map((c) => {
@@ -67,24 +117,34 @@ export function Canvas({ estado, dispatch, largura, altura }: Props) {
             const b = centro(c.destino);
             const q = Math.abs(estado.vazoes[c.origem] ?? estado.vazoes[c.destino] ?? 0);
             const ativa = emExecucao && q > 1e-6;
+            const sel = estado.conexaoSelecionada === c.id;
             return (
               <Arrow
                 key={c.id}
                 points={[a.x, a.y, b.x, b.y]}
-                stroke={ativa ? '#22d3ee' : '#4a5f73'}
-                fill={ativa ? '#22d3ee' : '#4a5f73'}
-                strokeWidth={ativa ? 3 : 1.5}
+                stroke={sel ? '#f87171' : ativa ? '#22d3ee' : '#4a5f73'}
+                fill={sel ? '#f87171' : ativa ? '#22d3ee' : '#4a5f73'}
+                strokeWidth={sel ? 3.5 : ativa ? 3 : 1.5}
+                hitStrokeWidth={14}
                 pointerLength={8}
                 pointerWidth={8}
-                onClick={() => !emExecucao && dispatch({ tipo: 'REMOVER_CONEXAO', id: c.id })}
+                onClick={() =>
+                  !emExecucao && dispatch({ tipo: 'SELECIONAR_CONEXAO', id: c.id })
+                }
+                onTap={() =>
+                  !emExecucao && dispatch({ tipo: 'SELECIONAR_CONEXAO', id: c.id })
+                }
               />
             );
           })}
-          {/* Realce da origem de conexão pendente. */}
-          {origemConexao && (
+          {/* Linha temporária durante o arraste de conexão. */}
+          {conectando && ponteiro && (
             <Line
-              points={[centro(origemConexao).x, centro(origemConexao).y, centro(origemConexao).x, centro(origemConexao).y]}
-              stroke="#38bdf8"
+              points={[centro(conectando).x, centro(conectando).y, ponteiro.x, ponteiro.y]}
+              stroke="#22d3ee"
+              strokeWidth={2}
+              dash={[6, 4]}
+              listening={false}
             />
           )}
         </Layer>
@@ -95,17 +155,24 @@ export function Canvas({ estado, dispatch, largura, altura }: Props) {
             <PecaView
               key={peca.id}
               peca={peca}
-              selecionada={estado.selecionada === peca.id || origemConexao === peca.id}
+              selecionada={estado.selecionada === peca.id}
               emExecucao={emExecucao}
               vazao={estado.vazoes[peca.id]}
               overflow={overflowSet.has(peca.id)}
               aSeco={secoSet.has(peca.id)}
-              onSelect={() => clicarPeca(peca)}
+              onSelect={() => dispatch({ tipo: 'SELECIONAR', id: peca.id })}
               onMove={(x, y) => dispatch({ tipo: 'MOVER_PECA', id: peca.id, x, y })}
+              onStartConnection={iniciarConexao}
+              onEndConnection={terminarConexao}
             />
           ))}
         </Layer>
       </Stage>
     </div>
   );
+}
+
+function rotuloDe(p: { id: string; rotulo?: string } | undefined): string {
+  if (!p) return '';
+  return p.rotulo && p.rotulo.trim() ? p.rotulo : p.id;
 }

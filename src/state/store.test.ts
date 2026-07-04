@@ -58,6 +58,28 @@ describe('mutação de grafo por modo', () => {
   });
 });
 
+describe('renomear e selecionar conexão', () => {
+  it('RENOMEAR_PECA altera o rótulo mantendo o id estável', () => {
+    let e = comEstado(projetoVazio());
+    e = reducer(e, { tipo: 'ADD_PECA', peca: criarPeca('bomba', 0, 0, 'b1') });
+    e = reducer(e, { tipo: 'RENOMEAR_PECA', id: 'b1', rotulo: 'Bomba principal' });
+    const p = e.projeto.pecas.find((x) => x.id === 'b1')!;
+    expect(p.id).toBe('b1');
+    expect(p.rotulo).toBe('Bomba principal');
+  });
+
+  it('selecionar conexão limpa a seleção de peça e vice-versa', () => {
+    let e = comEstado(projetoValido());
+    e = reducer(e, { tipo: 'SELECIONAR', id: 'F' });
+    expect(e.selecionada).toBe('F');
+    e = reducer(e, { tipo: 'SELECIONAR_CONEXAO', id: 'x' });
+    expect(e.selecionada).toBeNull();
+    expect(e.conexaoSelecionada).toBe('x');
+    e = reducer(e, { tipo: 'SELECIONAR', id: 'R' });
+    expect(e.conexaoSelecionada).toBeNull();
+  });
+});
+
 describe('validação impede execução com erro', () => {
   it('não entra em execução com nó órfão; expõe os erros', () => {
     const orfa = criarPeca('reservatorio', 0, 0, 'SOLO');
