@@ -48,6 +48,8 @@ export function portasPadrao(tipo: TipoPeca): string[] {
       return ['entrada', 'saida'];
     case 'fonte':
       return ['saida'];
+    case 'consumo':
+      return ['entrada'];
     case 'sensor':
       return ['sonda'];
   }
@@ -74,11 +76,14 @@ export function criarPeca(
         },
       };
     case 'tubo':
-      return { ...base, props: { diametro: 0.1, registro: { aberto: true } } };
+      // diâmetro em milímetros (50 mm — cano comum).
+      return { ...base, props: { diametro: 50, registro: { aberto: true } } };
     case 'bomba':
       return { ...base, props: { vazaoNominal: 10, sensores: [], ligada: false } };
     case 'fonte':
       return { ...base, props: { vazaoFixa: 5 } };
+    case 'consumo':
+      return { ...base, props: { vazaoDemanda: 3, aberto: true } };
     case 'sensor':
       return { ...base, props: { bombaAlvo: '', nivelMinimo: 1, nivelMaximo: 4 } };
     case 'juncao':

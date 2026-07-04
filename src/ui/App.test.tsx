@@ -36,15 +36,37 @@ describe('editor — criação de peças (Sprint 3)', () => {
 });
 
 describe('editor — conexão de peças (Sprint 3)', () => {
-  it('cria uma conexão clicando em duas peças', () => {
+  it('NÃO conecta ao apenas clicar em duas peças (conexão é deliberada)', () => {
     render(<App />);
     const arestasAntes = screen.queryAllByTestId('arrow').length;
     const a = adicionar('Fonte');
     const b = adicionar('Reservatório');
     fireEvent.click(screen.getByTestId(`peca-${a}`));
     fireEvent.click(screen.getByTestId(`peca-${b}`));
-    const arestasDepois = screen.queryAllByTestId('arrow').length;
-    expect(arestasDepois).toBe(arestasAntes + 1);
+    expect(screen.queryAllByTestId('arrow').length).toBe(arestasAntes); // sem auto-conexão
+  });
+
+  it('conecta arrastando da alça de saída até a peça de destino', () => {
+    render(<App />);
+    const arestasAntes = screen.queryAllByTestId('arrow').length;
+    const a = adicionar('Fonte');
+    const b = adicionar('Reservatório');
+    fireEvent.mouseDown(screen.getByTestId(`port-out-${a}`));
+    fireEvent.mouseUp(screen.getByTestId(`peca-${b}`));
+    expect(screen.queryAllByTestId('arrow').length).toBe(arestasAntes + 1);
+  });
+
+  it('seleciona e exclui uma conexão', () => {
+    render(<App />);
+    const a = adicionar('Fonte');
+    const b = adicionar('Reservatório');
+    fireEvent.mouseDown(screen.getByTestId(`port-out-${a}`));
+    fireEvent.mouseUp(screen.getByTestId(`peca-${b}`));
+    const arestas = screen.queryAllByTestId('arrow');
+    const antes = arestas.length;
+    fireEvent.click(arestas[arestas.length - 1]!); // seleciona a nova conexão
+    fireEvent.click(screen.getByText(/Excluir conexão/));
+    expect(screen.queryAllByTestId('arrow').length).toBe(antes - 1);
   });
 });
 
@@ -68,6 +90,46 @@ describe('inspetor — edição de props (Sprint 3/4)', () => {
     fireEvent.change(altura, { target: { value: '12' } });
     expect((screen.getByLabelText('Altura máxima') as HTMLInputElement).value).toBe('12');
   });
+
+  it('renomeia a peça e o rótulo passa a aparecer', () => {
+    render(<App />);
+    const id = adicionar('Bomba');
+    fireEvent.click(screen.getByTestId(`peca-${id}`));
+    const nome = screen.getByLabelText('Nome') as HTMLInputElement;
+    fireEvent.change(nome, { target: { value: 'Bomba do poço' } });
+    expect((screen.getByLabelText('Nome') as HTMLInputElement).value).toBe('Bomba do poço');
+  });
+
+  it('adiciona um ponto de consumo com vazão de saída configurável', () => {
+    render(<App />);
+    const id = adicionar('Consumo');
+    fireEvent.click(screen.getByTestId(`peca-${id}`));
+    const vazao = screen.getByLabelText('Vazão de saída') as HTMLInputElement;
+    expect(vazao).toBeInTheDocument();
+    fireEvent.change(vazao, { target: { value: '4.5' } });
+    expect((screen.getByLabelText('Vazão de saída') as HTMLInputElement).value).toBe('4.5');
+  });
+
+  it('permite configurar a proteção contra bomba a seco', () => {
+    render(<App />);
+    const id = adicionar('Bomba');
+    fireEvent.click(screen.getByTestId(`peca-${id}`));
+    const prot = screen.getByLabelText(/Proteção a seco/) as HTMLInputElement;
+    fireEvent.change(prot, { target: { value: '0.2' } });
+    expect((screen.getByLabelText(/Proteção a seco/) as HTMLInputElement).value).toBe('0.2');
+  });
+
+  it('permite inserir uma boia (válvula de nível) no tubo', () => {
+    render(<App />);
+    const id = adicionar('Tubo');
+    fireEvent.click(screen.getByTestId(`peca-${id}`));
+    // Antes de ativar, os campos de nível da boia não existem.
+    expect(screen.queryByLabelText(/Boia: fecha/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText('Boia (válvula de nível)'));
+    // Ativada → aparecem os limiares.
+    expect(screen.getByLabelText(/Boia: abre/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Boia: fecha/)).toBeInTheDocument();
+  });
 });
 
 describe('modo execução — validação e transição (Sprint 4)', () => {
@@ -88,6 +150,22 @@ describe('modo execução — validação e transição (Sprint 4)', () => {
     expect(screen.getByText('edicao')).toBeInTheDocument(); // permaneceu em edição
   });
 
+  it('campos do inspetor ficam somente-leitura em execução', () => {
+    render(<App />);
+    // Seleciona uma peça e confirma que o campo Nome é editável em edição.
+    const id = adicionar('Reservatório');
+    fireEvent.click(screen.getByTestId(`peca-${id}`));
+    expect(screen.getByLabelText('Nome')).not.toBeDisabled();
+    // Conecta a peça para o grafo ser válido e entra em execução.
+    const f = adicionar('Fonte');
+    fireEvent.mouseDown(screen.getByTestId(`port-out-${f}`));
+    fireEvent.mouseUp(screen.getByTestId(`peca-${id}`));
+    fireEvent.click(screen.getByTestId(`peca-${id}`));
+    fireEvent.click(screen.getByText('▶ Executar'));
+    // Em execução o campo fica desabilitado (fieldset disabled).
+    expect(screen.getByLabelText('Altura máxima')).toBeDisabled();
+  });
+
   it('exige pause antes de voltar à edição', () => {
     render(<App />);
     fireEvent.click(screen.getByText('▶ Executar'));
@@ -96,6 +174,52 @@ describe('modo execução — validação e transição (Sprint 4)', () => {
     expect(editar).toBeDisabled(); // rodando → não pode editar
     fireEvent.click(screen.getByText('⏸ Pausar'));
     expect(screen.getByText('✎ Editar')).not.toBeDisabled();
+  });
+});
+
+describe('unidades e novo projeto', () => {
+  it('exibe a unidade de comprimento no rótulo dos campos', () => {
+    render(<App />);
+    const id = adicionar('Reservatório');
+    fireEvent.click(screen.getByTestId(`peca-${id}`));
+    // O rótulo visível de "Altura máxima" traz o sufixo de unidade (m por padrão).
+    const label = screen.getByText('Altura máxima').closest('label')!;
+    expect(label.textContent).toContain('(m)');
+  });
+
+  it('troca a unidade de comprimento e o sufixo acompanha', () => {
+    render(<App />);
+    const id = adicionar('Reservatório');
+    fireEvent.click(screen.getByTestId(`peca-${id}`));
+    fireEvent.change(screen.getByLabelText('Unidade de comprimento'), { target: { value: 'cm' } });
+    const label = screen.getByText('Altura máxima').closest('label')!;
+    expect(label.textContent).toContain('(cm)');
+  });
+
+  it('mostra vazão em volume/tempo (L/s) na fonte', () => {
+    render(<App />);
+    const id = adicionar('Fonte');
+    fireEvent.click(screen.getByTestId(`peca-${id}`));
+    const label = screen.getByText('Vazão fixa').closest('label')!;
+    expect(label.textContent).toContain('(L/s)');
+  });
+
+  it('o botão Novo limpa o projeto (após confirmar)', () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    render(<App />);
+    expect(idsPecas().length).toBeGreaterThan(0); // exemplo carregado
+    fireEvent.click(screen.getByText('✨ Novo'));
+    expect(idsPecas().length).toBe(0);
+    confirmSpy.mockRestore();
+  });
+
+  it('Novo não limpa se o usuário cancelar', () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    render(<App />);
+    const antes = idsPecas().length;
+    fireEvent.click(screen.getByText('✨ Novo'));
+    expect(idsPecas().length).toBe(antes);
+    confirmSpy.mockRestore();
   });
 });
 

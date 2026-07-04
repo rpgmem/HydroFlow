@@ -26,8 +26,29 @@ body {
 
 .app {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto 1fr auto;
   height: 100vh;
+}
+
+.rodape {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 14px;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.rodape a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.rodape a:hover {
+  text-decoration: underline;
 }
 
 .toolbar {
@@ -175,11 +196,31 @@ button.ativo {
   position: absolute;
   top: 10px;
   left: 12px;
+  right: 12px;
   color: var(--accent-2);
   background: rgba(0, 0, 0, 0.35);
   padding: 4px 10px;
   border-radius: 6px;
   font-size: 13px;
+}
+
+.excluir-conexao {
+  position: absolute;
+  top: 44px;
+  left: 12px;
+  z-index: 5;
+  background: rgba(120, 20, 20, 0.9);
+}
+
+.inspetor-campos {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.inspetor-campos:disabled {
+  opacity: 0.75;
 }
 
 .field {
@@ -219,6 +260,26 @@ button.ativo {
 .telemetry {
   font-size: 12px;
   color: var(--muted);
+}
+
+.unidade {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.unidades-sel {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.unidades-sel select,
+.toolbar select {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
 }
 
 .telemetry strong {

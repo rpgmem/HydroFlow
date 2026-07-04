@@ -26,6 +26,7 @@
 
 import {
   isBomba,
+  isConsumo,
   isFonte,
   isReservatorio,
   isSensor,
@@ -35,16 +36,25 @@ import {
   type PecaDe,
   type ProjetoSimulacao,
 } from '../domain/types';
-import { areaSecao, nivelDeVolume, volumeMaximo } from './geometria';
+import {
+  areaTuboM2,
+  nivelDeVolumeM3,
+  vazaoDeM3,
+  vazaoParaM3,
+  volumeM3DeNivel,
+  volumeMaximoM3,
+} from './geometria';
+import { metrosPorComprimento } from '../domain/unidades';
 import { arbitrarBomba, avaliarSensor, boiaAberta, type Decisao } from './arbitragem';
+import type { Unidades } from '../domain/types';
 
-/** Um movimento de líquido resolvido para um tick. */
+/** Um movimento de líquido resolvido para um tick (vazão em m³/s). */
 interface FluxoResolvido {
   /** Reservatório de onde sai o volume (null = fonte externa). */
   origem: string | null;
   /** Reservatório para onde entra o volume (null = descarte externo). */
   destino: string | null;
-  /** Vazão volumétrica (unidade de volume / segundo), sempre ≥ 0. */
+  /** Vazão volumétrica em m³/s, sempre ≥ 0. */
   vazao: number;
 }
 
@@ -57,13 +67,19 @@ export interface ResultadoTick {
   overflow: string[];
   /** Bombas desligadas por proteção contra funcionamento a seco. */
   bombasASeco: string[];
+  /** Tubos cuja boia está fechada neste tick (destino cheio). */
+  boiasFechadas: string[];
+  /** Tubos ladrão em transbordo neste tick (origem acima do nível de ladrão). */
+  ladroesAtivos: string[];
+  /** Decisão corrente de cada sensor (id → 'ligar' | 'desligar' | 'manter'). */
+  sensores: Record<string, Decisao>;
   /** Tempo de simulação acumulado (s) após este tick. */
   tempo: number;
 }
 
-/** Carga hidráulica total de um reservatório: cotaBase + nível. */
-function carga(peca: PecaDe<'reservatorio'>): number {
-  return peca.props.cotaBase + (peca.props.nivel ?? 0);
+/** Carga hidráulica total de um reservatório em METROS: (cotaBase + nível)·kL. */
+function cargaM(peca: PecaDe<'reservatorio'>, kL: number): number {
+  return (peca.props.cotaBase + (peca.props.nivel ?? 0)) * kL;
 }
 
 /**
@@ -92,12 +108,18 @@ class GrafoIndex {
   }
 
   /**
-   * Caminha em uma direção atravessando junções até achar um reservatório.
-   * 'up' segue arestas de entrada; 'down' segue arestas de saída.
+   * Caminha em uma direção atravessando junções/condutores até achar um
+   * reservatório. 'up' segue arestas de entrada; 'down' segue arestas de saída.
+   *
+   * Com `bloquearFechados`, um tubo de **registro fechado** é intransponível —
+   * usado nas resoluções de FLUXO (bomba/fonte/consumo) para que fechar o
+   * registro de um cano em série realmente interrompa o fluxo que passa por ele.
+   * Resoluções que só observam nível (sensores) usam `false`.
    */
   resolverReservatorio(
     start: string,
     dir: 'up' | 'down',
+    bloquearFechados = false,
     visitado = new Set<string>(),
   ): PecaDe<'reservatorio'> | null {
     if (visitado.has(start)) return null;
@@ -105,14 +127,65 @@ class GrafoIndex {
     const peca = this.porId.get(start);
     if (!peca) return null;
     if (isReservatorio(peca)) return peca;
+    // Tubo com registro fechado corta o caminho do fluxo.
+    if (
+      bloquearFechados &&
+      isTubo(peca) &&
+      peca.props.registro &&
+      !peca.props.registro.aberto
+    ) {
+      return null;
+    }
     // Junção (ou qualquer nó de passagem) → continua atravessando.
     const arestas = dir === 'up' ? this.entrada.get(start) : this.saida.get(start);
     for (const c of arestas ?? []) {
       const prox = dir === 'up' ? c.origem : c.destino;
-      const r = this.resolverReservatorio(prox, dir, visitado);
+      const r = this.resolverReservatorio(prox, dir, bloquearFechados, visitado);
       if (r) return r;
     }
     return null;
+  }
+
+  /**
+   * Resolve o caminho de FLUXO de um condutor ativo (bomba/fonte/consumo) até o
+   * reservatório, informando também se o caminho está ABERTO. Um caminho fecha
+   * quando um tubo em série tem o registro fechado OU uma boia fechada. A boia é
+   * mecânica: monitora o reservatório de destino (fecha ao encher) — por isso só
+   * é avaliada no sentido 'down' (empurrando água para o destino).
+   */
+  resolverFluxo(
+    start: string,
+    dir: 'up' | 'down',
+    visitado = new Set<string>(),
+  ): { res: PecaDe<'reservatorio'> | null; aberto: boolean; tubos: string[] } {
+    if (visitado.has(start)) return { res: null, aberto: true, tubos: [] };
+    visitado.add(start);
+    const peca = this.porId.get(start);
+    if (!peca) return { res: null, aberto: true, tubos: [] };
+    if (isReservatorio(peca)) return { res: peca, aberto: true, tubos: [] };
+
+    const arestas = dir === 'up' ? this.entrada.get(start) : this.saida.get(start);
+    for (const c of arestas ?? []) {
+      const prox = dir === 'up' ? c.origem : c.destino;
+      const sub = this.resolverFluxo(prox, dir, visitado);
+      if (!sub.res) continue;
+      let aberto = sub.aberto;
+      const tubos = sub.tubos;
+      if (isTubo(peca)) {
+        tubos.push(peca.id); // cano atravessado por este caminho de fluxo
+        if (peca.props.registro && !peca.props.registro.aberto) {
+          aberto = false; // registro fechado
+        } else if (
+          peca.props.boia &&
+          dir === 'down' &&
+          !boiaAberta(peca.props.boia, sub.res.props.nivel ?? 0, true)
+        ) {
+          aberto = false; // boia fechada (destino cheio)
+        }
+      }
+      return { res: sub.res, aberto, tubos };
+    }
+    return { res: null, aberto: true, tubos: [] };
   }
 }
 
@@ -138,11 +211,13 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
 
   // ---- (1) Sensores avaliam sobre o estado do tick anterior -------------
   const decisoesPorBomba = new Map<string, Decisao[]>();
+  const sensores: Record<string, Decisao> = {};
   for (const p of proj.pecas) {
     if (!isSensor(p)) continue;
     const resMon = reservatorioMonitorado(idx, p.id);
     const nivel = resMon?.props.nivel ?? 0;
     const decisao = avaliarSensor(p.props, nivel, tempoAtual);
+    sensores[p.id] = decisao;
     const lista = decisoesPorBomba.get(p.props.bombaAlvo) ?? [];
     lista.push(decisao);
     decisoesPorBomba.set(p.props.bombaAlvo, lista);
@@ -156,34 +231,68 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     let ligada = arbitrarBomba(decisoes, p.props.ligada ?? false);
 
     const origem = idx.resolverReservatorio(p.id, 'up');
-    if (ligada && origem && (origem.props.nivel ?? 0) <= 0) {
+    const limiteSeco = p.props.protecaoSeco ?? 0;
+    if (ligada && origem && (origem.props.nivel ?? 0) <= limiteSeco) {
       ligada = false; // bomba a seco: desliga independentemente dos sensores
       bombasASeco.push(p.id);
     }
     p.props.ligada = ligada;
   }
 
-  // ---- (3) Cálculo de vazão de cada aresta condutora -------------------
+  // ---- (3) Cálculo de vazão de cada aresta condutora (em m³/s) ---------
+  const u = proj.unidades;
   const fluxos: FluxoResolvido[] = [];
-  const vazoes: Record<string, number> = {};
+  const vazoesM3: Record<string, number> = {};
 
+  // Elementos ATIVOS primeiro: além da própria vazão, anotam a vazão nos tubos
+  // em série pelos quais empurram a água (para a telemetria/animação refletir o
+  // fluxo que passa por esses canos).
   for (const p of proj.pecas) {
-    if (isTubo(p)) {
-      vazoes[p.id] = calcularTubo(idx, p, g, fluxos);
-    } else if (isBomba(p)) {
-      vazoes[p.id] = calcularBomba(idx, p, fluxos);
-    } else if (isFonte(p)) {
-      vazoes[p.id] = calcularFonte(idx, p, fluxos);
+    if (isBomba(p)) vazoesM3[p.id] = calcularBomba(idx, p, g, u, fluxos, vazoesM3);
+    else if (isFonte(p)) vazoesM3[p.id] = calcularFonte(idx, p, u, fluxos, vazoesM3);
+    else if (isConsumo(p)) vazoesM3[p.id] = calcularConsumo(idx, p, g, u, fluxos, vazoesM3);
+  }
+  // Tubos por gravidade / ladrão: só os que ainda não foram atribuídos por um
+  // elemento ativo (um cano alimentado por fonte/bomba tem sua vazão dada pelo
+  // driver).
+  const ladroesAtivos: string[] = [];
+  for (const p of proj.pecas) {
+    if (isTubo(p) && vazoesM3[p.id] === undefined) {
+      vazoesM3[p.id] = calcularTubo(idx, p, g, u, fluxos, ladroesAtivos);
+    }
+  }
+
+  // Estado das boias (para a UI colorir): fechada quando o reservatório de
+  // destino está cheio. Avaliado sobre os níveis do início do tick.
+  const boiasFechadas: string[] = [];
+  for (const p of proj.pecas) {
+    if (!isTubo(p) || !p.props.boia) continue;
+    const down = idx.resolverReservatorio(p.id, 'down');
+    if (down && !boiaAberta(p.props.boia, down.props.nivel ?? 0, true)) {
+      boiasFechadas.push(p.id);
     }
   }
 
   // ---- (4 + 5) Atualização de volume e overflow ------------------------
-  const overflow = aplicarFluxos(proj, fluxos, dt);
+  const overflow = aplicarFluxos(proj, u, fluxos, dt);
 
   // Persiste estado dos sensores (ultimaTroca / pedindoLigar) p/ delay.
   atualizarEstadoSensores(proj, idx, tempoFim);
 
-  return { projeto: proj, vazoes, overflow, bombasASeco, tempo: tempoFim };
+  // Telemetria: converte as vazões de m³/s para a unidade do usuário (volume/s).
+  const vazoes: Record<string, number> = {};
+  for (const [id, q] of Object.entries(vazoesM3)) vazoes[id] = vazaoDeM3(q, u);
+
+  return {
+    projeto: proj,
+    vazoes,
+    overflow,
+    bombasASeco,
+    boiasFechadas,
+    ladroesAtivos,
+    sensores,
+    tempo: tempoFim,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -194,17 +303,37 @@ function calcularTubo(
   idx: GrafoIndex,
   tubo: PecaDe<'tubo'>,
   g: number,
+  u: Unidades,
   fluxos: FluxoResolvido[],
+  ladroesAtivos: string[],
 ): number {
-  const { registro, boia, checkValve, diametro } = tubo.props;
+  const { registro, boia, checkValve, diametro, ladrao } = tubo.props;
   if (registro && !registro.aberto) return 0; // registro fechado
 
-  const up = idx.resolverReservatorio(tubo.id, 'up');
-  const down = idx.resolverReservatorio(tubo.id, 'down');
-  if (!up && !down) return 0;
+  const up = idx.resolverReservatorio(tubo.id, 'up', true);
+  const down = idx.resolverReservatorio(tubo.id, 'down', true);
+  // Sem reservatório a montante não há coluna d'água que gere fluxo por
+  // gravidade. Se o lado de montante é uma fonte/bomba (não-reservatório), quem
+  // move a água é esse elemento ativo — o tubo não deve inventar refluxo.
+  if (!up) return 0;
 
-  const hUp = up ? carga(up) : 0;
-  const hDown = down ? carga(down) : 0;
+  const kL = metrosPorComprimento(u);
+  const areaM2 = areaTuboM2(diametro);
+
+  // Tubo ladrão: só escoa o EXCEDENTE acima do nível de acionamento (a coluna
+  // acima do lábio é a carga que empurra o transbordo — autolimitante).
+  if (ladrao && Number.isFinite(ladrao.nivel)) {
+    const excesso = (up.props.nivel ?? 0) - ladrao.nivel;
+    if (excesso <= 1e-9) return 0; // abaixo do lábio → sem transbordo
+    const v = Math.sqrt(2 * g * excesso * kL);
+    const q = areaM2 * v;
+    fluxos.push({ origem: up.id, destino: down?.id ?? null, vazao: q });
+    ladroesAtivos.push(tubo.id);
+    return q;
+  }
+
+  const hUp = cargaM(up, kL);
+  const hDown = down ? cargaM(down, kL) : 0; // destino ausente = saída ao ambiente
   const deltaH = hUp - hDown;
 
   // Boia mecânica: monitora o reservatório de destino (fecha quando cheio).
@@ -215,92 +344,161 @@ function calcularTubo(
 
   if (Math.abs(deltaH) < 1e-12) return 0;
 
-  const area = Math.PI * (diametro / 2) ** 2;
   const v = Math.sqrt(2 * g * Math.abs(deltaH));
-  const q = area * v;
+  const q = areaM2 * v;
 
   if (deltaH > 0) {
     // Fluxo natural origem→destino.
-    fluxos.push({ origem: up?.id ?? null, destino: down?.id ?? null, vazao: q });
+    fluxos.push({ origem: up.id, destino: down?.id ?? null, vazao: q });
     return q;
   }
   // deltaH < 0 → refluxo destino→origem, bloqueado por checkValve.
   if (checkValve) return 0;
-  fluxos.push({ origem: down?.id ?? null, destino: up?.id ?? null, vazao: q });
+  fluxos.push({ origem: down?.id ?? null, destino: up.id, vazao: q });
   return -q; // sinal indica sentido reverso na telemetria
+}
+
+/** Anota a vazão (m³/s) de um caminho nos tubos em série (telemetria/animação). */
+function anotarTubos(vazoes: Record<string, number>, tubos: string[], q: number): void {
+  for (const t of tubos) vazoes[t] = (vazoes[t] ?? 0) + q;
 }
 
 function calcularBomba(
   idx: GrafoIndex,
   bomba: PecaDe<'bomba'>,
+  g: number,
+  u: Unidades,
   fluxos: FluxoResolvido[],
+  vazoes: Record<string, number>,
 ): number {
   if (!bomba.props.ligada) return 0;
 
-  const up = idx.resolverReservatorio(bomba.id, 'up');
-  const down = idx.resolverReservatorio(bomba.id, 'down');
+  // Fonte de sucção respeitando válvulas em série (registro/boia). Sem origem
+  // alcançável ou com o caminho fechado, a bomba não move nada.
+  const upPath = idx.resolverFluxo(bomba.id, 'up');
+  if (!upPath.res || !upPath.aberto) return 0;
+  const up = upPath.res;
+  const kL = metrosPorComprimento(u);
+  const hUp = cargaM(up, kL);
 
-  const hUp = up ? carga(up) : 0;
-  const hDown = down ? carga(down) : 0;
-  const lift = hDown - hUp; // carga que a bomba precisa vencer
+  // Uma bomba pode alimentar múltiplas saídas (ex.: recalque para dois
+  // reservatórios). A vazão nominal é dividida entre elas — por `vazaoAlocada`
+  // se informada, senão igualmente — espelhando a lógica da fonte multi-destino.
+  const saidas = idx.saida.get(bomba.id) ?? [];
+  const n = saidas.length;
+  if (n === 0) return 0; // bomba sem recalque não move nada
+  void g; // a bomba é forçada (não usa Torricelli); g mantém a assinatura uniforme
 
-  let q = bomba.props.vazaoNominal;
-  if (bomba.props.curva) {
-    q = bomba.props.vazaoNominal - bomba.props.curva.k * lift;
+  let total = 0;
+  for (const c of saidas) {
+    // Caminho fechado (registro/boia) ou sem reservatório a jusante → aquela
+    // saída não conduz nada.
+    const dp = idx.resolverFluxo(c.destino, 'down');
+    if (!dp.res || !dp.aberto) continue;
+    const liftM = cargaM(dp.res, kL) - hUp; // carga (m) a vencer nesta saída
+
+    const base = n > 1 ? (c.vazaoAlocada ?? bomba.props.vazaoNominal / n) : bomba.props.vazaoNominal;
+    const qUser = bomba.props.curva ? base - bomba.props.curva.k * liftM : base;
+    const q = vazaoParaM3(Math.max(0, qUser), u); // bomba não gera vazão negativa
+
+    if (q > 0) {
+      fluxos.push({ origem: up.id, destino: dp.res.id, vazao: q });
+      anotarTubos(vazoes, dp.tubos, q); // canos de recalque desta saída
+      total += q;
+    }
   }
-  q = Math.max(0, q); // bomba não gera vazão negativa
-
-  if (q > 0) {
-    fluxos.push({ origem: up?.id ?? null, destino: down?.id ?? null, vazao: q });
-  }
-  return q;
+  if (total > 0) anotarTubos(vazoes, upPath.tubos, total); // canos de sucção
+  return total;
 }
 
 function calcularFonte(
   idx: GrafoIndex,
   fonte: PecaDe<'fonte'>,
+  u: Unidades,
   fluxos: FluxoResolvido[],
+  vazoes: Record<string, number>,
 ): number {
   const saidas = idx.saida.get(fonte.id) ?? [];
   if (saidas.length === 0) return 0;
 
   let total = 0;
   for (const c of saidas) {
-    const down = idx.resolverReservatorio(c.destino, 'down');
+    // Caminho fechado (registro OU boia de um tubo em série) → não abastece.
+    const dp = idx.resolverFluxo(c.destino, 'down');
+    if (!dp.res || !dp.aberto) continue;
+    const down = dp.res;
     // Múltiplos destinos: usa vazaoAlocada; destino único usa vazaoFixa.
     const qAlvo =
       saidas.length > 1
         ? (c.vazaoAlocada ?? 0)
         : (c.vazaoAlocada ?? fonte.props.vazaoFixa);
 
-    // Boia da fonte: fecha quando o destino está cheio.
-    let q = qAlvo;
-    if (fonte.props.boia && down) {
+    // Boia da própria fonte: fecha quando o destino está cheio.
+    let qUser = qAlvo;
+    if (fonte.props.boia) {
       const aberta = boiaAberta(fonte.props.boia, down.props.nivel ?? 0, true);
-      if (!aberta) q = 0;
+      if (!aberta) qUser = 0;
     }
+    const q = vazaoParaM3(Math.max(0, qUser), u);
     if (q > 0) {
-      fluxos.push({ origem: null, destino: down?.id ?? null, vazao: q });
+      fluxos.push({ origem: null, destino: down.id, vazao: q });
+      anotarTubos(vazoes, dp.tubos, q); // canos entre a fonte e o destino
       total += q;
     }
   }
   return total;
 }
 
+function calcularConsumo(
+  idx: GrafoIndex,
+  consumo: PecaDe<'consumo'>,
+  g: number,
+  u: Unidades,
+  fluxos: FluxoResolvido[],
+  vazoes: Record<string, number>,
+): number {
+  if (consumo.props.aberto === false) return 0; // saída fechada
+  const cp = idx.resolverFluxo(consumo.id, 'up');
+  if (!cp.res || !cp.aberto) return 0; // sem origem, ou registro fechado no caminho
+  const up = cp.res;
+  const kL = metrosPorComprimento(u);
+
+  let q = vazaoParaM3(Math.max(0, consumo.props.vazaoDemanda), u);
+  // Realismo: a saída é limitada pela CAPACIDADE do cano mais estreito no
+  // caminho (Torricelli pelo diâmetro e pela carga). Canos finos estrangulam.
+  if (cp.tubos.length > 0) {
+    const headM = cargaM(up, kL); // carga do reservatório até a saída (cota 0)
+    let capMin = Infinity;
+    for (const tid of cp.tubos) {
+      const t = idx.porId.get(tid);
+      if (t && isTubo(t)) {
+        capMin = Math.min(capMin, areaTuboM2(t.props.diametro) * Math.sqrt(2 * g * Math.max(0, headM)));
+      }
+    }
+    q = Math.min(q, capMin);
+  }
+  if (q > 0) {
+    fluxos.push({ origem: up.id, destino: null, vazao: q });
+    anotarTubos(vazoes, cp.tubos, q); // canos entre o reservatório e o consumo
+  }
+  return q;
+}
+
 // ---------------------------------------------------------------------------
-// Aplicação de fluxos → volumes → overflow
+// Aplicação de fluxos → volumes → overflow (tudo em m³)
 // ---------------------------------------------------------------------------
 
 function aplicarFluxos(
   proj: ProjetoSimulacao,
+  u: Unidades,
   fluxos: FluxoResolvido[],
   dt: number,
 ): string[] {
-  // Volume atual por reservatório.
+  // Volume atual (m³) por reservatório.
   const volume = new Map<string, number>();
   for (const p of proj.pecas) {
     if (isReservatorio(p)) {
-      volume.set(p.id, areaSecao(p.props) * Math.max(0, p.props.nivel ?? 0));
+      volume.set(p.id, volumeM3DeNivel(p.props, p.props.nivel ?? 0, u));
     }
   }
 
@@ -332,13 +530,13 @@ function aplicarFluxos(
   for (const p of proj.pecas) {
     if (!isReservatorio(p)) continue;
     let vol = volume.get(p.id) ?? 0;
-    const vMax = volumeMaximo(p.props);
+    const vMax = volumeMaximoM3(p.props, u);
     if (vol > vMax) {
       overflow.push(p.id); // excedente se perde (transborda), sem travar o tick
       vol = vMax;
     }
     if (vol < 0) vol = 0;
-    p.props.nivel = nivelDeVolume(p.props, vol);
+    p.props.nivel = nivelDeVolumeM3(p.props, vol, u);
   }
   return overflow;
 }
@@ -379,6 +577,9 @@ export function rodarTicks(
     vazoes: {},
     overflow: [],
     bombasASeco: [],
+    boiasFechadas: [],
+    ladroesAtivos: [],
+    sensores: {},
     tempo,
   };
   for (let i = 0; i < n; i++) {

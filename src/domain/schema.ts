@@ -23,6 +23,7 @@ const TIPOS_VALIDOS: readonly TipoPeca[] = [
   'tubo',
   'bomba',
   'fonte',
+  'consumo',
   'sensor',
   'juncao',
 ];
@@ -132,6 +133,13 @@ function validarPeca(peca: unknown, idx: number, erros: ErroValidacao[]): void {
       erros.push({
         caminho: `${base}.props.vazaoFixa`,
         mensagem: 'vazaoFixa obrigatória',
+      });
+    }
+  } else if (peca.tipo === 'consumo') {
+    if (!isFiniteNumber(props.vazaoDemanda)) {
+      erros.push({
+        caminho: `${base}.props.vazaoDemanda`,
+        mensagem: 'vazaoDemanda obrigatória',
       });
     }
   } else if (peca.tipo === 'sensor') {

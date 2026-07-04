@@ -13,6 +13,8 @@ interface NoProps {
   draggable?: boolean;
   onClick?: (e?: unknown) => void;
   onTap?: (e?: unknown) => void;
+  onMouseDown?: (e: { cancelBubble: boolean }) => void;
+  onMouseUp?: (e?: unknown) => void;
   onDragEnd?: (e: { target: { x: () => number; y: () => number } }) => void;
   [k: string]: unknown;
 }
@@ -23,7 +25,7 @@ export function Stage({ children }: NoProps) {
 export function Layer({ children }: NoProps) {
   return <div data-testid="layer">{children}</div>;
 }
-export function Group({ children, name, x, y, draggable, onClick, onDragEnd }: NoProps) {
+export function Group({ children, name, x, y, draggable, onClick, onMouseUp, onDragEnd }: NoProps) {
   return (
     <div
       data-testid={name}
@@ -31,6 +33,7 @@ export function Group({ children, name, x, y, draggable, onClick, onDragEnd }: N
       data-y={y}
       data-draggable={String(!!draggable)}
       onClick={() => onClick?.()}
+      onMouseUp={() => onMouseUp?.()}
     >
       {onDragEnd && (
         <button
@@ -43,7 +46,18 @@ export function Group({ children, name, x, y, draggable, onClick, onDragEnd }: N
   );
 }
 export const Rect = (_: NoProps) => null;
-export const Circle = (_: NoProps) => null;
+// Circles com nome/handlers (ex.: alça de saída de conexão) viram DOM testável.
+export function Circle({ name, onMouseDown, onMouseUp, onClick }: NoProps) {
+  if (!name && !onMouseDown && !onMouseUp) return null;
+  return (
+    <div
+      data-testid={name}
+      onMouseDown={() => onMouseDown?.({ cancelBubble: false })}
+      onMouseUp={() => onMouseUp?.()}
+      onClick={() => onClick?.()}
+    />
+  );
+}
 export const Text = (_: NoProps) => null;
 export function Line(_: NoProps) {
   return <div data-testid="line" />;

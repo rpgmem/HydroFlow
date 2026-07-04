@@ -28,9 +28,16 @@ npm run typecheck  # tsc --noEmit
 npm run build      # build de produção
 ```
 
-A aplicação abre com um projeto de exemplo (uma caixa d'água elevada abastecida
-por bomba controlada por sensor). Clique em **▶ Executar** para validar o grafo e
-entrar em modo de simulação; depois **▶ Play**.
+A aplicação abre com um projeto de exemplo (três reservatórios cilíndricos
+empilhados: uma fonte enche o inferior, uma bomba recalca — dividindo a vazão —
+para o do meio e o superior, e dois canos escoam por gravidade até um ponto de
+consumo). Clique em **▶ Executar** para validar o grafo e entrar em modo de
+simulação; depois **▶ Play**.
+
+**Interação no editor:** clique numa peça para selecioná-la (e editar/renomear no
+inspetor); **arraste do ponto ciano (saída)** de uma peça até outra para criar uma
+conexão — conexões nunca são criadas por acaso. Clique numa linha para
+selecioná-la e apague com **Delete** (ou no botão flutuante).
 
 ## Arquitetura
 
@@ -76,8 +83,9 @@ interface ProjetoSimulacao {
 }
 
 interface Peca {
-  id: string;                           // uuid
-  tipo: 'reservatorio' | 'tubo' | 'bomba' | 'fonte' | 'sensor' | 'juncao';
+  id: string;                           // uuid (identidade estável)
+  tipo: 'reservatorio' | 'tubo' | 'bomba' | 'fonte' | 'consumo' | 'sensor' | 'juncao';
+  rotulo?: string;                      // nome amigável exibido (editável); default = id
   x: number; y: number;                 // posição no canvas
   rotacao?: number;                     // tubo/bomba
   portas?: string[];                    // ex.: ['topo', 'base']
@@ -104,9 +112,10 @@ interface NivelControle {
 | Tipo | Campos |
 | --- | --- |
 | `reservatorio` | `formato` (`cilindro`\|`retangular`), `raio?`/`largura?`/`comprimento?`, `alturaMaxima`, `cotaBase`, `nivel?` |
-| `tubo` | `diametro`, `checkValve?`, `registro?: {aberto}`, `boia?: NivelControle` |
-| `bomba` | `vazaoNominal`, `curva?: {k}`, `sensores: string[]`, `ligada?` |
+| `tubo` | `diametro` (**mm**), `checkValve?`, `registro?: {aberto}`, `boia?: NivelControle`, `ladrao?: {nivel}` (dreno de transbordo) |
+| `bomba` | `vazaoNominal`, `curva?: {k}`, `sensores: string[]`, `ligada?`, `protecaoSeco?` |
 | `fonte` | `vazaoFixa`, `boia?: NivelControle` |
+| `consumo` | `vazaoDemanda`, `aberto?` (ponto de saída/demanda; retira água e descarta) |
 | `sensor` | `NivelControle & { bombaAlvo: string }` |
 | `juncao` | `{}` (só distribui vazão, sem volume próprio) |
 
@@ -123,12 +132,27 @@ Fórmulas implementadas em `src/engine/simulador.ts`:
   (sempre a carga total; **nunca** só o nível bruto).
 - **Bomba** — `Q = vazaoNominal` (sem curva) ou `Q = vazaoNominal − k·Δh_lift`
   (com curva). Sentido **forçado** pela conexão, independe do Δh natural; `Q ≥ 0`.
+  Com **múltiplas saídas**, a vazão nominal é dividida entre elas (por
+  `vazaoAlocada` se informada, senão igualmente).
 - **Fonte** — vazão fixa constante, externa ao grafo; múltiplos destinos usam
   `vazaoAlocada`.
+- **Consumo** — ponto de saída/demanda: retira `vazaoDemanda` do reservatório de
+  origem e descarta (externo ao grafo), **limitado pela capacidade do cano** mais
+  estreito no caminho (Torricelli pelo diâmetro/Δh) e pelo volume disponível.
+- **Tubo ladrão** — dreno de transbordo: só escoa o excedente acima de
+  `ladrao.nivel` (a coluna acima do lábio é a carga; autolimitante).
+
+### Unidades
+
+A física roda em **SI** (metros, m³, s). Os valores das peças ficam nas unidades
+escolhidas e são convertidos internamente: comprimentos pela unidade de
+comprimento (m/cm), volume/vazão em litros ou m³, e **diâmetro de tubo sempre em
+milímetros**. O multiplicador de velocidade (1x…120x) permite acompanhar cenários
+realistas (vazões em L/s enchendo tanques de milhares de litros) em segundos.
 - **Overflow** — nível > `alturaMaxima` → excedente se perde (transborda), sem
   gerar erro nem travar o tick.
-- **Bomba a seco** — se o reservatório de origem está vazio, a bomba desliga
-  independentemente dos sensores.
+- **Bomba a seco** — a bomba desliga quando o nível de origem fica ≤ `protecaoSeco`
+  (default 0, i.e. origem vazia), independentemente dos sensores.
 - **Check valve / registro / boia** — refluxo bloqueado; registro on/off manual;
   boia mecânica fecha ao encher o destino.
 

@@ -11,6 +11,7 @@ const PECAS: { tipo: TipoPeca; rotulo: string; icone: string }[] = [
   { tipo: 'tubo', rotulo: 'Tubo', icone: '━' },
   { tipo: 'bomba', rotulo: 'Bomba', icone: '⚙️' },
   { tipo: 'fonte', rotulo: 'Fonte', icone: '🚰' },
+  { tipo: 'consumo', rotulo: 'Consumo', icone: '🕳️' },
   { tipo: 'sensor', rotulo: 'Sensor', icone: '📡' },
   { tipo: 'juncao', rotulo: 'Junção', icone: '⌥' },
 ];
