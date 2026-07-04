@@ -1,0 +1,390 @@
+/**
+ * HydroFlow — Motor de simulação (Sprint 2, seção 4)
+ *
+ * Motor puro, desacoplado de React: recebe um `ProjetoSimulacao` e devolve o
+ * estado do próximo tick. Nenhuma dependência de DOM/canvas — testável isolado.
+ *
+ * FÍSICA SIMPLIFICADA (Torricelli + continuidade de volume; NÃO é CFD):
+ *
+ *   Vazão por gravidade (tubo):  v = √(2·g·Δh)
+ *                                A = π·(diametro/2)²
+ *                                Q = A·v
+ *   Δh = (cotaBase + nivel)_origem − (cotaBase + nivel)_destino
+ *        (sempre a carga hidráulica total; nunca só o nível bruto)
+ *   Bomba:   Q = vazaoNominal           (sem curva)
+ *            Q = vazaoNominal − k·Δh_lift (com curva), Δh_lift = carga a vencer
+ *            Sentido forçado pela conexão, independe do Δh natural.
+ *   Fonte:   Q = vazaoFixa (constante, externa ao grafo)
+ *
+ * ORDEM DE AVALIAÇÃO NO tick():
+ *   1. Sensores e boias avaliam com base no ESTADO DO TICK ANTERIOR.
+ *   2. Arbitragem de bombas (desligar > ligar; OR entre "ligar").
+ *   3. Cálculo de vazão de cada aresta (tubo, bomba, fonte).
+ *   4. Atualização de volume/nível de cada reservatório.
+ *   5. Aplicação de overflow (clipping na alturaMaxima).
+ */
+
+import {
+  isBomba,
+  isFonte,
+  isReservatorio,
+  isSensor,
+  isTubo,
+  type Conexao,
+  type Peca,
+  type PecaDe,
+  type ProjetoSimulacao,
+} from '../domain/types';
+import { areaSecao, nivelDeVolume, volumeMaximo } from './geometria';
+import { arbitrarBomba, avaliarSensor, boiaAberta, type Decisao } from './arbitragem';
+
+/** Um movimento de líquido resolvido para um tick. */
+interface FluxoResolvido {
+  /** Reservatório de onde sai o volume (null = fonte externa). */
+  origem: string | null;
+  /** Reservatório para onde entra o volume (null = descarte externo). */
+  destino: string | null;
+  /** Vazão volumétrica (unidade de volume / segundo), sempre ≥ 0. */
+  vazao: number;
+}
+
+export interface ResultadoTick {
+  /** Novo estado do projeto (nível, ligada, estados de sensor atualizados). */
+  projeto: ProjetoSimulacao;
+  /** Vazão calculada por peça condutora (id → Q), para telemetria/UI. */
+  vazoes: Record<string, number>;
+  /** Reservatórios que transbordaram neste tick. */
+  overflow: string[];
+  /** Bombas desligadas por proteção contra funcionamento a seco. */
+  bombasASeco: string[];
+  /** Tempo de simulação acumulado (s) após este tick. */
+  tempo: number;
+}
+
+/** Carga hidráulica total de um reservatório: cotaBase + nível. */
+function carga(peca: PecaDe<'reservatorio'>): number {
+  return peca.props.cotaBase + (peca.props.nivel ?? 0);
+}
+
+/**
+ * Índices de vizinhança para consultas O(1) durante o tick.
+ */
+class GrafoIndex {
+  readonly porId: Map<string, Peca>;
+  /** conexões de saída (origem == id). */
+  readonly saida: Map<string, Conexao[]>;
+  /** conexões de entrada (destino == id). */
+  readonly entrada: Map<string, Conexao[]>;
+
+  constructor(projeto: ProjetoSimulacao) {
+    this.porId = new Map(projeto.pecas.map((p) => [p.id, p]));
+    this.saida = new Map();
+    this.entrada = new Map();
+    const anexar = (m: Map<string, Conexao[]>, k: string, c: Conexao): void => {
+      const lista = m.get(k);
+      if (lista) lista.push(c);
+      else m.set(k, [c]);
+    };
+    for (const c of projeto.conexoes) {
+      anexar(this.saida, c.origem, c);
+      anexar(this.entrada, c.destino, c);
+    }
+  }
+
+  /**
+   * Caminha em uma direção atravessando junções até achar um reservatório.
+   * 'up' segue arestas de entrada; 'down' segue arestas de saída.
+   */
+  resolverReservatorio(
+    start: string,
+    dir: 'up' | 'down',
+    visitado = new Set<string>(),
+  ): PecaDe<'reservatorio'> | null {
+    if (visitado.has(start)) return null;
+    visitado.add(start);
+    const peca = this.porId.get(start);
+    if (!peca) return null;
+    if (isReservatorio(peca)) return peca;
+    // Junção (ou qualquer nó de passagem) → continua atravessando.
+    const arestas = dir === 'up' ? this.entrada.get(start) : this.saida.get(start);
+    for (const c of arestas ?? []) {
+      const prox = dir === 'up' ? c.origem : c.destino;
+      const r = this.resolverReservatorio(prox, dir, visitado);
+      if (r) return r;
+    }
+    return null;
+  }
+}
+
+/** Reservatório que um sensor/boia monitora: o reservatório a ele conectado. */
+function reservatorioMonitorado(
+  idx: GrafoIndex,
+  pecaId: string,
+): PecaDe<'reservatorio'> | null {
+  // Tenta ambos os sentidos — o sensor pode estar ligado por qualquer porta.
+  return (
+    idx.resolverReservatorio(pecaId, 'up') ??
+    idx.resolverReservatorio(pecaId, 'down')
+  );
+}
+
+/** Executa um passo de simulação. Não muta a entrada (retorna novo projeto). */
+export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
+  const proj: ProjetoSimulacao = structuredClone(projeto);
+  const idx = new GrafoIndex(proj);
+  const dt = proj.configuracaoSimulacao.dt;
+  const g = proj.configuracaoSimulacao.g;
+  const tempoFim = tempoAtual + dt;
+
+  // ---- (1) Sensores avaliam sobre o estado do tick anterior -------------
+  const decisoesPorBomba = new Map<string, Decisao[]>();
+  for (const p of proj.pecas) {
+    if (!isSensor(p)) continue;
+    const resMon = reservatorioMonitorado(idx, p.id);
+    const nivel = resMon?.props.nivel ?? 0;
+    const decisao = avaliarSensor(p.props, nivel, tempoAtual);
+    const lista = decisoesPorBomba.get(p.props.bombaAlvo) ?? [];
+    lista.push(decisao);
+    decisoesPorBomba.set(p.props.bombaAlvo, lista);
+  }
+
+  // ---- (2) Arbitragem de bombas + proteção contra seco -----------------
+  const bombasASeco: string[] = [];
+  for (const p of proj.pecas) {
+    if (!isBomba(p)) continue;
+    const decisoes = decisoesPorBomba.get(p.id) ?? [];
+    let ligada = arbitrarBomba(decisoes, p.props.ligada ?? false);
+
+    const origem = idx.resolverReservatorio(p.id, 'up');
+    if (ligada && origem && (origem.props.nivel ?? 0) <= 0) {
+      ligada = false; // bomba a seco: desliga independentemente dos sensores
+      bombasASeco.push(p.id);
+    }
+    p.props.ligada = ligada;
+  }
+
+  // ---- (3) Cálculo de vazão de cada aresta condutora -------------------
+  const fluxos: FluxoResolvido[] = [];
+  const vazoes: Record<string, number> = {};
+
+  for (const p of proj.pecas) {
+    if (isTubo(p)) {
+      vazoes[p.id] = calcularTubo(idx, p, g, fluxos);
+    } else if (isBomba(p)) {
+      vazoes[p.id] = calcularBomba(idx, p, fluxos);
+    } else if (isFonte(p)) {
+      vazoes[p.id] = calcularFonte(idx, p, fluxos);
+    }
+  }
+
+  // ---- (4 + 5) Atualização de volume e overflow ------------------------
+  const overflow = aplicarFluxos(proj, fluxos, dt);
+
+  // Persiste estado dos sensores (ultimaTroca / pedindoLigar) p/ delay.
+  atualizarEstadoSensores(proj, idx, tempoFim);
+
+  return { projeto: proj, vazoes, overflow, bombasASeco, tempo: tempoFim };
+}
+
+// ---------------------------------------------------------------------------
+// Cálculo por tipo de aresta
+// ---------------------------------------------------------------------------
+
+function calcularTubo(
+  idx: GrafoIndex,
+  tubo: PecaDe<'tubo'>,
+  g: number,
+  fluxos: FluxoResolvido[],
+): number {
+  const { registro, boia, checkValve, diametro } = tubo.props;
+  if (registro && !registro.aberto) return 0; // registro fechado
+
+  const up = idx.resolverReservatorio(tubo.id, 'up');
+  const down = idx.resolverReservatorio(tubo.id, 'down');
+  if (!up && !down) return 0;
+
+  const hUp = up ? carga(up) : 0;
+  const hDown = down ? carga(down) : 0;
+  const deltaH = hUp - hDown;
+
+  // Boia mecânica: monitora o reservatório de destino (fecha quando cheio).
+  if (boia && down) {
+    const aberta = boiaAberta(boia, down.props.nivel ?? 0, true);
+    if (!aberta) return 0;
+  }
+
+  if (Math.abs(deltaH) < 1e-12) return 0;
+
+  const area = Math.PI * (diametro / 2) ** 2;
+  const v = Math.sqrt(2 * g * Math.abs(deltaH));
+  const q = area * v;
+
+  if (deltaH > 0) {
+    // Fluxo natural origem→destino.
+    fluxos.push({ origem: up?.id ?? null, destino: down?.id ?? null, vazao: q });
+    return q;
+  }
+  // deltaH < 0 → refluxo destino→origem, bloqueado por checkValve.
+  if (checkValve) return 0;
+  fluxos.push({ origem: down?.id ?? null, destino: up?.id ?? null, vazao: q });
+  return -q; // sinal indica sentido reverso na telemetria
+}
+
+function calcularBomba(
+  idx: GrafoIndex,
+  bomba: PecaDe<'bomba'>,
+  fluxos: FluxoResolvido[],
+): number {
+  if (!bomba.props.ligada) return 0;
+
+  const up = idx.resolverReservatorio(bomba.id, 'up');
+  const down = idx.resolverReservatorio(bomba.id, 'down');
+
+  const hUp = up ? carga(up) : 0;
+  const hDown = down ? carga(down) : 0;
+  const lift = hDown - hUp; // carga que a bomba precisa vencer
+
+  let q = bomba.props.vazaoNominal;
+  if (bomba.props.curva) {
+    q = bomba.props.vazaoNominal - bomba.props.curva.k * lift;
+  }
+  q = Math.max(0, q); // bomba não gera vazão negativa
+
+  if (q > 0) {
+    fluxos.push({ origem: up?.id ?? null, destino: down?.id ?? null, vazao: q });
+  }
+  return q;
+}
+
+function calcularFonte(
+  idx: GrafoIndex,
+  fonte: PecaDe<'fonte'>,
+  fluxos: FluxoResolvido[],
+): number {
+  const saidas = idx.saida.get(fonte.id) ?? [];
+  if (saidas.length === 0) return 0;
+
+  let total = 0;
+  for (const c of saidas) {
+    const down = idx.resolverReservatorio(c.destino, 'down');
+    // Múltiplos destinos: usa vazaoAlocada; destino único usa vazaoFixa.
+    const qAlvo =
+      saidas.length > 1
+        ? (c.vazaoAlocada ?? 0)
+        : (c.vazaoAlocada ?? fonte.props.vazaoFixa);
+
+    // Boia da fonte: fecha quando o destino está cheio.
+    let q = qAlvo;
+    if (fonte.props.boia && down) {
+      const aberta = boiaAberta(fonte.props.boia, down.props.nivel ?? 0, true);
+      if (!aberta) q = 0;
+    }
+    if (q > 0) {
+      fluxos.push({ origem: null, destino: down?.id ?? null, vazao: q });
+      total += q;
+    }
+  }
+  return total;
+}
+
+// ---------------------------------------------------------------------------
+// Aplicação de fluxos → volumes → overflow
+// ---------------------------------------------------------------------------
+
+function aplicarFluxos(
+  proj: ProjetoSimulacao,
+  fluxos: FluxoResolvido[],
+  dt: number,
+): string[] {
+  // Volume atual por reservatório.
+  const volume = new Map<string, number>();
+  for (const p of proj.pecas) {
+    if (isReservatorio(p)) {
+      volume.set(p.id, areaSecao(p.props) * Math.max(0, p.props.nivel ?? 0));
+    }
+  }
+
+  // Limita saídas para não drenar abaixo de zero: escala proporcionalmente
+  // quando a soma das saídas de um reservatório excede seu volume disponível.
+  const saidaPorRes = new Map<string, number>();
+  for (const f of fluxos) {
+    if (f.origem) saidaPorRes.set(f.origem, (saidaPorRes.get(f.origem) ?? 0) + f.vazao * dt);
+  }
+  const escala = new Map<string, number>();
+  for (const [id, saidaVol] of saidaPorRes) {
+    const disp = volume.get(id) ?? 0;
+    escala.set(id, saidaVol > disp && saidaVol > 0 ? disp / saidaVol : 1);
+  }
+
+  // Aplica cada fluxo (com escala na origem).
+  for (const f of fluxos) {
+    const fator = f.origem ? (escala.get(f.origem) ?? 1) : 1;
+    const vol = f.vazao * dt * fator;
+    if (f.origem) volume.set(f.origem, (volume.get(f.origem) ?? 0) - vol);
+    if (f.destino && volume.has(f.destino)) {
+      volume.set(f.destino, (volume.get(f.destino) ?? 0) + vol);
+    }
+    // destino null (ou junção sem volume) → volume descartado do grafo.
+  }
+
+  // Converte de volta para nível e aplica overflow (clipping na alturaMaxima).
+  const overflow: string[] = [];
+  for (const p of proj.pecas) {
+    if (!isReservatorio(p)) continue;
+    let vol = volume.get(p.id) ?? 0;
+    const vMax = volumeMaximo(p.props);
+    if (vol > vMax) {
+      overflow.push(p.id); // excedente se perde (transborda), sem travar o tick
+      vol = vMax;
+    }
+    if (vol < 0) vol = 0;
+    p.props.nivel = nivelDeVolume(p.props, vol);
+  }
+  return overflow;
+}
+
+/**
+ * Registra a última troca de estado de cada sensor (para o `delay`) e o pedido
+ * corrente. Executado ao final do tick para que o próximo tick veja o histórico.
+ */
+function atualizarEstadoSensores(
+  proj: ProjetoSimulacao,
+  idx: GrafoIndex,
+  tempo: number,
+): void {
+  for (const p of proj.pecas) {
+    if (!isSensor(p)) continue;
+    const resMon = reservatorioMonitorado(idx, p.id);
+    const nivel = resMon?.props.nivel ?? 0;
+    const decisao = avaliarSensor(p.props, nivel, tempo);
+    const querLigar =
+      decisao === 'ligar' ? true : decisao === 'desligar' ? false : p.props.pedindoLigar;
+    if (querLigar !== p.props.pedindoLigar) {
+      p.props.ultimaTroca = tempo;
+      p.props.pedindoLigar = querLigar;
+    }
+  }
+}
+
+/** Roda N ticks encadeando estado e tempo (controle de velocidade — seção 7). */
+export function rodarTicks(
+  projeto: ProjetoSimulacao,
+  n: number,
+  tempoInicial = 0,
+): ResultadoTick {
+  let estado = projeto;
+  let tempo = tempoInicial;
+  let ultimo: ResultadoTick = {
+    projeto,
+    vazoes: {},
+    overflow: [],
+    bombasASeco: [],
+    tempo,
+  };
+  for (let i = 0; i < n; i++) {
+    ultimo = tick(estado, tempo);
+    estado = ultimo.projeto;
+    tempo = ultimo.tempo;
+  }
+  return ultimo;
+}

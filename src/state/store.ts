@@ -1,0 +1,265 @@
+/**
+ * HydroFlow — Estado da aplicação (Sprint 4)
+ *
+ * Reducer puro que orquestra os dois modos de operação (seção 6):
+ *  - 'edicao':   grafo mutável (add/remove peça, conexão, mover no canvas).
+ *  - 'execucao': grafo estruturalmente IMUTÁVEL — só valores mudam (nível,
+ *                vazão, registro, bomba on/off, thresholds de sensor).
+ *
+ * A transição edição→execução roda a validação de grafo (seção 5) e só avança
+ * se passar. A transição execução→edição exige pause/reset primeiro.
+ *
+ * O reducer é puro e independente de React (o loop de render vive no
+ * componente), o que o torna diretamente testável no Vitest.
+ */
+
+import type { ErroValidacao } from '../domain/schema';
+import { validarGrafo } from '../engine/validacaoGrafo';
+import { rodarTicks } from '../engine/simulador';
+import {
+  isBomba,
+  isSensor,
+  isTubo,
+  type Conexao,
+  type ModoSistema,
+  type Peca,
+  type ProjetoSimulacao,
+  type PropsPorTipo,
+} from '../domain/types';
+
+export type Velocidade = 1 | 2 | 5;
+
+export interface EstadoApp {
+  projeto: ProjetoSimulacao;
+  modo: ModoSistema;
+  /** true = simulação avançando (play); false = pausada. Só em execução. */
+  rodando: boolean;
+  velocidade: Velocidade;
+  tempo: number;
+  errosValidacao: ErroValidacao[];
+  vazoes: Record<string, number>;
+  overflow: string[];
+  bombasASeco: string[];
+  /** id da peça selecionada no inspetor (ou null). */
+  selecionada: string | null;
+  /** Snapshot do projeto ao entrar em execução, para RESET. */
+  snapshotEdicao: ProjetoSimulacao | null;
+}
+
+export type Acao =
+  | { tipo: 'ADD_PECA'; peca: Peca }
+  | { tipo: 'REMOVER_PECA'; id: string }
+  | { tipo: 'MOVER_PECA'; id: string; x: number; y: number }
+  | { tipo: 'ADD_CONEXAO'; conexao: Conexao }
+  | { tipo: 'REMOVER_CONEXAO'; id: string }
+  | { tipo: 'ATUALIZAR_PROPS'; id: string; props: Partial<PropsPorTipo> }
+  | { tipo: 'SELECIONAR'; id: string | null }
+  | { tipo: 'SET_NOME'; nome: string }
+  | { tipo: 'SET_UNIDADES'; unidades: ProjetoSimulacao['unidades'] }
+  | { tipo: 'CARREGAR_PROJETO'; projeto: ProjetoSimulacao }
+  | { tipo: 'ENTRAR_EXECUCAO' }
+  | { tipo: 'SAIR_EXECUCAO' }
+  | { tipo: 'PLAY' }
+  | { tipo: 'PAUSE' }
+  | { tipo: 'RESET' }
+  | { tipo: 'SET_VELOCIDADE'; velocidade: Velocidade }
+  | { tipo: 'TICK' };
+
+export function estadoInicial(projeto: ProjetoSimulacao): EstadoApp {
+  return {
+    projeto,
+    modo: 'edicao',
+    rodando: false,
+    velocidade: 1,
+    tempo: 0,
+    errosValidacao: [],
+    vazoes: {},
+    overflow: [],
+    bombasASeco: [],
+    selecionada: null,
+    snapshotEdicao: null,
+  };
+}
+
+/** Mutações que alteram a ESTRUTURA do grafo — proibidas em execução. */
+const ACOES_ESTRUTURAIS = new Set<Acao['tipo']>([
+  'ADD_PECA',
+  'REMOVER_PECA',
+  'ADD_CONEXAO',
+  'REMOVER_CONEXAO',
+  'SET_UNIDADES',
+]);
+
+function atualizarPeca(
+  projeto: ProjetoSimulacao,
+  id: string,
+  fn: (p: Peca) => Peca,
+): ProjetoSimulacao {
+  return {
+    ...projeto,
+    pecas: projeto.pecas.map((p) => (p.id === id ? fn(p) : p)),
+  };
+}
+
+export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
+  // Guarda de imutabilidade estrutural em execução (seção 6).
+  if (estado.modo === 'execucao' && ACOES_ESTRUTURAIS.has(acao.tipo)) {
+    return estado; // mutação de grafo bloqueada durante a execução
+  }
+
+  switch (acao.tipo) {
+    case 'ADD_PECA':
+      return {
+        ...estado,
+        projeto: { ...estado.projeto, pecas: [...estado.projeto.pecas, acao.peca] },
+        selecionada: acao.peca.id,
+      };
+
+    case 'REMOVER_PECA':
+      return {
+        ...estado,
+        projeto: {
+          ...estado.projeto,
+          pecas: estado.projeto.pecas.filter((p) => p.id !== acao.id),
+          // Remove conexões pendentes e referências de sensores.
+          conexoes: estado.projeto.conexoes.filter(
+            (c) => c.origem !== acao.id && c.destino !== acao.id,
+          ),
+        },
+        selecionada: estado.selecionada === acao.id ? null : estado.selecionada,
+      };
+
+    case 'MOVER_PECA':
+      // Mover no canvas é edição pura; em execução mantemos posição imutável
+      // por consistência com "grafo estruturalmente imutável".
+      if (estado.modo === 'execucao') return estado;
+      return {
+        ...estado,
+        projeto: atualizarPeca(estado.projeto, acao.id, (p) => ({
+          ...p,
+          x: acao.x,
+          y: acao.y,
+        })),
+      };
+
+    case 'ADD_CONEXAO':
+      return {
+        ...estado,
+        projeto: {
+          ...estado.projeto,
+          conexoes: [...estado.projeto.conexoes, acao.conexao],
+        },
+      };
+
+    case 'REMOVER_CONEXAO':
+      return {
+        ...estado,
+        projeto: {
+          ...estado.projeto,
+          conexoes: estado.projeto.conexoes.filter((c) => c.id !== acao.id),
+        },
+      };
+
+    case 'ATUALIZAR_PROPS':
+      // Permitido em ambos os modos: ajustar valores (registro, thresholds,
+      // bomba manual) faz parte da operação em execução.
+      return {
+        ...estado,
+        projeto: atualizarPeca(estado.projeto, acao.id, (p) => ({
+          ...p,
+          props: { ...p.props, ...acao.props } as PropsPorTipo,
+        })),
+      };
+
+    case 'SELECIONAR':
+      return { ...estado, selecionada: acao.id };
+
+    case 'SET_NOME':
+      return { ...estado, projeto: { ...estado.projeto, nome: acao.nome } };
+
+    case 'SET_UNIDADES':
+      return {
+        ...estado,
+        projeto: { ...estado.projeto, unidades: acao.unidades },
+      };
+
+    case 'CARREGAR_PROJETO':
+      return { ...estadoInicial(acao.projeto) };
+
+    case 'ENTRAR_EXECUCAO': {
+      const validacao = validarGrafo(estado.projeto);
+      if (!validacao.ok) {
+        // Validação falhou → permanece em edição e exibe erros (seção 6).
+        return { ...estado, errosValidacao: validacao.erros };
+      }
+      return {
+        ...estado,
+        modo: 'execucao',
+        rodando: false,
+        tempo: 0,
+        errosValidacao: [],
+        snapshotEdicao: structuredClone(estado.projeto),
+      };
+    }
+
+    case 'SAIR_EXECUCAO':
+      // Exige pause primeiro (seção 6). Restaura o snapshot de edição para
+      // descartar valores gerados pela simulação.
+      if (estado.rodando) return estado;
+      return {
+        ...estado,
+        modo: 'edicao',
+        rodando: false,
+        vazoes: {},
+        overflow: [],
+        bombasASeco: [],
+        projeto: estado.snapshotEdicao ?? estado.projeto,
+        snapshotEdicao: null,
+      };
+
+    case 'PLAY':
+      if (estado.modo !== 'execucao') return estado;
+      return { ...estado, rodando: true };
+
+    case 'PAUSE':
+      return { ...estado, rodando: false };
+
+    case 'RESET':
+      if (estado.modo !== 'execucao') return estado;
+      return {
+        ...estado,
+        rodando: false,
+        tempo: 0,
+        vazoes: {},
+        overflow: [],
+        bombasASeco: [],
+        projeto: estado.snapshotEdicao ?? estado.projeto,
+      };
+
+    case 'SET_VELOCIDADE':
+      return { ...estado, velocidade: acao.velocidade };
+
+    case 'TICK': {
+      if (estado.modo !== 'execucao' || !estado.rodando) return estado;
+      // Controle de velocidade (seção 7): roda N ticks por frame, sem alterar
+      // o dt da física.
+      const r = rodarTicks(estado.projeto, estado.velocidade, estado.tempo);
+      return {
+        ...estado,
+        projeto: r.projeto,
+        vazoes: r.vazoes,
+        overflow: r.overflow,
+        bombasASeco: r.bombasASeco,
+        tempo: r.tempo,
+      };
+    }
+
+    default:
+      return estado;
+  }
+}
+
+// Pequenos seletores úteis para a UI.
+export const bombasDe = (p: ProjetoSimulacao): Peca[] => p.pecas.filter(isBomba);
+export const sensoresDe = (p: ProjetoSimulacao): Peca[] => p.pecas.filter(isSensor);
+export const tubosDe = (p: ProjetoSimulacao): Peca[] => p.pecas.filter(isTubo);
