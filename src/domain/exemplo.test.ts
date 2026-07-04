@@ -17,15 +17,17 @@ describe('projeto de exemplo (reservatórios empilhados)', () => {
     expect(cotas[0]! < cotas[1]! && cotas[1]! < cotas[2]!).toBe(true); // empilhados
   });
 
-  it('a bomba drena o reservatório inferior pela sucção', () => {
+  it('a fonte reabastece o reservatório inferior (bomba protegida a seco no nível inicial)', () => {
     const nivel = (proj: ReturnType<typeof projetoExemplo>, id: string): number => {
       const p = proj.pecas.find((x) => x.id === id)!;
       return isReservatorio(p) ? (p.props.nivel ?? 0) : 0;
     };
     const inicial = projetoExemplo();
-    const infAntes = nivel(inicial, 'inferior');
+    const infAntes = nivel(inicial, 'inferior'); // 2 m — abaixo da protecaoSeco (4)
     const r = rodarTicks(inicial, 600); // ~60 s de simulação
-    expect(nivel(r.projeto, 'inferior')).toBeLessThan(infAntes); // sucção puxa
+    // Com o inferior abaixo do limite de seco, a bomba fica desligada; a fonte
+    // (via boia) enche o inferior, então o nível SOBE.
+    expect(nivel(r.projeto, 'inferior')).toBeGreaterThan(infAntes);
   });
 
   it('simula sem gerar níveis inválidos (finitos e não-negativos)', () => {
@@ -36,9 +38,12 @@ describe('projeto de exemplo (reservatórios empilhados)', () => {
     }
   });
 
-  it('a bomba liga sozinha pelo sensor (superior começa abaixo do mínimo)', () => {
+  it('a bomba inicia protegida a seco (inferior abaixo do limite de proteção)', () => {
     const r = rodarTicks(projetoExemplo(), 1);
     const bomba = r.projeto.pecas.find((x) => x.id === 'bomba')!;
-    expect((bomba.props as { ligada?: boolean }).ligada).toBe(true);
+    // inferior = 2 m ≤ protecaoSeco (4) → a proteção a seco desliga a bomba,
+    // mesmo o sensor pedindo para ligar (superior abaixo do mínimo).
+    expect((bomba.props as { ligada?: boolean }).ligada).toBe(false);
+    expect(r.bombasASeco).toContain('bomba');
   });
 });
