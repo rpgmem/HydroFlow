@@ -5,6 +5,24 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 [SemVer](https://semver.org/lang/pt-BR/). As versões espelham os sprints da
 especificação técnica.
 
+## [1.4.0] — Navegação do canvas (pan e zoom)
+
+### Adicionado
+
+- **Pan e zoom no canvas**: arrastar o fundo para deslocar a vista, **pinça**
+  (dois dedos) no mobile e **rolagem do mouse** no desktop para ampliar/reduzir,
+  além de botões **＋ / － / ⤢ (ajustar à tela)**. Resolve o caso em que o
+  diagrama não cabe na tela do celular e parte das peças ficava inalcançável.
+- **Enquadramento automático** ao abrir: se o diagrama não couber na área
+  visível (típico no mobile), a vista já entra ajustada mostrando tudo; no
+  desktop, onde cabe, a escala 1× é preservada. O reenquadramento cessa assim
+  que o usuário mexe no zoom/pan.
+
+### Corrigido
+
+- A linha temporária de criação de conexão passa a usar coordenadas do conteúdo
+  (respeita zoom/pan) e o arraste de conexão não desloca mais o fundo junto.
+
 ## [1.3.0] — Uso no celular (ver e simular)
 
 ### Adicionado
