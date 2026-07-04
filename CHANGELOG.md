@@ -5,6 +5,25 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 [SemVer](https://semver.org/lang/pt-BR/). As versões espelham os sprints da
 especificação técnica.
 
+## [1.3.0] — Uso no celular (ver e simular)
+
+### Adicionado
+
+- **Layout responsivo para telas pequenas** (≤ 820 px): o canvas passa a ocupar
+  toda a área; a paleta de peças (edição) fica oculta; o inspetor vira uma
+  **gaveta deslizante** aberta por um botão flutuante ou ao tocar numa peça, com
+  fundo escurecido que fecha ao toque. Correção do overflow horizontal que
+  travava o canvas em largura fixa (`min-width: 0` no contêiner do Stage).
+- **Aviso no celular** de que a edição (adicionar e conectar peças) está
+  disponível apenas no computador — no mobile o foco é simular e inspecionar.
+
+### Alterado
+
+- **Projeto de exemplo**: os três reservatórios agora iniciam em **nível 2 m** e
+  o ponto de consumo usa **perfil senoidal** (0..5 L, período 60 s). Com o
+  inferior abaixo da proteção a seco, a bomba parte protegida e a fonte enche o
+  reservatório antes de a bomba operar.
+
 ## [1.2.0] — Ajustes de simulação e realismo
 
 ### Adicionado

@@ -15,9 +15,18 @@ export function App() {
   const [estado, dispatch] = useReducer(reducer, projetoExemplo(), estadoInicial);
   const [erroImport, setErroImport] = useState<string | null>(null);
   const [tamanho, setTamanho] = useState({ largura: 800, altura: 600 });
+  // Mobile: o inspetor é uma gaveta; abre ao selecionar uma peça (no desktop a
+  // classe não tem efeito visual, então o estado é inofensivo lá).
+  const [inspetorAberto, setInspetorAberto] = useState(false);
+  const [avisoVisivel, setAvisoVisivel] = useState(true);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useSimulationLoop(estado.rodando, dispatch);
+
+  // Selecionar uma peça abre a gaveta do inspetor (relevante só no mobile).
+  useEffect(() => {
+    if (estado.selecionada) setInspetorAberto(true);
+  }, [estado.selecionada]);
 
   // Mede a área central para dimensionar o Stage do konva.
   useEffect(() => {
@@ -34,18 +43,29 @@ export function App() {
   const emExecucao = estado.modo === 'execucao';
 
   return (
-    <div className="app">
+    <div className={`app${inspetorAberto ? ' inspetor-aberto' : ''}`}>
       <Toolbar estado={estado} dispatch={dispatch} onErroImport={setErroImport} />
       <div className="body">
         <Palette dispatch={dispatch} desabilitado={emExecucao} />
 
-        <div ref={wrapRef} style={{ minHeight: 0, position: 'relative' }}>
+        <div ref={wrapRef} style={{ minWidth: 0, minHeight: 0, position: 'relative' }}>
           <Canvas
             estado={estado}
             dispatch={dispatch}
             largura={tamanho.largura}
             altura={tamanho.altura}
           />
+          {avisoVisivel && (
+            <div className="aviso-desktop" role="note">
+              <span>
+                ✎ Edição (adicionar e conectar peças) disponível apenas no
+                computador — aqui você pode simular e inspecionar.
+              </span>
+              <button onClick={() => setAvisoVisivel(false)} aria-label="Fechar aviso">
+                ✕
+              </button>
+            </div>
+          )}
           {(estado.errosValidacao.length > 0 || erroImport) && (
             <div className="errors" role="alert">
               <strong>
@@ -75,6 +95,22 @@ export function App() {
           dispatch={dispatch}
         />
       </div>
+
+      {/* Mobile: backdrop fecha a gaveta; FAB abre o inspetor. */}
+      {inspetorAberto && (
+        <div
+          className="drawer-backdrop"
+          onClick={() => setInspetorAberto(false)}
+          aria-hidden
+        />
+      )}
+      <button
+        className="fab-inspetor primary"
+        onClick={() => setInspetorAberto((v) => !v)}
+        aria-label="Abrir inspetor de propriedades"
+      >
+        ⚙
+      </button>
 
       <footer className="rodape">
         <span>
