@@ -366,11 +366,12 @@ function ConsumoForm({
 }
 
 function FonteForm({ props, emExecucao, upd, u }: { props: PropsFonte; emExecucao: boolean; upd: Upd; u: UniLabel }) {
+  // A boia é uma válvula de NÍVEL que fica no cano/entrada do tanque — por isso
+  // ela é configurada no tubo, não na fonte externa (suprimento infinito). O
+  // motor ainda respeita uma `fonte.boia` de projetos antigos, mas não a expomos
+  // mais aqui para não confundir.
   return (
-    <>
-      <Num label="Vazão fixa" unidade={u.vazao} value={props.vazaoFixa} disabled={emExecucao} onChange={(v) => upd({ vazaoFixa: v })} />
-      <BoiaFields boia={props.boia} upd={upd} unidade={u.comp} />
-    </>
+    <Num label="Vazão fixa" unidade={u.vazao} value={props.vazaoFixa} disabled={emExecucao} onChange={(v) => upd({ vazaoFixa: v })} />
   );
 }
 
