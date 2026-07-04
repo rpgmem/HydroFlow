@@ -191,6 +191,17 @@ button.ativo {
   background: rgba(120, 20, 20, 0.9);
 }
 
+.inspetor-campos {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.inspetor-campos:disabled {
+  opacity: 0.75;
+}
+
 .field {
   margin-bottom: 10px;
 }

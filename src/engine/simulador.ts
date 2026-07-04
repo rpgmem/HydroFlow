@@ -60,6 +60,8 @@ export interface ResultadoTick {
   bombasASeco: string[];
   /** Tubos cuja boia está fechada neste tick (destino cheio). */
   boiasFechadas: string[];
+  /** Decisão corrente de cada sensor (id → 'ligar' | 'desligar' | 'manter'). */
+  sensores: Record<string, Decisao>;
   /** Tempo de simulação acumulado (s) após este tick. */
   tempo: number;
 }
@@ -198,11 +200,13 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
 
   // ---- (1) Sensores avaliam sobre o estado do tick anterior -------------
   const decisoesPorBomba = new Map<string, Decisao[]>();
+  const sensores: Record<string, Decisao> = {};
   for (const p of proj.pecas) {
     if (!isSensor(p)) continue;
     const resMon = reservatorioMonitorado(idx, p.id);
     const nivel = resMon?.props.nivel ?? 0;
     const decisao = avaliarSensor(p.props, nivel, tempoAtual);
+    sensores[p.id] = decisao;
     const lista = decisoesPorBomba.get(p.props.bombaAlvo) ?? [];
     lista.push(decisao);
     decisoesPorBomba.set(p.props.bombaAlvo, lista);
@@ -261,7 +265,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   // Persiste estado dos sensores (ultimaTroca / pedindoLigar) p/ delay.
   atualizarEstadoSensores(proj, idx, tempoFim);
 
-  return { projeto: proj, vazoes, overflow, bombasASeco, boiasFechadas, tempo: tempoFim };
+  return { projeto: proj, vazoes, overflow, bombasASeco, boiasFechadas, sensores, tempo: tempoFim };
 }
 
 // ---------------------------------------------------------------------------
@@ -510,6 +514,7 @@ export function rodarTicks(
     overflow: [],
     bombasASeco: [],
     boiasFechadas: [],
+    sensores: {},
     tempo,
   };
   for (let i = 0; i < n; i++) {

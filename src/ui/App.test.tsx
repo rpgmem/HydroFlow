@@ -150,6 +150,22 @@ describe('modo execução — validação e transição (Sprint 4)', () => {
     expect(screen.getByText('edicao')).toBeInTheDocument(); // permaneceu em edição
   });
 
+  it('campos do inspetor ficam somente-leitura em execução', () => {
+    render(<App />);
+    // Seleciona uma peça e confirma que o campo Nome é editável em edição.
+    const id = adicionar('Reservatório');
+    fireEvent.click(screen.getByTestId(`peca-${id}`));
+    expect(screen.getByLabelText('Nome')).not.toBeDisabled();
+    // Conecta a peça para o grafo ser válido e entra em execução.
+    const f = adicionar('Fonte');
+    fireEvent.mouseDown(screen.getByTestId(`port-out-${f}`));
+    fireEvent.mouseUp(screen.getByTestId(`peca-${id}`));
+    fireEvent.click(screen.getByTestId(`peca-${id}`));
+    fireEvent.click(screen.getByText('▶ Executar'));
+    // Em execução o campo fica desabilitado (fieldset disabled).
+    expect(screen.getByLabelText('Altura máxima')).toBeDisabled();
+  });
+
   it('exige pause antes de voltar à edição', () => {
     render(<App />);
     fireEvent.click(screen.getByText('▶ Executar'));

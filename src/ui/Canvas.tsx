@@ -119,6 +119,9 @@ export function Canvas({ estado, dispatch, largura, altura }: Props) {
             const q = Math.abs(estado.vazoes[c.origem] ?? estado.vazoes[c.destino] ?? 0);
             const ativa = emExecucao && q > 1e-6;
             const sel = estado.conexaoSelecionada === c.id;
+            // "Formigas marchando": o traço desloca com o tempo de simulação,
+            // dando uma indicação de fluxo constante enquanto está rodando.
+            const marcha = -(estado.tempo * 40) % 16;
             return (
               <Arrow
                 key={c.id}
@@ -126,6 +129,8 @@ export function Canvas({ estado, dispatch, largura, altura }: Props) {
                 stroke={sel ? '#f87171' : ativa ? '#22d3ee' : '#4a5f73'}
                 fill={sel ? '#f87171' : ativa ? '#22d3ee' : '#4a5f73'}
                 strokeWidth={sel ? 3.5 : ativa ? 3 : 1.5}
+                dash={ativa ? [10, 6] : undefined}
+                dashOffset={ativa ? marcha : 0}
                 hitStrokeWidth={14}
                 pointerLength={8}
                 pointerWidth={8}
@@ -162,6 +167,7 @@ export function Canvas({ estado, dispatch, largura, altura }: Props) {
               overflow={overflowSet.has(peca.id)}
               aSeco={secoSet.has(peca.id)}
               boiaFechada={boiaFechadaSet.has(peca.id)}
+              sensorEstado={emExecucao ? estado.sensores[peca.id] : undefined}
               onSelect={() => dispatch({ tipo: 'SELECIONAR', id: peca.id })}
               onMove={(x, y) => dispatch({ tipo: 'MOVER_PECA', id: peca.id, x, y })}
               onStartConnection={iniciarConexao}

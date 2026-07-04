@@ -421,6 +421,30 @@ describe('arbitragem de bombas', () => {
     expect(avaliarSensor(s, 2, 0)).toBe('manter'); // banda morta (histerese)
   });
 
+  it('expõe a decisão corrente de cada sensor (para a UI colorir)', () => {
+    const r = tick(
+      projeto(
+        [
+          res('BAIXO', { nivel: 0.5 }),
+          res('CHEIO', { nivel: 4.5 }),
+          res('MEIO', { nivel: 2 }),
+          bomba('P', { ligada: true }),
+          sensor('SL', { bombaAlvo: 'P', nivelMinimo: 1, nivelMaximo: 4 }),
+          sensor('SD', { bombaAlvo: 'P', nivelMinimo: 1, nivelMaximo: 4 }),
+          sensor('SM', { bombaAlvo: 'P', nivelMinimo: 1, nivelMaximo: 4 }),
+        ],
+        [
+          criarConexao('SL', 'BAIXO'),
+          criarConexao('SD', 'CHEIO'),
+          criarConexao('SM', 'MEIO'),
+        ],
+      ),
+    );
+    expect(r.sensores['SL']).toBe('ligar'); // nível baixo
+    expect(r.sensores['SD']).toBe('desligar'); // nível alto
+    expect(r.sensores['SM']).toBe('manter'); // banda morta
+  });
+
   it('integração: um sensor mandando desligar vence outro mandando ligar', () => {
     const r = tick(
       projeto(

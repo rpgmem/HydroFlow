@@ -44,16 +44,27 @@ interface Props {
   overflow: boolean;
   aSeco: boolean;
   boiaFechada: boolean;
+  /** Decisão corrente do sensor ('ligar'|'desligar'|'manter'), se em execução. */
+  sensorEstado?: string;
   onSelect: () => void;
   onMove: (x: number, y: number) => void;
   onStartConnection: (id: string) => void;
   onEndConnection: (id: string) => void;
 }
 
-// Cores de estado de válvula: verde = aberto, vermelho = fechado.
+// Cores de estado. Registro: verde = aberto, vermelho = fechado.
+// Boia: amarelo = aberta (enchendo/atenção), vermelho = fechada (destino cheio).
 const COR_ABERTO = '#34d399';
 const COR_FECHADO = '#f87171';
-const COR_BOIA_EDICAO = '#38bdf8'; // em edição o estado da boia é dinâmico
+const COR_BOIA_ABERTA = '#fbbf24';
+
+// Sensor: verde = atuando p/ ligar, vermelho = atuando p/ desligar,
+// amarelo = esperando (banda morta). Sem simulação usa a cor padrão do sensor.
+const COR_SENSOR: Record<string, string> = {
+  ligar: '#34d399',
+  desligar: '#f87171',
+  manter: '#fbbf24',
+};
 
 const COR: Record<Peca['tipo'], string> = {
   reservatorio: '#1e3a52',
@@ -73,6 +84,7 @@ export function PecaView({
   overflow,
   aSeco,
   boiaFechada,
+  sensorEstado,
   onSelect,
   onMove,
   onStartConnection,
@@ -115,11 +127,17 @@ export function PecaView({
           borda={borda}
           larguraBorda={larguraBorda}
           vazao={vazao}
-          emExecucao={emExecucao}
           boiaFechada={boiaFechada}
         />
-      ) : peca.tipo === 'sensor' || peca.tipo === 'juncao' ? (
-        <Circle radius={w / 2} fill={COR[peca.tipo]} stroke={borda} strokeWidth={larguraBorda} />
+      ) : peca.tipo === 'sensor' ? (
+        <Circle
+          radius={w / 2}
+          fill={sensorEstado ? (COR_SENSOR[sensorEstado] ?? COR.sensor) : COR.sensor}
+          stroke={borda}
+          strokeWidth={larguraBorda}
+        />
+      ) : peca.tipo === 'juncao' ? (
+        <Circle radius={w / 2} fill={COR.juncao} stroke={borda} strokeWidth={larguraBorda} />
       ) : peca.tipo === 'consumo' ? (
         // Triângulo apontando para baixo (dreno/saída).
         <Line
@@ -179,8 +197,7 @@ export function PecaView({
 /**
  * Tubo com indicador de válvula:
  *  - registro → quadrado verde (aberto) / vermelho (fechado);
- *  - boia → círculo verde (aberta) / vermelho (fechada) em execução; azul em
- *    edição (o estado da boia depende do nível, conhecido só na simulação).
+ *  - boia → círculo amarelo (aberta) / vermelho (fechada).
  */
 function TuboView({
   props,
@@ -189,7 +206,6 @@ function TuboView({
   borda,
   larguraBorda,
   vazao,
-  emExecucao,
   boiaFechada,
 }: {
   props: PropsTubo;
@@ -198,7 +214,6 @@ function TuboView({
   borda: string;
   larguraBorda: number;
   vazao: number | undefined;
-  emExecucao: boolean;
   boiaFechada: boolean;
 }) {
   const fluindo = vazao !== undefined && Math.abs(vazao) > 1e-9;
@@ -216,10 +231,10 @@ function TuboView({
         strokeWidth={larguraBorda}
       />
       {props.boia ? (
-        // Boia = círculo (float). Verde aberta / vermelho fechada (execução).
+        // Boia = círculo (float). Amarelo aberta / vermelho fechada.
         <Circle
           radius={6}
-          fill={emExecucao ? (boiaFechada ? COR_FECHADO : COR_ABERTO) : COR_BOIA_EDICAO}
+          fill={boiaFechada ? COR_FECHADO : COR_BOIA_ABERTA}
           stroke="#0d1620"
           strokeWidth={1}
         />

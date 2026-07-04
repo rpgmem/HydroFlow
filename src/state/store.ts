@@ -16,6 +16,7 @@
 import type { ErroValidacao } from '../domain/schema';
 import { validarGrafo } from '../engine/validacaoGrafo';
 import { rodarTicks } from '../engine/simulador';
+import type { Decisao } from '../engine/arbitragem';
 import {
   isBomba,
   isSensor,
@@ -41,6 +42,7 @@ export interface EstadoApp {
   overflow: string[];
   bombasASeco: string[];
   boiasFechadas: string[];
+  sensores: Record<string, Decisao>;
   /** id da peça selecionada no inspetor (ou null). */
   selecionada: string | null;
   /** id da conexão selecionada (para exclusão), ou null. */
@@ -82,6 +84,7 @@ export function estadoInicial(projeto: ProjetoSimulacao): EstadoApp {
     overflow: [],
     bombasASeco: [],
     boiasFechadas: [],
+    sensores: {},
     selecionada: null,
     conexaoSelecionada: null,
     snapshotEdicao: null,
@@ -236,6 +239,7 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
         overflow: [],
         bombasASeco: [],
         boiasFechadas: [],
+        sensores: {},
         projeto: estado.snapshotEdicao ?? estado.projeto,
         snapshotEdicao: null,
       };
@@ -257,6 +261,7 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
         overflow: [],
         bombasASeco: [],
         boiasFechadas: [],
+        sensores: {},
         projeto: estado.snapshotEdicao ?? estado.projeto,
       };
 
@@ -275,6 +280,7 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
         overflow: r.overflow,
         bombasASeco: r.bombasASeco,
         boiasFechadas: r.boiasFechadas,
+        sensores: r.sensores,
         tempo: r.tempo,
       };
     }

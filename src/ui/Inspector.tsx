@@ -94,27 +94,37 @@ export function Inspector({ peca, projeto, emExecucao, dispatch }: Props) {
         {peca.tipo} <span className="telemetry">#{peca.id}</span>
       </h3>
 
-      <div className="field">
-        <label>Nome</label>
-        <input
-          type="text"
-          aria-label="Nome"
-          placeholder={peca.id}
-          value={peca.rotulo ?? ''}
-          onChange={(e) =>
-            dispatch({ tipo: 'RENOMEAR_PECA', id: peca.id, rotulo: e.target.value })
-          }
-        />
-      </div>
-
-      {isReservatorio(peca) && (
-        <ReservatorioForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />
+      {emExecucao && (
+        <p className="telemetry" style={{ marginTop: 0 }}>
+          Somente leitura durante a execução. Volte à edição para alterar valores.
+        </p>
       )}
-      {isTubo(peca) && <TuboForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
-      {isBomba(peca) && <BombaForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
-      {isFonte(peca) && <FonteForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
-      {isConsumo(peca) && <ConsumoForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
-      {isSensor(peca) && <SensorForm props={peca.props} projeto={projeto} upd={upd} u={u} />}
+
+      {/* Em execução tudo fica desabilitado: evita a falsa sensação de edição
+          (os valores são restaurados ao voltar para a edição). */}
+      <fieldset className="inspetor-campos" disabled={emExecucao}>
+        <div className="field">
+          <label>Nome</label>
+          <input
+            type="text"
+            aria-label="Nome"
+            placeholder={peca.id}
+            value={peca.rotulo ?? ''}
+            onChange={(e) =>
+              dispatch({ tipo: 'RENOMEAR_PECA', id: peca.id, rotulo: e.target.value })
+            }
+          />
+        </div>
+
+        {isReservatorio(peca) && (
+          <ReservatorioForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />
+        )}
+        {isTubo(peca) && <TuboForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
+        {isBomba(peca) && <BombaForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
+        {isFonte(peca) && <FonteForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
+        {isConsumo(peca) && <ConsumoForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
+        {isSensor(peca) && <SensorForm props={peca.props} projeto={projeto} upd={upd} u={u} />}
+      </fieldset>
 
       {!emExecucao && (
         <button
