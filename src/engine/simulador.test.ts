@@ -320,11 +320,42 @@ describe('boia em tubo alimentado por fonte', () => {
     expect(b.nivel!).toBeGreaterThan(0.5); // encheu
   });
 
+  it('atribui a vazão ao cano atravessado pela fonte (para animar o fluxo)', () => {
+    const r = tick(cenario(0.5)); // fluindo
+    expect(r.vazoes['T']).toBe(5); // o tubo reporta a vazão que a fonte empurra
+  });
+
   it('tubo alimentado por fonte não drena o reservatório por conta própria', () => {
     // Sem a fonte empurrando (fonte fechada por boia cheia), o reservatório
     // não pode perder água pelo tubo de montante.
     const r = tick(cenario(3));
     expect(r.vazoes['T']).toBe(0);
+  });
+});
+
+// ===========================================================================
+// Boia (válvula de nível) num tubo ENTRE reservatórios (fluxo por gravidade)
+// ===========================================================================
+describe('boia em tubo entre reservatórios', () => {
+  const cenario = (nivelB: number) =>
+    projeto(
+      [
+        res('A', { cotaBase: 10, nivel: 5 }), // alto e cheio
+        tubo('T', { diametro: 0.1, boia: { nivelMinimo: 1, nivelMaximo: 2 } }),
+        res('B', { cotaBase: 0, nivel: nivelB, alturaMaxima: 5 }),
+      ],
+      [criarConexao('A', 'T'), criarConexao('T', 'B')],
+    );
+
+  it('fecha o tubo quando o destino atinge o máximo', () => {
+    expect(tick(cenario(2)).vazoes['T']).toBe(0); // 2 ≥ máximo
+    expect(tick(cenario(0)).vazoes['T']).toBeGreaterThan(0); // vazio → flui
+  });
+
+  it('não deixa o destino ultrapassar o nível da boia ao longo do tempo', () => {
+    const r = rodarTicks(cenario(0), 500);
+    const b = r.projeto.pecas.find((x) => x.id === 'B')!.props as PropsReservatorio;
+    expect(b.nivel!).toBeLessThanOrEqual(2.05); // segurou perto do máximo (2)
   });
 });
 

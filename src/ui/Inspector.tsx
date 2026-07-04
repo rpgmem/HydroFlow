@@ -156,18 +156,22 @@ function ReservatorioForm({
 }
 
 function TuboForm({ props, emExecucao, upd }: { props: PropsTubo; emExecucao: boolean; upd: Upd }) {
+  const temBoia = props.boia !== undefined;
   return (
     <>
       <Num label="Diâmetro" value={props.diametro} disabled={emExecucao} step={0.01} onChange={(v) => upd({ diametro: v })} />
-      <label className="checkbox">
-        <input
-          type="checkbox"
-          checked={props.registro?.aberto ?? true}
-          aria-label="Registro aberto"
-          onChange={(e) => upd({ registro: { aberto: e.target.checked } })}
-        />
-        Registro aberto
-      </label>
+      {/* Com boia, o registro manual perde o sentido (a boia governa a abertura). */}
+      {!temBoia && (
+        <label className="checkbox">
+          <input
+            type="checkbox"
+            checked={props.registro?.aberto ?? true}
+            aria-label="Registro aberto"
+            onChange={(e) => upd({ registro: { aberto: e.target.checked } })}
+          />
+          Registro aberto
+        </label>
+      )}
       <label className="checkbox" style={{ marginTop: 8 }}>
         <input
           type="checkbox"
@@ -178,7 +182,8 @@ function TuboForm({ props, emExecucao, upd }: { props: PropsTubo; emExecucao: bo
         />
         Check valve (anti-refluxo)
       </label>
-      <BoiaFields boia={props.boia} upd={upd} />
+      {/* Ao ativar a boia, garante o registro aberto para a boia poder operar. */}
+      <BoiaFields boia={props.boia} upd={upd} aoAtivar={{ registro: { aberto: true } }} />
     </>
   );
 }
@@ -188,7 +193,15 @@ function TuboForm({ props, emExecucao, upd }: { props: PropsTubo; emExecucao: bo
  * de destino: fecha ao encher (nível ≥ máximo), abre ao baixar (nível ≤ mínimo).
  * Sem histerese/delay (isso é exclusivo do sensor eletrônico).
  */
-function BoiaFields({ boia, upd }: { boia: NivelControle | undefined; upd: Upd }) {
+function BoiaFields({
+  boia,
+  upd,
+  aoAtivar = {},
+}: {
+  boia: NivelControle | undefined;
+  upd: Upd;
+  aoAtivar?: Record<string, unknown>;
+}) {
   const ativa = boia !== undefined;
   return (
     <>
@@ -198,7 +211,11 @@ function BoiaFields({ boia, upd }: { boia: NivelControle | undefined; upd: Upd }
           checked={ativa}
           aria-label="Boia (válvula de nível)"
           onChange={(e) =>
-            upd({ boia: e.target.checked ? { nivelMinimo: 0, nivelMaximo: 1 } : undefined })
+            upd(
+              e.target.checked
+                ? { boia: { nivelMinimo: 0, nivelMaximo: 1 }, ...aoAtivar }
+                : { boia: undefined },
+            )
           }
         />
         Boia (válvula de nível)

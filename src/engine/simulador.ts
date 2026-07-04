@@ -142,12 +142,12 @@ class GrafoIndex {
     start: string,
     dir: 'up' | 'down',
     visitado = new Set<string>(),
-  ): { res: PecaDe<'reservatorio'> | null; aberto: boolean } {
-    if (visitado.has(start)) return { res: null, aberto: true };
+  ): { res: PecaDe<'reservatorio'> | null; aberto: boolean; tubos: string[] } {
+    if (visitado.has(start)) return { res: null, aberto: true, tubos: [] };
     visitado.add(start);
     const peca = this.porId.get(start);
-    if (!peca) return { res: null, aberto: true };
-    if (isReservatorio(peca)) return { res: peca, aberto: true };
+    if (!peca) return { res: null, aberto: true, tubos: [] };
+    if (isReservatorio(peca)) return { res: peca, aberto: true, tubos: [] };
 
     const arestas = dir === 'up' ? this.entrada.get(start) : this.saida.get(start);
     for (const c of arestas ?? []) {
@@ -155,7 +155,9 @@ class GrafoIndex {
       const sub = this.resolverFluxo(prox, dir, visitado);
       if (!sub.res) continue;
       let aberto = sub.aberto;
+      const tubos = sub.tubos;
       if (isTubo(peca)) {
+        tubos.push(peca.id); // cano atravessado por este caminho de fluxo
         if (peca.props.registro && !peca.props.registro.aberto) {
           aberto = false; // registro fechado
         } else if (
@@ -166,9 +168,9 @@ class GrafoIndex {
           aberto = false; // boia fechada (destino cheio)
         }
       }
-      return { res: sub.res, aberto };
+      return { res: sub.res, aberto, tubos };
     }
-    return { res: null, aberto: true };
+    return { res: null, aberto: true, tubos: [] };
   }
 }
 
@@ -224,15 +226,19 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   const fluxos: FluxoResolvido[] = [];
   const vazoes: Record<string, number> = {};
 
+  // Elementos ATIVOS primeiro: além da própria vazão, anotam a vazão nos tubos
+  // em série pelos quais empurram a água (para a telemetria/animação refletir o
+  // fluxo que passa por esses canos).
   for (const p of proj.pecas) {
-    if (isTubo(p)) {
+    if (isBomba(p)) vazoes[p.id] = calcularBomba(idx, p, fluxos, vazoes);
+    else if (isFonte(p)) vazoes[p.id] = calcularFonte(idx, p, fluxos, vazoes);
+    else if (isConsumo(p)) vazoes[p.id] = calcularConsumo(idx, p, fluxos, vazoes);
+  }
+  // Tubos por gravidade: só os que ainda não foram atribuídos por um elemento
+  // ativo (um cano alimentado por fonte/bomba tem sua vazão dada pelo driver).
+  for (const p of proj.pecas) {
+    if (isTubo(p) && vazoes[p.id] === undefined) {
       vazoes[p.id] = calcularTubo(idx, p, g, fluxos);
-    } else if (isBomba(p)) {
-      vazoes[p.id] = calcularBomba(idx, p, fluxos);
-    } else if (isFonte(p)) {
-      vazoes[p.id] = calcularFonte(idx, p, fluxos);
-    } else if (isConsumo(p)) {
-      vazoes[p.id] = calcularConsumo(idx, p, fluxos);
     }
   }
 
@@ -292,10 +298,16 @@ function calcularTubo(
   return -q; // sinal indica sentido reverso na telemetria
 }
 
+/** Anota a vazão de um caminho nos tubos em série (telemetria/animação). */
+function anotarTubos(vazoes: Record<string, number>, tubos: string[], q: number): void {
+  for (const t of tubos) vazoes[t] = (vazoes[t] ?? 0) + q;
+}
+
 function calcularBomba(
   idx: GrafoIndex,
   bomba: PecaDe<'bomba'>,
   fluxos: FluxoResolvido[],
+  vazoes: Record<string, number>,
 ): number {
   if (!bomba.props.ligada) return 0;
 
@@ -328,9 +340,11 @@ function calcularBomba(
 
     if (q > 0) {
       fluxos.push({ origem: up.id, destino: down.id, vazao: q });
+      anotarTubos(vazoes, dp.tubos, q); // canos de recalque desta saída
       total += q;
     }
   }
+  if (total > 0) anotarTubos(vazoes, upPath.tubos, total); // canos de sucção
   return total;
 }
 
@@ -338,6 +352,7 @@ function calcularFonte(
   idx: GrafoIndex,
   fonte: PecaDe<'fonte'>,
   fluxos: FluxoResolvido[],
+  vazoes: Record<string, number>,
 ): number {
   const saidas = idx.saida.get(fonte.id) ?? [];
   if (saidas.length === 0) return 0;
@@ -362,6 +377,7 @@ function calcularFonte(
     }
     if (q > 0) {
       fluxos.push({ origem: null, destino: down.id, vazao: q });
+      anotarTubos(vazoes, dp.tubos, q); // canos entre a fonte e o destino
       total += q;
     }
   }
@@ -372,6 +388,7 @@ function calcularConsumo(
   idx: GrafoIndex,
   consumo: PecaDe<'consumo'>,
   fluxos: FluxoResolvido[],
+  vazoes: Record<string, number>,
 ): number {
   if (consumo.props.aberto === false) return 0; // saída fechada
   const cp = idx.resolverFluxo(consumo.id, 'up');
@@ -380,7 +397,10 @@ function calcularConsumo(
   const q = Math.max(0, consumo.props.vazaoDemanda);
   // destino null → volume sai do grafo (descartado); a limitação pelo volume
   // disponível é aplicada em aplicarFluxos (escala de saídas).
-  if (q > 0) fluxos.push({ origem: up.id, destino: null, vazao: q });
+  if (q > 0) {
+    fluxos.push({ origem: up.id, destino: null, vazao: q });
+    anotarTubos(vazoes, cp.tubos, q); // canos entre o reservatório e o consumo
+  }
   return q;
 }
 
