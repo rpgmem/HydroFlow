@@ -25,6 +25,23 @@ export function _resetContadorIds(): void {
   contador = 0;
 }
 
+/**
+ * Avança o contador para além do maior sufixo numérico presente nos ids do
+ * projeto. Deve ser chamado ao carregar/iniciar um projeto para que os ids
+ * gerados depois (ex.: ao adicionar peças/conexões) NUNCA colidam com os que já
+ * existem — foi essa colisão que gerava conexões com id duplicado.
+ */
+export function sincronizarContador(projeto: ProjetoSimulacao): void {
+  let maior = contador;
+  const considerar = (id: string): void => {
+    const m = /(\d+)$/.exec(id);
+    if (m) maior = Math.max(maior, Number(m[1]));
+  };
+  for (const p of projeto.pecas) considerar(p.id);
+  for (const c of projeto.conexoes) considerar(c.id);
+  contador = maior;
+}
+
 export function projetoVazio(nome = 'Novo Projeto'): ProjetoSimulacao {
   return {
     nome,

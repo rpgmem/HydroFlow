@@ -17,6 +17,7 @@ import type { ErroValidacao } from '../domain/schema';
 import { validarGrafo } from '../engine/validacaoGrafo';
 import { rodarTicks } from '../engine/simulador';
 import type { Decisao } from '../engine/arbitragem';
+import { sincronizarContador } from '../domain/factory';
 import {
   isBomba,
   isSensor,
@@ -76,6 +77,9 @@ export type Acao =
   | { tipo: 'TICK' };
 
 export function estadoInicial(projeto: ProjetoSimulacao): EstadoApp {
+  // Evita ids duplicados: alinha o contador aos ids já presentes no projeto
+  // (início e carregamento — CARREGAR_PROJETO passa por aqui).
+  sincronizarContador(projeto);
   return {
     projeto,
     modo: 'edicao',

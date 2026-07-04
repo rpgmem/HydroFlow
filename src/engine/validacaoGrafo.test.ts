@@ -22,6 +22,16 @@ describe('validação de grafo — bloqueios', () => {
     if (!r.ok) expect(r.erros.some((e) => e.mensagem.includes('órfã'))).toBe(true);
   });
 
+  it('rejeita ids de conexão duplicados', () => {
+    const a = criarPeca('reservatorio', 0, 0, 'A');
+    const b = criarPeca('reservatorio', 0, 0, 'B');
+    const c1 = criarConexao('A', 'B');
+    const c2 = { ...criarConexao('A', 'B'), id: c1.id }; // mesmo id
+    const r = validarGrafo(proj([a, b], [c1, c2]));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.erros.some((e) => e.mensagem.includes('id de conexão duplicado'))).toBe(true);
+  });
+
   it('rejeita aresta com origem/destino inexistente', () => {
     const r = criarPeca('reservatorio', 0, 0, 'R1');
     const res = validarGrafo(proj([r], [criarConexao('R1', 'FANTASMA')]));
