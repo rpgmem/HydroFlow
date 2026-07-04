@@ -250,7 +250,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   for (const p of proj.pecas) {
     if (isBomba(p)) vazoesM3[p.id] = calcularBomba(idx, p, g, u, fluxos, vazoesM3);
     else if (isFonte(p)) vazoesM3[p.id] = calcularFonte(idx, p, u, fluxos, vazoesM3);
-    else if (isConsumo(p)) vazoesM3[p.id] = calcularConsumo(idx, p, g, u, fluxos, vazoesM3);
+    else if (isConsumo(p)) vazoesM3[p.id] = calcularConsumo(idx, p, g, u, tempoAtual, fluxos, vazoesM3);
   }
   // Tubos por gravidade / ladrão: só os que ainda não foram atribuídos por um
   // elemento ativo (um cano alimentado por fonte/bomba tem sua vazão dada pelo
@@ -381,28 +381,29 @@ function calcularBomba(
   const kL = metrosPorComprimento(u);
   const hUp = cargaM(up, kL);
 
-  // Uma bomba pode alimentar múltiplas saídas (ex.: recalque para dois
-  // reservatórios). A vazão nominal é dividida entre elas — por `vazaoAlocada`
-  // se informada, senão igualmente — espelhando a lógica da fonte multi-destino.
-  const saidas = idx.saida.get(bomba.id) ?? [];
-  const n = saidas.length;
-  if (n === 0) return 0; // bomba sem recalque não move nada
   void g; // a bomba é forçada (não usa Torricelli); g mantém a assinatura uniforme
 
-  let total = 0;
-  for (const c of saidas) {
-    // Caminho fechado (registro/boia) ou sem reservatório a jusante → aquela
-    // saída não conduz nada.
-    const dp = idx.resolverFluxo(c.destino, 'down');
-    if (!dp.res || !dp.aberto) continue;
-    const liftM = cargaM(dp.res, kL) - hUp; // carga (m) a vencer nesta saída
+  // Uma bomba pode alimentar múltiplas saídas (ex.: recalque para dois
+  // reservatórios). Primeiro descobrimos quais saídas estão realmente ABERTAS
+  // (registro/boia/destino) — a vazão nominal é dividida só entre elas. Assim,
+  // fechar uma saída NÃO desperdiça sua parcela: a bomba manda a vazão cheia
+  // pelas saídas que restam.
+  const abertas = (idx.saida.get(bomba.id) ?? [])
+    .map((c) => ({ c, dp: idx.resolverFluxo(c.destino, 'down') }))
+    .filter((x) => x.dp.res && x.dp.aberto);
+  const m = abertas.length;
+  if (m === 0) return 0; // nenhuma saída aberta → bomba não move nada
 
-    const base = n > 1 ? (c.vazaoAlocada ?? bomba.props.vazaoNominal / n) : bomba.props.vazaoNominal;
+  let total = 0;
+  for (const { c, dp } of abertas) {
+    const down = dp.res!;
+    const liftM = cargaM(down, kL) - hUp; // carga (m) a vencer nesta saída
+    const base = c.vazaoAlocada ?? bomba.props.vazaoNominal / m;
     const qUser = bomba.props.curva ? base - bomba.props.curva.k * liftM : base;
     const q = vazaoParaM3(Math.max(0, qUser), u); // bomba não gera vazão negativa
 
     if (q > 0) {
-      fluxos.push({ origem: up.id, destino: dp.res.id, vazao: q });
+      fluxos.push({ origem: up.id, destino: down.id, vazao: q });
       anotarTubos(vazoes, dp.tubos, q); // canos de recalque desta saída
       total += q;
     }
@@ -449,11 +450,33 @@ function calcularFonte(
   return total;
 }
 
+/**
+ * Demanda de um consumo no instante `tempo`, conforme o perfil (na unidade do
+ * usuário). Determinístico — sem aleatoriedade — para manter o motor testável.
+ */
+function demandaConsumo(props: PecaDe<'consumo'>['props'], tempo: number): number {
+  const perfil = props.perfil ?? 'fixo';
+  if (perfil === 'fixo') return Math.max(0, props.vazaoDemanda);
+
+  const min = Math.max(0, props.vazaoMin ?? 0);
+  const max = Math.max(min, props.vazaoMax ?? props.vazaoDemanda);
+  const periodo = props.periodo && props.periodo > 0 ? props.periodo : 60;
+
+  if (perfil === 'senoidal') {
+    return min + (max - min) * (0.5 + 0.5 * Math.sin((2 * Math.PI * tempo) / periodo));
+  }
+  // intermitente: onda quadrada (ligado em `max` durante `cicloLigado` do período).
+  const duty = Math.min(1, Math.max(0, props.cicloLigado ?? 0.5));
+  const fase = (((tempo % periodo) + periodo) % periodo) / periodo;
+  return fase < duty ? max : min;
+}
+
 function calcularConsumo(
   idx: GrafoIndex,
   consumo: PecaDe<'consumo'>,
   g: number,
   u: Unidades,
+  tempo: number,
   fluxos: FluxoResolvido[],
   vazoes: Record<string, number>,
 ): number {
@@ -463,7 +486,7 @@ function calcularConsumo(
   const up = cp.res;
   const kL = metrosPorComprimento(u);
 
-  let q = vazaoParaM3(Math.max(0, consumo.props.vazaoDemanda), u);
+  let q = vazaoParaM3(demandaConsumo(consumo.props, tempo), u);
   // Realismo: a saída é limitada pela CAPACIDADE do cano mais estreito no
   // caminho (Torricelli pelo diâmetro e pela carga). Canos finos estrangulam.
   if (cp.tubos.length > 0) {

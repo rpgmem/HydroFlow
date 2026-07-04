@@ -10,11 +10,16 @@ import type {
   Peca,
   ProjetoSimulacao,
   PropsBomba,
+  PropsConsumo,
   PropsFonte,
   PropsReservatorio,
   PropsSensor,
   PropsTubo,
 } from '../domain/types';
+
+function consumo(id: string, props: PropsConsumo): Peca {
+  return { id, tipo: 'consumo', x: 0, y: 0, props };
+}
 
 beforeEach(() => _resetContadorIds());
 
@@ -199,6 +204,35 @@ describe('bomba', () => {
       ),
     );
     expect(r.vazoes['P']).toBeCloseTo(9, 9); // 3 + 6
+  });
+
+  it('manda a vazão cheia pela saída aberta quando a outra está fechada', () => {
+    const r = tick(
+      projeto(
+        [
+          res('A', { nivel: 5 }),
+          res('B', {}),
+          res('C', {}),
+          bomba('P', { ligada: true, vazaoNominal: 8 }),
+          tubo('rec_b', { registro: { aberto: false } }), // saída para B fechada
+          tubo('rec_c', { registro: { aberto: true } }),
+        ],
+        [
+          criarConexao('A', 'P'),
+          criarConexao('P', 'rec_b'),
+          criarConexao('rec_b', 'B'),
+          criarConexao('P', 'rec_c'),
+          criarConexao('rec_c', 'C'),
+        ],
+      ),
+    );
+    // C (única saída aberta) recebe os 8 inteiros — a saída fechada não
+    // desperdiça metade da vazão.
+    expect(r.vazoes['P']).toBeCloseTo(8, 9);
+    const b = r.projeto.pecas.find((x) => x.id === 'B')!.props as PropsReservatorio;
+    const c = r.projeto.pecas.find((x) => x.id === 'C')!.props as PropsReservatorio;
+    expect(b.nivel ?? 0).toBe(0); // B não recebe nada
+    expect(c.nivel!).toBeCloseTo((8 * 0.1) / 100, 9);
   });
 
   it('registro fechado num cano de recalque em série interrompe a bomba', () => {
@@ -465,6 +499,56 @@ describe('consumo', () => {
     const cap = area * Math.sqrt(2 * 9.81 * 1);
     expect(r.vazoes['C']).toBeCloseTo(cap, 9);
     expect(r.vazoes['C']).toBeLessThan(1); // muito abaixo da demanda
+  });
+
+  it('perfil senoidal varia entre mínimo e máximo ao longo do tempo', () => {
+    const mk = (t: number) =>
+      tick(
+        projeto(
+          [
+            res('A', { nivel: 5 }),
+            consumo('C', {
+              vazaoDemanda: 0,
+              aberto: true,
+              perfil: 'senoidal',
+              vazaoMin: 1,
+              vazaoMax: 3,
+              periodo: 4,
+            }),
+          ],
+          [criarConexao('A', 'C')],
+        ),
+        t,
+      ).vazoes['C']!;
+    expect(mk(0)).toBeCloseTo(2, 6); // meio (sin 0)
+    expect(mk(1)).toBeCloseTo(3, 6); // máximo (sin π/2)
+    expect(mk(3)).toBeCloseTo(1, 6); // mínimo (sin 3π/2)
+  });
+
+  it('perfil intermitente liga/desliga conforme o ciclo', () => {
+    const mk = (t: number) =>
+      tick(
+        projeto(
+          [
+            res('A', { nivel: 5 }),
+            consumo('C', {
+              vazaoDemanda: 0,
+              aberto: true,
+              perfil: 'intermitente',
+              vazaoMin: 0,
+              vazaoMax: 5,
+              periodo: 10,
+              cicloLigado: 0.3,
+            }),
+          ],
+          [criarConexao('A', 'C')],
+        ),
+        t,
+      ).vazoes['C']!;
+    expect(mk(0)).toBe(5); // fase 0 < 0.3 → ligado
+    expect(mk(2)).toBe(5); // fase 0.2 < 0.3 → ligado
+    expect(mk(5)).toBe(0); // fase 0.5 ≥ 0.3 → desligado
+    expect(mk(9)).toBe(0); // fase 0.9 → desligado
   });
 });
 

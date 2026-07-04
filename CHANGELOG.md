@@ -5,6 +5,36 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 [SemVer](https://semver.org/lang/pt-BR/). As versões espelham os sprints da
 especificação técnica.
 
+## [1.2.0] — Ajustes de simulação e realismo
+
+### Adicionado
+
+- **Perfis de consumo** no ponto de saída: além da vazão **fixa**, agora há
+  **senoidal** (variação suave entre mínimo/máximo por período) e
+  **intermitente** (liga/desliga por ciclo de trabalho), modelando demanda
+  irregular de forma determinística no tempo.
+- **Detecção de ids duplicados** (peças e conexões) na validação de grafo: a
+  entrada em execução é bloqueada com mensagem clara se houver colisão.
+- Novo **projeto de exemplo padrão** do usuário: três reservatórios cilíndricos
+  empilhados, bomba com **curva** (`vazaoNominal − k·Δh`) e **proteção a seco**,
+  três **tubos ladrão** (superior/meio/inferior), **boia manual** e **bypass**,
+  todos com diâmetros em milímetros e ids de conexão únicos.
+
+### Corrigido
+
+- **Sucção da bomba não esvaziava a origem**: a vazão nominal era dividida entre
+  **todas** as saídas (desperdiçando a parte destinada a ramos fechados). Agora a
+  divisão considera **apenas as saídas abertas**, então o cano de sucção puxa a
+  vazão cheia e o reservatório de origem realmente esvazia.
+- **Ids duplicados após carregar um projeto**: `sincronizarContador` alinha o
+  contador de ids aos sufixos já presentes ao iniciar/carregar, evitando que
+  peças/conexões criadas depois colidam com as existentes.
+
+### Removido
+
+- Opção de **boia / válvula de nível das propriedades da Fonte externa** — esse
+  controle pertence ao **cano**, não à fonte, e gerava configuração ambígua.
+
 ## [1.1.0] — Feedback pós-uso
 
 ### Adicionado

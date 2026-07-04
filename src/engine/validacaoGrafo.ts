@@ -82,6 +82,23 @@ export function validarGrafo(
   const erros: ErroValidacao[] = [];
   const pecasPorId = new Map(projeto.pecas.map((p) => [p.id, p]));
 
+  // ---- Ids duplicados (peças e conexões) -------------------------------
+  const duplicados = (ids: string[]): string[] => {
+    const vistos = new Set<string>();
+    const dups = new Set<string>();
+    for (const id of ids) {
+      if (vistos.has(id)) dups.add(id);
+      else vistos.add(id);
+    }
+    return [...dups];
+  };
+  for (const id of duplicados(projeto.pecas.map((p) => p.id))) {
+    erros.push({ caminho: `pecas[${id}]`, mensagem: `id de peça duplicado: "${id}"` });
+  }
+  for (const id of duplicados(projeto.conexoes.map((c) => c.id))) {
+    erros.push({ caminho: `conexoes[${id}]`, mensagem: `id de conexão duplicado: "${id}"` });
+  }
+
   // ---- Arestas com origem/destino inexistentes -------------------------
   for (const c of projeto.conexoes) {
     if (!pecasPorId.has(c.origem)) {
