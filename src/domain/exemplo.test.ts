@@ -17,18 +17,23 @@ describe('projeto de exemplo (reservatórios empilhados)', () => {
     expect(cotas[0]! < cotas[1]! && cotas[1]! < cotas[2]!).toBe(true); // empilhados
   });
 
-  it('a bomba enche o reservatório do meio E o superior (saída dividida)', () => {
+  it('a água chega ao reservatório do meio (bomba → superior → bypass → meio)', () => {
     const nivel = (proj: ReturnType<typeof projetoExemplo>, id: string): number => {
       const p = proj.pecas.find((x) => x.id === id)!;
       return isReservatorio(p) ? (p.props.nivel ?? 0) : 0;
     };
     const inicial = projetoExemplo();
     const meioAntes = nivel(inicial, 'meio');
-    const supAntes = nivel(inicial, 'superior');
-
-    const r = rodarTicks(inicial, 200); // ~20 s de simulação
+    const r = rodarTicks(inicial, 600); // ~60 s de simulação
     expect(nivel(r.projeto, 'meio')).toBeGreaterThan(meioAntes);
-    expect(nivel(r.projeto, 'superior')).toBeGreaterThan(supAntes);
+  });
+
+  it('simula sem gerar níveis inválidos (finitos e não-negativos)', () => {
+    const r = rodarTicks(projetoExemplo(), 1000);
+    for (const p of r.projeto.pecas.filter(isReservatorio)) {
+      expect(Number.isFinite(p.props.nivel ?? 0)).toBe(true);
+      expect(p.props.nivel ?? 0).toBeGreaterThanOrEqual(0);
+    }
   });
 
   it('a bomba liga sozinha pelo sensor (superior começa abaixo do mínimo)', () => {
