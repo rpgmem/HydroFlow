@@ -250,7 +250,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   for (const p of proj.pecas) {
     if (isBomba(p)) vazoesM3[p.id] = calcularBomba(idx, p, g, u, fluxos, vazoesM3);
     else if (isFonte(p)) vazoesM3[p.id] = calcularFonte(idx, p, u, fluxos, vazoesM3);
-    else if (isConsumo(p)) vazoesM3[p.id] = calcularConsumo(idx, p, g, u, fluxos, vazoesM3);
+    else if (isConsumo(p)) vazoesM3[p.id] = calcularConsumo(idx, p, g, u, tempoAtual, fluxos, vazoesM3);
   }
   // Tubos por gravidade / ladrão: só os que ainda não foram atribuídos por um
   // elemento ativo (um cano alimentado por fonte/bomba tem sua vazão dada pelo
@@ -450,11 +450,33 @@ function calcularFonte(
   return total;
 }
 
+/**
+ * Demanda de um consumo no instante `tempo`, conforme o perfil (na unidade do
+ * usuário). Determinístico — sem aleatoriedade — para manter o motor testável.
+ */
+function demandaConsumo(props: PecaDe<'consumo'>['props'], tempo: number): number {
+  const perfil = props.perfil ?? 'fixo';
+  if (perfil === 'fixo') return Math.max(0, props.vazaoDemanda);
+
+  const min = Math.max(0, props.vazaoMin ?? 0);
+  const max = Math.max(min, props.vazaoMax ?? props.vazaoDemanda);
+  const periodo = props.periodo && props.periodo > 0 ? props.periodo : 60;
+
+  if (perfil === 'senoidal') {
+    return min + (max - min) * (0.5 + 0.5 * Math.sin((2 * Math.PI * tempo) / periodo));
+  }
+  // intermitente: onda quadrada (ligado em `max` durante `cicloLigado` do período).
+  const duty = Math.min(1, Math.max(0, props.cicloLigado ?? 0.5));
+  const fase = (((tempo % periodo) + periodo) % periodo) / periodo;
+  return fase < duty ? max : min;
+}
+
 function calcularConsumo(
   idx: GrafoIndex,
   consumo: PecaDe<'consumo'>,
   g: number,
   u: Unidades,
+  tempo: number,
   fluxos: FluxoResolvido[],
   vazoes: Record<string, number>,
 ): number {
@@ -464,7 +486,7 @@ function calcularConsumo(
   const up = cp.res;
   const kL = metrosPorComprimento(u);
 
-  let q = vazaoParaM3(Math.max(0, consumo.props.vazaoDemanda), u);
+  let q = vazaoParaM3(demandaConsumo(consumo.props, tempo), u);
   // Realismo: a saída é limitada pela CAPACIDADE do cano mais estreito no
   // caminho (Torricelli pelo diâmetro e pela carga). Canos finos estrangulam.
   if (cp.tubos.length > 0) {

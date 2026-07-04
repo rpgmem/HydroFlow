@@ -104,10 +104,23 @@ export interface PropsFonte {
 // consumo — ponto de saída/demanda: retira água do reservatório de origem a uma
 // vazão configurável e a descarta (sem destino no grafo). É o oposto da Fonte.
 export interface PropsConsumo {
-  /** Vazão de saída desejada (limitada pelo que houver disponível). */
+  /** Vazão de saída no perfil 'fixo' (limitada pelo que houver disponível). */
   vazaoDemanda: number;
   /** Controle manual on/off da saída. */
   aberto?: boolean;
+  /**
+   * Perfil de consumo ao longo do tempo. 'fixo' = constante; 'senoidal' = varia
+   * suavemente entre min e max; 'intermitente' = liga/desliga (onda quadrada).
+   * Determinístico em função do tempo de simulação.
+   */
+  perfil?: 'fixo' | 'senoidal' | 'intermitente';
+  /** Perfis variáveis: vazão mínima e máxima. */
+  vazaoMin?: number;
+  vazaoMax?: number;
+  /** Período do ciclo, em segundos (perfis variáveis). */
+  periodo?: number;
+  /** Intermitente: fração do período com a saída ligada (0..1). */
+  cicloLigado?: number;
 }
 
 export type PropsSensor = NivelControle & {

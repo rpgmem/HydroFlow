@@ -343,15 +343,42 @@ function ConsumoForm({
   upd: Upd;
   u: UniLabel;
 }) {
+  const perfil = props.perfil ?? 'fixo';
   return (
     <>
-      <Num
-        label="Vazão de saída"
-        unidade={u.vazao}
-        value={props.vazaoDemanda}
-        disabled={emExecucao}
-        onChange={(v) => upd({ vazaoDemanda: v })}
-      />
+      <div className="field">
+        <label>Perfil de consumo</label>
+        <select
+          value={perfil}
+          disabled={emExecucao}
+          aria-label="Perfil de consumo"
+          onChange={(e) => upd({ perfil: e.target.value })}
+        >
+          <option value="fixo">Fixo (constante)</option>
+          <option value="senoidal">Senoidal (varia entre mín. e máx.)</option>
+          <option value="intermitente">Intermitente (liga/desliga)</option>
+        </select>
+      </div>
+
+      {perfil === 'fixo' ? (
+        <Num
+          label="Vazão de saída"
+          unidade={u.vazao}
+          value={props.vazaoDemanda}
+          disabled={emExecucao}
+          onChange={(v) => upd({ vazaoDemanda: v })}
+        />
+      ) : (
+        <>
+          <Num label="Vazão mínima" unidade={u.vazao} value={props.vazaoMin ?? 0} disabled={emExecucao} onChange={(v) => upd({ vazaoMin: v })} />
+          <Num label="Vazão máxima" unidade={u.vazao} value={props.vazaoMax ?? props.vazaoDemanda} disabled={emExecucao} onChange={(v) => upd({ vazaoMax: v })} />
+          <Num label="Período (s)" value={props.periodo ?? 60} disabled={emExecucao} step={1} onChange={(v) => upd({ periodo: v })} />
+          {perfil === 'intermitente' && (
+            <Num label="Ciclo ligado (0 a 1)" value={props.cicloLigado ?? 0.5} disabled={emExecucao} step={0.05} onChange={(v) => upd({ cicloLigado: v })} />
+          )}
+        </>
+      )}
+
       <label className="checkbox">
         <input
           type="checkbox"
