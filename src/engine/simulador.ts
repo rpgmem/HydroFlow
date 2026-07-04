@@ -130,6 +130,46 @@ class GrafoIndex {
     }
     return null;
   }
+
+  /**
+   * Resolve o caminho de FLUXO de um condutor ativo (bomba/fonte/consumo) até o
+   * reservatório, informando também se o caminho está ABERTO. Um caminho fecha
+   * quando um tubo em série tem o registro fechado OU uma boia fechada. A boia é
+   * mecânica: monitora o reservatório de destino (fecha ao encher) — por isso só
+   * é avaliada no sentido 'down' (empurrando água para o destino).
+   */
+  resolverFluxo(
+    start: string,
+    dir: 'up' | 'down',
+    visitado = new Set<string>(),
+  ): { res: PecaDe<'reservatorio'> | null; aberto: boolean } {
+    if (visitado.has(start)) return { res: null, aberto: true };
+    visitado.add(start);
+    const peca = this.porId.get(start);
+    if (!peca) return { res: null, aberto: true };
+    if (isReservatorio(peca)) return { res: peca, aberto: true };
+
+    const arestas = dir === 'up' ? this.entrada.get(start) : this.saida.get(start);
+    for (const c of arestas ?? []) {
+      const prox = dir === 'up' ? c.origem : c.destino;
+      const sub = this.resolverFluxo(prox, dir, visitado);
+      if (!sub.res) continue;
+      let aberto = sub.aberto;
+      if (isTubo(peca)) {
+        if (peca.props.registro && !peca.props.registro.aberto) {
+          aberto = false; // registro fechado
+        } else if (
+          peca.props.boia &&
+          dir === 'down' &&
+          !boiaAberta(peca.props.boia, sub.res.props.nivel ?? 0, true)
+        ) {
+          aberto = false; // boia fechada (destino cheio)
+        }
+      }
+      return { res: sub.res, aberto };
+    }
+    return { res: null, aberto: true };
+  }
 }
 
 /** Reservatório que um sensor/boia monitora: o reservatório a ele conectado. */
@@ -220,10 +260,13 @@ function calcularTubo(
 
   const up = idx.resolverReservatorio(tubo.id, 'up', true);
   const down = idx.resolverReservatorio(tubo.id, 'down', true);
-  if (!up && !down) return 0;
+  // Sem reservatório a montante não há coluna d'água que gere fluxo por
+  // gravidade. Se o lado de montante é uma fonte/bomba (não-reservatório), quem
+  // move a água é esse elemento ativo — o tubo não deve inventar refluxo.
+  if (!up) return 0;
 
-  const hUp = up ? carga(up) : 0;
-  const hDown = down ? carga(down) : 0;
+  const hUp = carga(up);
+  const hDown = down ? carga(down) : 0; // destino ausente = saída ao ambiente (cota 0)
   const deltaH = hUp - hDown;
 
   // Boia mecânica: monitora o reservatório de destino (fecha quando cheio).
@@ -240,12 +283,12 @@ function calcularTubo(
 
   if (deltaH > 0) {
     // Fluxo natural origem→destino.
-    fluxos.push({ origem: up?.id ?? null, destino: down?.id ?? null, vazao: q });
+    fluxos.push({ origem: up.id, destino: down?.id ?? null, vazao: q });
     return q;
   }
   // deltaH < 0 → refluxo destino→origem, bloqueado por checkValve.
   if (checkValve) return 0;
-  fluxos.push({ origem: down?.id ?? null, destino: up?.id ?? null, vazao: q });
+  fluxos.push({ origem: down?.id ?? null, destino: up.id, vazao: q });
   return -q; // sinal indica sentido reverso na telemetria
 }
 
@@ -256,10 +299,11 @@ function calcularBomba(
 ): number {
   if (!bomba.props.ligada) return 0;
 
-  // Fonte de sucção respeitando registros fechados: sem origem alcançável, a
-  // bomba não move nada (ex.: registro do cano de sucção fechado).
-  const up = idx.resolverReservatorio(bomba.id, 'up', true);
-  if (!up) return 0;
+  // Fonte de sucção respeitando válvulas em série (registro/boia). Sem origem
+  // alcançável ou com o caminho fechado, a bomba não move nada.
+  const upPath = idx.resolverFluxo(bomba.id, 'up');
+  if (!upPath.res || !upPath.aberto) return 0;
+  const up = upPath.res;
   const hUp = carga(up);
 
   // Uma bomba pode alimentar múltiplas saídas (ex.: recalque para dois
@@ -271,10 +315,11 @@ function calcularBomba(
 
   let total = 0;
   for (const c of saidas) {
-    // Destino inalcançável (registro fechado no cano de recalque, ou sem
-    // reservatório a jusante) → aquela saída não conduz nada.
-    const down = idx.resolverReservatorio(c.destino, 'down', true);
-    if (!down) continue;
+    // Caminho fechado (registro/boia) ou sem reservatório a jusante → aquela
+    // saída não conduz nada.
+    const dp = idx.resolverFluxo(c.destino, 'down');
+    if (!dp.res || !dp.aberto) continue;
+    const down = dp.res;
     const lift = carga(down) - hUp; // carga que a bomba precisa vencer nesta saída
 
     const base = n > 1 ? (c.vazaoAlocada ?? bomba.props.vazaoNominal / n) : bomba.props.vazaoNominal;
@@ -299,16 +344,17 @@ function calcularFonte(
 
   let total = 0;
   for (const c of saidas) {
-    // Destino inalcançável (registro fechado no caminho) → não abastece.
-    const down = idx.resolverReservatorio(c.destino, 'down', true);
-    if (!down) continue;
+    // Caminho fechado (registro OU boia de um tubo em série) → não abastece.
+    const dp = idx.resolverFluxo(c.destino, 'down');
+    if (!dp.res || !dp.aberto) continue;
+    const down = dp.res;
     // Múltiplos destinos: usa vazaoAlocada; destino único usa vazaoFixa.
     const qAlvo =
       saidas.length > 1
         ? (c.vazaoAlocada ?? 0)
         : (c.vazaoAlocada ?? fonte.props.vazaoFixa);
 
-    // Boia da fonte: fecha quando o destino está cheio.
+    // Boia da própria fonte: fecha quando o destino está cheio.
     let q = qAlvo;
     if (fonte.props.boia) {
       const aberta = boiaAberta(fonte.props.boia, down.props.nivel ?? 0, true);
@@ -328,8 +374,9 @@ function calcularConsumo(
   fluxos: FluxoResolvido[],
 ): number {
   if (consumo.props.aberto === false) return 0; // saída fechada
-  const up = idx.resolverReservatorio(consumo.id, 'up', true);
-  if (!up) return 0; // sem reservatório de origem (ou registro fechado no caminho)
+  const cp = idx.resolverFluxo(consumo.id, 'up');
+  if (!cp.res || !cp.aberto) return 0; // sem origem, ou registro fechado no caminho
+  const up = cp.res;
   const q = Math.max(0, consumo.props.vazaoDemanda);
   // destino null → volume sai do grafo (descartado); a limitação pelo volume
   // disponível é aplicada em aplicarFluxos (escala de saídas).

@@ -293,6 +293,42 @@ describe('bomba a seco', () => {
 });
 
 // ===========================================================================
+// Boia (válvula de nível) num tubo entre a fonte e o reservatório
+// ===========================================================================
+describe('boia em tubo alimentado por fonte', () => {
+  const cenario = (nivelDestino: number) =>
+    projeto(
+      [
+        fonte('F', { vazaoFixa: 5 }),
+        tubo('T', { boia: { nivelMinimo: 0, nivelMaximo: 2 } }),
+        res('B', { nivel: nivelDestino }),
+      ],
+      [criarConexao('F', 'T'), criarConexao('T', 'B')],
+    );
+
+  it('boia fecha o abastecimento quando o destino atinge o máximo', () => {
+    const r = tick(cenario(3)); // 3 ≥ máximo 2 → fecha
+    expect(r.vazoes['F']).toBe(0);
+    const b = r.projeto.pecas.find((x) => x.id === 'B')!.props as PropsReservatorio;
+    expect(b.nivel!).toBeCloseTo(3, 9); // nem enche nem drena
+  });
+
+  it('boia aberta deixa a fonte abastecer normalmente', () => {
+    const r = tick(cenario(0.5)); // abaixo do máximo → abre
+    expect(r.vazoes['F']).toBe(5);
+    const b = r.projeto.pecas.find((x) => x.id === 'B')!.props as PropsReservatorio;
+    expect(b.nivel!).toBeGreaterThan(0.5); // encheu
+  });
+
+  it('tubo alimentado por fonte não drena o reservatório por conta própria', () => {
+    // Sem a fonte empurrando (fonte fechada por boia cheia), o reservatório
+    // não pode perder água pelo tubo de montante.
+    const r = tick(cenario(3));
+    expect(r.vazoes['T']).toBe(0);
+  });
+});
+
+// ===========================================================================
 // Ponto de consumo (saída de água sem destino)
 // ===========================================================================
 describe('consumo', () => {
