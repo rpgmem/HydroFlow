@@ -520,7 +520,15 @@ function calcularBomba(
     let destino: string | null;
     if (dp.res) {
       const liftM = cargaM(dp.res, kL) - hUp; // carga (m) a vencer nesta saída
-      qUser = bomba.props.curva ? base - bomba.props.curva.k * liftM : base;
+      // Curva: `alturaNominal` (plaquinha) deriva o k automaticamente e tem
+      // precedência; senão usa o `curva.k` explícito; senão bomba ideal (k=0).
+      const kEff =
+        bomba.props.alturaNominal && bomba.props.alturaNominal > 0
+          ? bomba.props.vazaoNominal / bomba.props.alturaNominal
+          : bomba.props.curva
+            ? bomba.props.curva.k
+            : 0;
+      qUser = base - kEff * liftM;
       destino = dp.res.id;
     } else {
       // Saída para consumo: a bomba entrega a MENOR entre a sua vazão (parcela) e

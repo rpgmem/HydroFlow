@@ -80,6 +80,11 @@ export function projetoExemplo(): ProjetoSimulacao {
         portas: ['entrada', 'saida'],
         props: {
           vazaoNominal: 50,
+          // Altura nominal de recalque 40 m: a curva é derivada e a altura real
+          // da instalação (~16–21 m até o superior) reduz a vazão sozinha, para
+          // ~24–30 L/s. Ainda alto para os recalques DN60 (segue o alerta de
+          // velocidade), mas mostra o efeito da altura.
+          alturaNominal: 40,
           sensores: ['sensor_sup', 'sensor_inf'],
           ligada: false,
           revezamento: true,
@@ -128,7 +133,7 @@ export function projetoExemplo(): ProjetoSimulacao {
         rotulo: 'Boia Eletrônica (inferior)',
       },
       tubo('boia_manual', 'Boia Manual', 360, 578, { bitola: 'DN110', diametro: 97.8, registro: { aberto: true }, boia: { nivelMinimo: 6, nivelMaximo: 8.5 }, alturaSaida: 8.5 }),
-      tubo('bypass', 'bypass Boia Manual', 600, 248.44477836213346, { bitola: 'DN32', diametro: 27.8, registro: { aberto: true }, boia: { nivelMinimo: 4, nivelMaximo: 5.5 }, alturaEntrada: 4, alturaSaida: 4 }),
+      tubo('bypass', 'bypass Boia Manual', 600, 248.44477836213346, { bitola: 'DN32', diametro: 27.8, registro: { aberto: true }, boia: { nivelMinimo: 4, nivelMaximo: 5.5 }, alturaEntrada: 2, alturaSaida: 6 }),
       tubo('ladrao_sup', 'Ladrão (superior)', 360, 134, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true }, ladrao: { nivel: 6.5 } }),
       tubo('ladrao_meio', 'Ladrão (meio)', 360, 278.77685950413223, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true }, ladrao: { nivel: 6.5 } }),
       tubo('ladrao_inf', 'Ladrão (inferior)', 360, 522, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true }, ladrao: { nivel: 9 } }),

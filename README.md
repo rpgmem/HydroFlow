@@ -126,7 +126,7 @@ interface NivelControle {
 | --- | --- |
 | `reservatorio` | `formato` (`cilindro`\|`retangular`), `raio?`/`largura?`/`comprimento?`, `alturaMaxima`, `cotaBase`, `nivel?` |
 | `tubo` | `diametro` (**mm**, interno — usado no cálculo de vazão), `bitola?` (DN pré-configurado do catálogo; grava o diâmetro interno tabelado), `checkValve?`, `registro?: {aberto}`, `boia?: NivelControle`, `ladrao?: {nivel}` (dreno de transbordo), `alturaEntrada?`/`alturaSaida?` (altura da conexão em cada ponta, relativa à base; default 0) |
-| `bomba` | `vazaoNominal`, `curva?: {k}`, `sensores: string[]`, `modoControle?` (`auto`\|`ligado`\|`desligado`), `ligada?`, `revezamento?` (dupla alternada: metades "1"/"2" que se revezam a cada acionamento) |
+| `bomba` | `vazaoNominal`, `alturaNominal?` (altura de recalque; deriva a curva — a altura reduz a vazão), `curva?: {k}` (curva explícita; legado), `sensores: string[]`, `modoControle?` (`auto`\|`ligado`\|`desligado`), `ligada?`, `revezamento?` (dupla alternada: metades "1"/"2" que se revezam a cada acionamento) |
 | `fonte` | `vazaoFixa`, `boia?: NivelControle` |
 | `consumo` | `vazaoDemanda`, `aberto?`, `perfil?` (`fixo`\|`senoidal`\|`intermitente`), `vazaoMin?`/`vazaoMax?`/`periodo?` (perfil variável) — ponto de saída/demanda; retira água e descarta |
 | `sensor` | `NivelControle & { bombasAlvo: string[] }` — controla **uma ou mais** bombas; `reversa` inverte a lógica (liga no máximo, desliga no mínimo) |
@@ -143,8 +143,11 @@ Fórmulas implementadas em `src/engine/simulador.ts`:
   `v = √(2·g·Δh)`, `A = π·(diametro/2)²`, `Q = A·v`.
 - **Carga hidráulica** — `Δh = (cotaBase + nivel)origem − (cotaBase + nivel)destino`
   (sempre a carga total; **nunca** só o nível bruto).
-- **Bomba** — `Q = vazaoNominal` (sem curva) ou `Q = vazaoNominal − k·Δh_lift`
-  (com curva). Sentido **forçado** pela conexão, independe do Δh natural; `Q ≥ 0`.
+- **Bomba** — `Q = vazaoNominal` (ideal) ou, com **altura nominal**,
+  `Q = vazaoNominal·(1 − Δh_lift / alturaNominal)` — a curva é derivada e a altura
+  de recalque reduz a vazão automaticamente (entrega a nominal a 0 m, zera na
+  altura nominal). Um `curva.k` explícito (`Q = vazaoNominal − k·Δh_lift`) é
+  mantido por compatibilidade. Sentido **forçado** pela conexão; `Q ≥ 0`.
   Com **múltiplas saídas**, a vazão nominal é dividida entre elas (por
   `vazaoAlocada` se informada, senão igualmente). A bomba pode empurrar direto
   para um **consumo**: entrega `min(vazão da bomba, demanda do consumo)` — se a

@@ -384,13 +384,21 @@ function BombaForm({ props, emExecucao, upd, u }: { props: PropsBomba; emExecuca
   return (
     <>
       <Num label="Vazão nominal" unidade={u.vazao} value={props.vazaoNominal} disabled={emExecucao} onChange={(v) => upd({ vazaoNominal: v })} />
+      {/* Altura nominal deriva a curva automaticamente; entre dois reservatórios
+          a altura real da instalação reduz a vazão. Projetos antigos com `curva.k`
+          aparecem aqui como a altura equivalente (vazaoNominal/k). */}
       <Num
-        label="Curva k (0 = sem curva)"
-        value={props.curva?.k ?? 0}
+        label="Altura nominal de recalque"
+        unidade="m"
+        value={props.alturaNominal ?? (props.curva && props.curva.k > 0 ? props.vazaoNominal / props.curva.k : 0)}
         disabled={emExecucao}
-        step={0.1}
-        onChange={(v) => upd({ curva: v > 0 ? { k: v } : undefined })}
+        step={0.5}
+        onChange={(v) => upd({ alturaNominal: v > 0 ? v : undefined, curva: undefined })}
       />
+      <p className="telemetry" style={{ marginTop: -4 }}>
+        Entrega a vazão nominal a 0 m e zera nesta altura; entre dois reservatórios
+        a altura real reduz a vazão automaticamente. 0 = bomba ideal (ignora a altura).
+      </p>
       <div className="field">
         <label>Controle da bomba</label>
         <select

@@ -233,6 +233,36 @@ describe('bomba', () => {
     expect(r.vazoes['P']).toBeCloseTo(5, 6); // 10 - 1·5
   });
 
+  it('altura nominal deriva a curva (a altura de recalque reduz a vazão sozinha)', () => {
+    const r = tick(
+      projeto(
+        [
+          res('A', { cotaBase: 0, nivel: 5 }), // carga 5
+          res('B', { cotaBase: 10, nivel: 0 }), // carga 10 → lift 5
+          // alturaNominal 20 → k = 10/20 = 0,5; lift 5 → Q = 10·(1 − 5/20) = 7,5.
+          bomba('P', { ligada: true, vazaoNominal: 10, alturaNominal: 20 }),
+        ],
+        [criarConexao('A', 'P'), criarConexao('P', 'B')],
+      ),
+    );
+    expect(r.vazoes['P']).toBeCloseTo(7.5, 6);
+  });
+
+  it('altura nominal tem precedência sobre curva.k explícita', () => {
+    const r = tick(
+      projeto(
+        [
+          res('A', { cotaBase: 0, nivel: 5 }),
+          res('B', { cotaBase: 10, nivel: 0 }), // lift 5
+          bomba('P', { ligada: true, vazaoNominal: 10, alturaNominal: 20, curva: { k: 5 } }),
+        ],
+        [criarConexao('A', 'P'), criarConexao('P', 'B')],
+      ),
+    );
+    // Usa a alturaNominal (Q=7,5), não o curva.k=5 (que daria 10−25 → 0).
+    expect(r.vazoes['P']).toBeCloseTo(7.5, 6);
+  });
+
   it('nunca gera vazão negativa (curva satura em 0)', () => {
     const r = tick(
       projeto(
