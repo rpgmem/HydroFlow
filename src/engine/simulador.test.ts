@@ -320,6 +320,45 @@ describe('bomba', () => {
     expect(r.vazoes['P']).toBe(0);
   });
 
+  describe('modo de controle (Automático / Ligado / Desligado)', () => {
+    it("'desligado' força a bomba parada mesmo com sensor pedindo ligar", () => {
+      const r = tick(
+        projeto(
+          [
+            res('A', { nivel: 5 }),
+            res('B', { nivel: 0 }),
+            bomba('P', { ligada: true, modoControle: 'desligado' }),
+            sensor('S', { bombaAlvo: 'P', nivelMinimo: 3, nivelMaximo: 4 }),
+          ],
+          [criarConexao('A', 'P'), criarConexao('P', 'B'), criarConexao('S', 'B')],
+        ),
+      );
+      expect(r.vazoes['P']).toBe(0);
+      expect((r.projeto.pecas.find((x) => x.id === 'P')!.props as PropsBomba).ligada).toBe(false);
+    });
+
+    it("'ligado' força a bomba a funcionar sem sensor", () => {
+      const r = tick(
+        projeto(
+          [res('A', { nivel: 5 }), res('B', {}), bomba('P', { modoControle: 'ligado', vazaoNominal: 8, protecaoSeco: 0 })],
+          [criarConexao('A', 'P'), criarConexao('P', 'B')],
+        ),
+      );
+      expect(r.vazoes['P']).toBeCloseTo(8, 9);
+    });
+
+    it("'ligado' ainda respeita a proteção a seco", () => {
+      const r = tick(
+        projeto(
+          [res('A', { nivel: 1 }), res('B', {}), bomba('P', { modoControle: 'ligado', protecaoSeco: 2 })],
+          [criarConexao('A', 'P'), criarConexao('P', 'B')],
+        ),
+      );
+      expect(r.bombasASeco).toContain('P');
+      expect(r.vazoes['P']).toBe(0);
+    });
+  });
+
   describe('bomba empurrando para consumo', () => {
     // A(reservatório) → suc → P(bomba) → C(consumo)
     const cenario = (demanda: number, ligada: boolean, vazaoNominal = 10) =>

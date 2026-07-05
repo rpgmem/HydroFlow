@@ -255,17 +255,22 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     decisoesPorBomba.set(p.props.bombaAlvo, lista);
   }
 
-  // ---- (2) Arbitragem de bombas + proteção contra seco -----------------
+  // ---- (2) Controle de bombas (modo) + arbitragem + proteção contra seco --
   const bombasASeco: string[] = [];
   for (const p of proj.pecas) {
     if (!isBomba(p)) continue;
-    const decisoes = decisoesPorBomba.get(p.id) ?? [];
-    let ligada = arbitrarBomba(decisoes, p.props.ligada ?? false);
+    const modo = p.props.modoControle ?? 'auto';
+    // 'ligado'/'desligado' forçam o estado (o botão manual); 'auto' segue os
+    // sensores. A proteção a seco vale em qualquer modo que resulte em ligada.
+    let ligada: boolean;
+    if (modo === 'ligado') ligada = true;
+    else if (modo === 'desligado') ligada = false;
+    else ligada = arbitrarBomba(decisoesPorBomba.get(p.id) ?? [], p.props.ligada ?? false);
 
     const origem = idx.resolverReservatorio(p.id, 'up');
     const limiteSeco = p.props.protecaoSeco ?? 0;
     if (ligada && origem && (origem.props.nivel ?? 0) <= limiteSeco) {
-      ligada = false; // bomba a seco: desliga independentemente dos sensores
+      ligada = false; // bomba a seco: desliga mesmo forçada em 'ligado'
       bombasASeco.push(p.id);
     }
     p.props.ligada = ligada;

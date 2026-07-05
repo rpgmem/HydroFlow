@@ -9,6 +9,11 @@ especificação técnica.
 
 ### Adicionado
 
+- **Controle da bomba** com modo **Automático / Ligado / Desligado** (seletor nas
+  propriedades da bomba): Automático segue o sensor; Ligado força a bomba a
+  funcionar (ainda respeitando a proteção a seco); Desligado a mantém parada. É o
+  "botão" liga/desliga/automático — substitui o antigo checkbox manual.
+
 - **Bomba pode empurrar para um ponto de consumo** (ex.: bomba de incêndio →
   hidrantes). A bomba entrega a MENOR entre a sua vazão e a demanda do consumo:
   se a demanda é menor, entrega a demanda; se é maior, entrega a sua vazão (não
