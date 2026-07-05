@@ -548,6 +548,52 @@ describe('boia em tubo entre reservatórios', () => {
   });
 });
 
+describe('boia reversa (corte por nível baixo, monitora a origem)', () => {
+  it('gravidade: protege a origem — drena só até o mínimo da boia e para', () => {
+    const p = projeto(
+      [
+        res('A', { cotaBase: 5, nivel: 5, largura: 1, comprimento: 1 }), // origem
+        tubo('T', { diametro: 200, boia: { nivelMinimo: 2, nivelMaximo: 4, reversa: true } }),
+        res('B', { cotaBase: 0, nivel: 0 }),
+      ],
+      [criarConexao('A', 'T'), criarConexao('T', 'B')],
+    );
+    const r = rodarTicks(p, 4000);
+    const a = r.projeto.pecas.find((x) => x.id === 'A')!.props as PropsReservatorio;
+    expect(a.nivel!).toBeGreaterThan(1.9);
+    expect(a.nivel!).toBeLessThan(2.1); // parou no mínimo (~2), não esvaziou
+  });
+
+  it('sucção da bomba: fecha quando a origem cai ao mínimo (não roda em seco)', () => {
+    const cenario = (nivelA: number) =>
+      projeto(
+        [
+          res('A', { nivel: nivelA }),
+          tubo('T', { diametro: 100, boia: { nivelMinimo: 2, nivelMaximo: 4, reversa: true } }),
+          bomba('P', { ligada: true, vazaoNominal: 5, protecaoSeco: 0 }),
+          { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: 5, aberto: true } },
+        ],
+        [criarConexao('A', 'T'), criarConexao('T', 'P'), criarConexao('P', 'C')],
+      );
+    expect(tick(cenario(5)).vazoes['P']).toBeCloseTo(5, 9); // origem alta → puxa
+    expect(tick(cenario(1)).vazoes['P']).toBe(0); // origem no mínimo → boia fecha
+  });
+
+  it('reporta a boia reversa fechada quando a origem está baixa (UI)', () => {
+    const mk = (nivelA: number) =>
+      projeto(
+        [
+          res('A', { nivel: nivelA }),
+          tubo('T', { diametro: 100, boia: { nivelMinimo: 2, nivelMaximo: 4, reversa: true } }),
+          res('B', { cotaBase: 0, nivel: 0 }),
+        ],
+        [criarConexao('A', 'T'), criarConexao('T', 'B')],
+      );
+    expect(tick(mk(1)).boiasFechadas).toContain('T'); // origem baixa → fechada
+    expect(tick(mk(5)).boiasFechadas).not.toContain('T'); // origem alta → aberta
+  });
+});
+
 // ===========================================================================
 // Tubo ladrão (dreno de transbordo)
 // ===========================================================================

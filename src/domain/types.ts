@@ -46,6 +46,13 @@ export interface NivelControle {
   histerese?: boolean;
   /** Só sensor eletrônico: tempo mínimo (s) entre liga/desliga. */
   delay?: number;
+  /**
+   * Só boia de tubo: lógica REVERSA (corte por nível baixo). Em vez de monitorar
+   * o destino e fechar quando cheio, monitora o reservatório de ORIGEM e FECHA no
+   * nível mínimo (reabre no máximo). Protege um reservatório de esvaziar / desliga
+   * a bomba de um reservatório para hidrantes quando ele baixa.
+   */
+  reversa?: boolean;
 }
 
 // ---------------------------------------------------------------------------

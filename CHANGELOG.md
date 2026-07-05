@@ -5,6 +5,16 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 [SemVer](https://semver.org/lang/pt-BR/). As versões espelham os sprints da
 especificação técnica.
 
+## [1.7.0] — Boia reversa (corte por nível baixo)
+
+### Adicionado
+
+- **Boia reversa** no tubo: em vez de monitorar o destino e fechar quando cheio,
+  monitora o reservatório de **origem** e **fecha no nível mínimo** (reabre no
+  máximo, com histerese). Protege um reservatório de esvaziar e serve para
+  ligar/desligar a bomba de um reservatório para hidrantes quando ele baixa.
+  Ativável pelo campo "Reversa" nas propriedades da boia do tubo.
+
 ## [1.6.0] — Bomba para consumo, alerta de déficit e log de eventos
 
 ### Adicionado

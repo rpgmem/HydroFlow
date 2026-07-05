@@ -205,14 +205,17 @@ class GrafoIndex {
       const tubos = sub.tubos;
       if (isTubo(peca)) {
         tubos.push(peca.id); // cano atravessado por este caminho de fluxo
+        const b = peca.props.boia;
         if (peca.props.registro && !peca.props.registro.aberto) {
           aberto = false; // registro fechado
-        } else if (
-          peca.props.boia &&
-          dir === 'down' &&
-          !boiaAberta(peca.props.boia, sub.res?.props.nivel ?? 0, true)
-        ) {
-          aberto = false; // boia fechada (destino cheio)
+        } else if (b) {
+          // Boia normal monitora o DESTINO (relevante empurrando 'down'); a boia
+          // reversa monitora a ORIGEM (relevante puxando 'up', onde sub.res é a
+          // origem). Fora do sentido relevante a boia não interfere no caminho.
+          const relevante = b.reversa ? dir === 'up' : dir === 'down';
+          if (relevante && !boiaAberta(b, sub.res?.props.nivel ?? 0, true)) {
+            aberto = false;
+          }
         }
       }
       return { res: sub.res, consumo: sub.consumo, aberto, tubos };
@@ -300,13 +303,14 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     }
   }
 
-  // Estado das boias (para a UI colorir): fechada quando o reservatório de
-  // destino está cheio. Avaliado sobre os níveis do início do tick.
+  // Estado das boias (para a UI colorir): normal fecha com o destino cheio;
+  // reversa fecha com a origem no mínimo. Avaliado sobre os níveis do tick.
   const boiasFechadas: string[] = [];
   for (const p of proj.pecas) {
     if (!isTubo(p) || !p.props.boia) continue;
-    const down = idx.resolverReservatorio(p.id, 'down');
-    if (down && !boiaAberta(p.props.boia, down.props.nivel ?? 0, true)) {
+    const b = p.props.boia;
+    const mon = idx.resolverReservatorio(p.id, b.reversa ? 'up' : 'down');
+    if (mon && !boiaAberta(b, mon.props.nivel ?? 0, true)) {
       boiasFechadas.push(p.id);
     }
   }
@@ -389,8 +393,13 @@ function calcularTubo(
   const supDown = down ? cargaM(down, kL) : 0; // superfície do destino (0 = ambiente)
   const tapDown = down ? (down.props.cotaBase + alturaSai) * kL : 0; // bocal no destino
 
-  // Boia mecânica: monitora o reservatório de destino (fecha quando cheio).
-  if (boia && down && !boiaAberta(boia, nivelDown, true)) return 0;
+  // Boia mecânica: normal monitora o destino (fecha cheio); reversa monitora a
+  // origem (fecha no mínimo — corte por nível baixo). A origem (up) sempre existe
+  // aqui; o destino (down) pode não existir.
+  if (boia && (boia.reversa || down)) {
+    const nivelMon = boia.reversa ? nivelUp : nivelDown;
+    if (!boiaAberta(boia, nivelMon, true)) return 0;
+  }
 
   // Fluxo natural origem→destino. A origem precisa ter água ACIMA do seu bocal
   // (senão o bocal "chupa ar" e nada sai). A água descarrega no MAIOR entre a
