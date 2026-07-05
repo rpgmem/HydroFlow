@@ -282,10 +282,18 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   // a origem esvaziar com a bomba ligada, é detectado como "rodando a seco".
   for (const p of proj.pecas) {
     if (!isBomba(p)) continue;
+    const antes = p.props.ligada ?? false;
     const modo = p.props.modoControle ?? 'auto';
-    if (modo === 'ligado') p.props.ligada = true;
-    else if (modo === 'desligado') p.props.ligada = false;
-    else p.props.ligada = arbitrarBomba(decisoesPorBomba.get(p.id) ?? [], p.props.ligada ?? false);
+    let agora: boolean;
+    if (modo === 'ligado') agora = true;
+    else if (modo === 'desligado') agora = false;
+    else agora = arbitrarBomba(decisoesPorBomba.get(p.id) ?? [], antes);
+    p.props.ligada = agora;
+    // Revezamento: a cada ACIONAMENTO (borda de subida) a metade ativa alterna —
+    // undefined→1, 1→2, 2→1. Quem assumiu por último descansa no ciclo seguinte.
+    if (p.props.revezamento && agora && !antes) {
+      p.props.unidadeAtiva = p.props.unidadeAtiva === 1 ? 2 : 1;
+    }
   }
 
   // ---- (2b) Estado das boias mecânicas (histerese persistida) ----------

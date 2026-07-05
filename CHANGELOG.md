@@ -5,6 +5,25 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 [SemVer](https://semver.org/lang/pt-BR/). As versões espelham os sprints da
 especificação técnica.
 
+## [1.10.0] — Bomba dupla em revezamento
+
+### Adicionado
+
+- **Bomba dupla em revezamento**: uma única bomba pode ser marcada como dupla
+  alternada (checkbox no inspetor). Ela é desenhada como um **círculo dividido
+  ao meio** ("1" e "2"); a cada **acionamento** (borda de subida do liga) a
+  metade ativa alterna — quem rodou por último descansa no ciclo seguinte, e a
+  metade que assumiu **acende** enquanto a outra fica apagada. Hidraulicamente
+  equivale a uma bomba comum (mesmos sensores, mesma vazão, mesma tubulação);
+  é só rodízio de desgaste. Padrão ao inserir uma bomba = **única**.
+- O **log de eventos** indica qual unidade assumiu (ex.: "Bomba ligou (unidade 2)").
+- No **projeto de exemplo**, a "Bomba" passou a ser dupla em revezamento.
+
+### Interno
+
+- Estado `unidadeAtiva` é transitório: limpo no export e no reset (como os
+  demais estados internos de execução).
+
 ## [1.9.0] — Tema claro e impressão do diagrama
 
 ### Adicionado

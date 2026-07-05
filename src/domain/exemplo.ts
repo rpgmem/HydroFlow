@@ -78,6 +78,7 @@ export function projetoExemplo(): ProjetoSimulacao {
           vazaoNominal: 50,
           sensores: ['sensor_sup', 'sensor_inf'],
           ligada: false,
+          revezamento: true,
         } as PropsBomba,
         rotulo: 'Bomba',
       },

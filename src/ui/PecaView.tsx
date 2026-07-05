@@ -6,12 +6,14 @@
  * direita). O usuário arrasta a partir dela até outra peça para criar a aresta —
  * clicar no corpo apenas seleciona. Isso evita conexões acidentais.
  */
-import { Group, Rect, Circle, Line, Text } from 'react-konva';
+import { Group, Rect, Circle, Line, Text, Wedge } from 'react-konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 import {
+  isBomba,
   isReservatorio,
   isTubo,
   type Peca,
+  type PropsBomba,
   type PropsReservatorio,
   type PropsTubo,
 } from '../domain/types';
@@ -121,13 +123,8 @@ export function PecaView({
     >
       {isReservatorio(peca) ? (
         <Reservatorio props={peca.props} w={w} h={h} borda={borda} larguraBorda={larguraBorda} overflow={overflow} />
-      ) : peca.tipo === 'bomba' ? (
-        <Circle
-          radius={w / 2}
-          fill={aSeco ? '#5b2b2b' : COR.bomba}
-          stroke={borda}
-          strokeWidth={larguraBorda}
-        />
+      ) : isBomba(peca) ? (
+        <BombaView props={peca.props} w={w} borda={borda} larguraBorda={larguraBorda} aSeco={aSeco} />
       ) : isTubo(peca) ? (
         <TuboView
           props={peca.props}
@@ -275,6 +272,46 @@ function TuboView({
           strokeWidth={1}
         />
       ) : null}
+    </>
+  );
+}
+
+/**
+ * Bomba. Simples: um círculo. Em REVEZAMENTO: um círculo dividido ao meio com
+ * as metades "1" (esquerda) e "2" (direita) — ao ligar, a metade que assumiu
+ * acende e a outra fica apagada; desligada, ambas apagadas.
+ */
+function BombaView({
+  props,
+  w,
+  borda,
+  larguraBorda,
+  aSeco,
+}: {
+  props: PropsBomba;
+  w: number;
+  borda: string;
+  larguraBorda: number;
+  aSeco: boolean;
+}) {
+  const r = w / 2;
+  if (!props.revezamento) {
+    return <Circle radius={r} fill={aSeco ? '#5b2b2b' : COR.bomba} stroke={borda} strokeWidth={larguraBorda} />;
+  }
+  const ligada = props.ligada ?? false;
+  const ativa = props.unidadeAtiva === 2 ? 2 : 1;
+  // Metade acende só quando é a ativa E a bomba está ligada; a seco pinta de
+  // vermelho escuro (está tentando rodar sem água).
+  const corMetade = (n: 1 | 2): string =>
+    ativa === n && ligada ? (aSeco ? '#8a3535' : '#38bdf8') : COR.bomba;
+  return (
+    <>
+      {/* Metade esquerda = unidade 1; direita = unidade 2. Os dois wedges de 180°
+          já desenham o contorno do círculo e o divisor vertical. */}
+      <Wedge radius={r} angle={180} rotation={90} fill={corMetade(1)} stroke={borda} strokeWidth={larguraBorda} />
+      <Wedge radius={r} angle={180} rotation={-90} fill={corMetade(2)} stroke={borda} strokeWidth={larguraBorda} />
+      <Text text="1" fontSize={12} fontStyle="bold" fill="#e6edf3" x={-r} y={-6} width={r} align="center" />
+      <Text text="2" fontSize={12} fontStyle="bold" fill="#e6edf3" x={0} y={-6} width={r} align="center" />
     </>
   );
 }
