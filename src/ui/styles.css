@@ -327,6 +327,7 @@ button.ativo {
 .ev-deficit span:last-child { color: var(--err); }
 .ev-ladrao span:last-child,
 .ev-overflow span:last-child { color: var(--warn); }
+.ev-velocidade span:last-child { color: #fb7185; }
 
 .inspetor-campos {
   border: 0;

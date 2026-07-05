@@ -20,8 +20,10 @@ import {
   type PropsReservatorio,
   type PropsSensor,
   type PropsTubo,
+  type Unidades,
 } from '../domain/types';
 import { labelComprimento, labelVazao } from '../domain/unidades';
+import { vazaoDeM3, vazaoMaxRecomendadaM3, VELOCIDADE_MAX_RECOMENDADA_MS } from '../engine/geometria';
 import { CATALOGO_TUBOS, CATEGORIAS_TUBO, bitolaPorDn, rotuloBitola } from '../domain/tubosCatalogo';
 
 /** Rótulos de unidade derivados das unidades do projeto. */
@@ -128,7 +130,7 @@ export function Inspector({ peca, projeto, emExecucao, vazao, dispatch }: Props)
         {isReservatorio(peca) && (
           <ReservatorioForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />
         )}
-        {isTubo(peca) && <TuboForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
+        {isTubo(peca) && <TuboForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} />}
         {isBomba(peca) && <BombaForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
         {isFonte(peca) && <FonteForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
         {isConsumo(peca) && <ConsumoForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
@@ -190,9 +192,25 @@ function ReservatorioForm({
   );
 }
 
-function TuboForm({ props, emExecucao, upd, u }: { props: PropsTubo; emExecucao: boolean; upd: Upd; u: UniLabel }) {
+function TuboForm({
+  props,
+  emExecucao,
+  upd,
+  u,
+  unidades,
+}: {
+  props: PropsTubo;
+  emExecucao: boolean;
+  upd: Upd;
+  u: UniLabel;
+  unidades: Unidades;
+}) {
   const temBoia = props.boia !== undefined;
   const temLadrao = props.ladrao !== undefined;
+  // Vazão máxima recomendada = área × velocidade recomendada (3 m/s). Ajuda o
+  // usuário a dimensionar; acima disso o tubo é sinalizado durante a simulação.
+  const vazaoMaxRec =
+    props.diametro > 0 ? vazaoDeM3(vazaoMaxRecomendadaM3(props.diametro), unidades) : 0;
   return (
     <>
       {/* Bitola pré-configurada: seleciona o DN e grava o diâmetro INTERNO
@@ -230,6 +248,15 @@ function TuboForm({ props, emExecucao, upd, u }: { props: PropsTubo; emExecucao:
         step={0.1}
         onChange={(v) => upd({ diametro: v, bitola: undefined })}
       />
+      {props.diametro > 0 && (
+        <p className="telemetry" style={{ marginTop: -4 }}>
+          Vazão máx. recomendada:{' '}
+          <strong>
+            {vazaoMaxRec.toFixed(2)} {u.vazao}
+          </strong>{' '}
+          (a {VELOCIDADE_MAX_RECOMENDADA_MS.toLocaleString('pt-BR')} m/s)
+        </p>
+      )}
       {/* Altura de conexão em cada ponta (relativa à base do reservatório).
           0 = fundo; acima disso, só escoa a água acima do bocal. */}
       <Num

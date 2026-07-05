@@ -41,8 +41,10 @@ import {
   nivelDeVolumeM3,
   vazaoDeM3,
   vazaoParaM3,
+  velocidadeTuboMs,
   volumeM3DeNivel,
   volumeMaximoM3,
+  VELOCIDADE_MAX_RECOMENDADA_MS,
 } from './geometria';
 import { metrosPorComprimento } from '../domain/unidades';
 import { arbitrarBomba, avaliarSensor, boiaAberta, type Decisao } from './arbitragem';
@@ -71,6 +73,8 @@ export interface ResultadoTick {
   boiasFechadas: string[];
   /** Tubos ladrão em transbordo neste tick (origem acima do nível de ladrão). */
   ladroesAtivos: string[];
+  /** Tubos com velocidade acima da recomendada (subdimensionados) neste tick. */
+  tubosVelozes: string[];
   /** Consumos cuja demanda excede a vazão da bomba que os alimenta (déficit). */
   consumoInsuficiente: string[];
   /** Decisão corrente de cada sensor (id → 'ligar' | 'desligar' | 'manter'). */
@@ -332,6 +336,15 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     }
   }
 
+  // Tubos com velocidade acima da recomendada (v = Q/A > limite) = subdimensionados
+  // para a vazão que passa. Só um aviso de dimensionamento; não altera a física.
+  const tubosVelozes: string[] = [];
+  for (const p of proj.pecas) {
+    if (!isTubo(p)) continue;
+    const v = velocidadeTuboMs(vazoesM3[p.id] ?? 0, p.props.diametro);
+    if (v > VELOCIDADE_MAX_RECOMENDADA_MS + 1e-6) tubosVelozes.push(p.id);
+  }
+
   // Boias fechadas neste tick (para a UI colorir) — estado calculado no passo 2b.
   const boiasFechadas: string[] = [];
   for (const p of proj.pecas) {
@@ -354,6 +367,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     bombasASeco,
     boiasFechadas,
     ladroesAtivos,
+    tubosVelozes,
     consumoInsuficiente,
     sensores,
     tempo: tempoFim,
@@ -710,6 +724,7 @@ export function rodarTicks(
     bombasASeco: [],
     boiasFechadas: [],
     ladroesAtivos: [],
+    tubosVelozes: [],
     consumoInsuficiente: [],
     sensores: {},
     tempo,

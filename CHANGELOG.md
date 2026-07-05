@@ -5,6 +5,20 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 [SemVer](https://semver.org/lang/pt-BR/). As versões espelham os sprints da
 especificação técnica.
 
+## [1.12.0] — Alerta de tubo subdimensionado (velocidade)
+
+### Adicionado
+
+- **Vazão máxima recomendada** por tubo, exibida no inspetor (ex.: `DN110 → 22,5
+  L/s a 3 m/s`). Calculada como **área × velocidade recomendada (3 m/s)** — a
+  regra clássica de projeto — então vale também para diâmetros "Personalizado".
+- **Alerta de dimensionamento na simulação**: quando a velocidade real de um cano
+  (v = Q/área) passa dos 3 m/s, ele é pintado de **rosa** no canvas e um evento é
+  registrado no log (*"velocidade acima do recomendado (> 3 m/s)"*). Útil para
+  perceber, por exemplo, uma bomba potente empurrando por um cano estreito.
+- Helpers `velocidadeTuboMs`, `vazaoMaxRecomendadaM3` e a constante
+  `VELOCIDADE_MAX_RECOMENDADA_MS` em `geometria.ts`.
+
 ## [1.11.0] — Bitolas de tubo pré-configuradas (catálogo)
 
 ### Adicionado
