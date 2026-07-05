@@ -5,6 +5,26 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 [SemVer](https://semver.org/lang/pt-BR/). As versões espelham os sprints da
 especificação técnica.
 
+## [1.5.1] — Correção: sensor congelado por estado exportado
+
+### Corrigido
+
+- **Bomba só ligava após ~17000 s** ao recarregar um projeto exportado durante a
+  execução. O sensor guarda `ultimaTroca` (instante da última troca) para o
+  `delay`; ao exportar no meio de um run, esse valor (ex.: 16696 s) ia junto no
+  JSON. Recarregado com o tempo zerado, a checagem `tempoAtual − ultimaTroca <
+  delay` ficava verdadeira até o relógio alcançar aquele instante, congelando o
+  sensor. Agora um `ultimaTroca` no **futuro** relativo ao tempo atual é tratado
+  como obsoleto e ignorado — o sensor decide normalmente pelo nível.
+
+### Alterado
+
+- **Novo projeto de exemplo padrão** (revisão do usuário): tomadas de tubo com
+  **altura de conexão** (recalques e bypass em altura), bomba sem curva com
+  `protecaoSeco` 2, e um **sistema secundário de incêndio** (bomba + hidrantes)
+  alimentado pelo reservatório do meio. O estado transitório dos sensores
+  (`ultimaTroca`/`pedindoLigar`) não é embutido no exemplo.
+
 ## [1.5.0] — Altura de conexão do tubo
 
 ### Adicionado

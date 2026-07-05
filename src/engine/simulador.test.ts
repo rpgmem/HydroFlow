@@ -667,6 +667,17 @@ describe('arbitragem de bombas', () => {
     expect(avaliarSensor(s, 2, 0)).toBe('manter'); // banda morta (histerese)
   });
 
+  it('ignora ultimaTroca no futuro (obsoleto de execução exportada e recarregada)', () => {
+    // Projeto exportado durante um run guardou ultimaTroca=16696; ao recarregar,
+    // o tempo volta a 0. O delay NÃO deve congelar o sensor até o relógio chegar
+    // lá — ele decide normalmente pelo nível.
+    const s: PropsSensor = { bombaAlvo: 'P', nivelMinimo: 3, nivelMaximo: 5.5, delay: 10, ultimaTroca: 16696 };
+    expect(avaliarSensor(s, 2, 0)).toBe('ligar'); // nível 2 < mínimo → liga já em t=0
+    // Com ultimaTroca no passado dentro da janela, o delay volta a valer.
+    expect(avaliarSensor(s, 2, 16700)).toBe('manter'); // 16700-16696=4 < 10
+    expect(avaliarSensor(s, 2, 16710)).toBe('ligar'); // 14 ≥ 10 → libera
+  });
+
   it('expõe a decisão corrente de cada sensor (para a UI colorir)', () => {
     const r = tick(
       projeto(
