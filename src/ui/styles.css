@@ -82,6 +82,7 @@ body {
 }
 
 .toolbar {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -89,6 +90,15 @@ body {
   background: var(--panel);
   border-bottom: 1px solid var(--line);
   flex-wrap: wrap;
+}
+
+/* Ações secundárias (Novo/Tema/Imprimir/Salvar/Carregar): no desktop fluem
+   inline na barra; no mobile recolhem sob o botão "⋯" (ver media query). */
+.menu-toggle {
+  display: none;
+}
+.acoes-secundarias {
+  display: contents;
 }
 
 .toolbar .brand {
@@ -425,6 +435,40 @@ button.ativo {
   /* Paleta = adicionar peças (edição) → escondida no celular. */
   .panel.palette {
     display: none;
+  }
+
+  /* Ações secundárias recolhidas sob "⋯" para ocupar menos a barra. */
+  .menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    padding: 0;
+    font-size: 20px;
+    line-height: 1;
+  }
+  .acoes-secundarias {
+    display: none;
+  }
+  .acoes-secundarias.aberto {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: absolute;
+    top: 100%;
+    right: 8px;
+    z-index: 40;
+    margin-top: 4px;
+    padding: 8px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  }
+  .acoes-secundarias.aberto button {
+    width: 100%;
+    text-align: left;
+    white-space: nowrap;
   }
 
   /* Dica de "arrastar para conectar" não se aplica ao toque; o aviso cobre. */
