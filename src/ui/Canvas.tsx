@@ -20,13 +20,17 @@ interface Props {
   dispatch: React.Dispatch<Acao>;
   largura: number;
   altura: number;
+  /** Tema claro: rótulos escuros (para fundo branco). */
+  temaClaro?: boolean;
+  /** Durante a impressão: enquadra todo o diagrama e restaura a vista ao fim. */
+  imprimindo?: boolean;
 }
 
 const ZOOM_MIN = 0.25;
 const ZOOM_MAX = 4;
 const clampZoom = (s: number): number => Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, s));
 
-export function Canvas({ estado, dispatch, largura, altura }: Props) {
+export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimindo }: Props) {
   const emExecucao = estado.modo === 'execucao';
   const [conectando, setConectando] = useState<string | null>(null);
   const [ponteiro, setPonteiro] = useState<{ x: number; y: number } | null>(null);
@@ -39,6 +43,8 @@ export function Canvas({ estado, dispatch, largura, altura }: Props) {
   // Enquanto o usuário não mexer no zoom/pan, reenquadramos ao mudar o tamanho
   // (ex.: primeira medição real no mobile, rotação de tela).
   const usuarioMexeu = useRef(false);
+  // Transform do Stage salvo antes de imprimir (para restaurar a vista depois).
+  const vistaAntesImpressao = useRef<{ scale: number; x: number; y: number } | null>(null);
 
   const pecaPorId = new Map(estado.projeto.pecas.map((p) => [p.id, p]));
   const centro = (id: string): { x: number; y: number } => {
@@ -187,6 +193,24 @@ export function Canvas({ estado, dispatch, largura, altura }: Props) {
     stage.batchDraw();
   };
 
+  // Impressão: enquadra todo o diagrama (para nada ficar cortado) e restaura a
+  // vista do usuário ao terminar.
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    if (imprimindo) {
+      vistaAntesImpressao.current = { scale: stage.scaleX(), x: stage.x(), y: stage.y() };
+      ajustarView();
+    } else if (vistaAntesImpressao.current) {
+      const v = vistaAntesImpressao.current;
+      stage.scale({ x: v.scale, y: v.scale });
+      stage.position({ x: v.x, y: v.y });
+      stage.batchDraw();
+      vistaAntesImpressao.current = null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [imprimindo]);
+
   // ---- Pinça (dois dedos) ----------------------------------------------
   const onTouchMove = (e: KonvaEventObject<TouchEvent>): void => {
     const ts = e.evt.touches;
@@ -320,6 +344,7 @@ export function Canvas({ estado, dispatch, largura, altura }: Props) {
               boiaFechada={boiaFechadaSet.has(peca.id)}
               ladraoAtivo={ladraoAtivoSet.has(peca.id)}
               consumoInsuficiente={consumoDeficitSet.has(peca.id)}
+              temaClaro={temaClaro}
               sensorEstado={emExecucao ? estado.sensores[peca.id] : undefined}
               onSelect={() => dispatch({ tipo: 'SELECIONAR', id: peca.id })}
               onMove={(x, y) => dispatch({ tipo: 'MOVER_PECA', id: peca.id, x, y })}

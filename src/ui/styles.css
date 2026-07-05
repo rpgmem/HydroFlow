@@ -24,6 +24,36 @@ body {
   color: var(--text);
 }
 
+/* ---- Tema claro (opcional; escuro é o padrão) ------------------------ */
+.app.tema-claro {
+  --bg: #eef2f6;
+  --panel: #ffffff;
+  --panel-2: #f1f5f9;
+  --line: #cbd5e1;
+  --text: #0f1720;
+  --muted: #566575;
+  --accent: #0284c7;
+  --accent-2: #0e7490;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app.tema-claro .canvas-wrap {
+  background:
+    radial-gradient(circle at 1px 1px, #cbd5e1 1px, transparent 0) 0 0 / 24px 24px,
+    #f8fafc;
+}
+
+/* Botões flutuantes sobre o canvas acompanham o tema. */
+.app.tema-claro .zoom-ctrls button,
+.app.tema-claro .log-toggle {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.app.tema-claro .primary {
+  color: #ffffff;
+}
+
 .app {
   display: grid;
   grid-template-rows: auto 1fr auto;
@@ -464,5 +494,46 @@ button.ativo {
     margin-left: auto;
     flex: none;
     padding: 2px 9px;
+  }
+}
+
+/* ---- Impressão: só o diagrama, fundo branco, rótulos escuros --------- */
+@media print {
+  /* Esconde toda a interface, deixando apenas o canvas. */
+  .toolbar,
+  .panel,
+  .rodape,
+  .zoom-ctrls,
+  .log-toggle,
+  .log-panel,
+  .hint,
+  .aviso-desktop,
+  .fab-inspetor,
+  .drawer-backdrop,
+  .excluir-conexao,
+  .errors {
+    display: none !important;
+  }
+
+  html,
+  body,
+  .app,
+  .body,
+  .canvas-wrap {
+    background: #fff !important;
+  }
+
+  .app {
+    height: auto;
+  }
+
+  /* Canvas ocupa toda a largura da folha (sem as colunas laterais). */
+  .body {
+    grid-template-columns: 1fr;
+  }
+
+  /* Sem sombra de grade; o Stage do konva desenha as peças (rótulos escuros). */
+  .canvas-wrap {
+    overflow: visible;
   }
 }
