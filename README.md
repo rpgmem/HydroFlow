@@ -171,6 +171,10 @@ realistas (vazões em L/s enchendo tanques de milhares de litros) em segundos.
   com ela ligada, a vazão é 0 (sem fantasma) e um alerta é emitido. A proteção por
   nível baixo é feita por um **sensor reverso** monitorando a sucção.
 - **Controle da bomba** — modo `auto` (segue o sensor), `ligado` ou `desligado`.
+- **Alerta de dimensionamento** — cada tubo tem uma **vazão máxima recomendada**
+  (área × 3 m/s, velocidade clássica de projeto). Quando a velocidade real
+  (v = Q/área) passa desse limite, o cano é sinalizado (rosa) e registrado no log
+  — só um aviso; não altera a física.
 - **Bomba dupla em revezamento** — uma bomba marcada como `revezamento` alterna
   entre duas metades ("1"/"2") a cada acionamento (quem rodou por último
   descansa). É só rodízio de desgaste: hidraulicamente idêntica a uma bomba

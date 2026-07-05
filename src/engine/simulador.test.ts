@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { tick, rodarTicks } from './simulador';
+import { areaTuboM2, vazaoMaxRecomendadaM3, velocidadeTuboMs } from './geometria';
 import { arbitrarBomba, avaliarSensor } from './arbitragem';
 import {
   criarConexao,
@@ -922,6 +923,41 @@ describe('arbitragem de bombas', () => {
     const p = r.projeto.pecas.find((x) => x.id === 'P')!.props as PropsBomba;
     expect(p.ligada).toBe(false);
     expect(r.vazoes['P']).toBe(0);
+  });
+});
+
+// ===========================================================================
+// Velocidade / vazão recomendada (dimensionamento de tubos)
+// ===========================================================================
+describe('vazão/velocidade máxima recomendada', () => {
+  it('vazão recomendada = área × 3 m/s (≈ tabela de bitolas)', () => {
+    const q = vazaoMaxRecomendadaM3(97.8); // DN110, interno 97,8 mm
+    expect(q).toBeCloseTo(areaTuboM2(97.8) * 3, 12);
+    expect(q * 1000).toBeCloseTo(22.5, 1); // ~22,5 L/s (tabela: 22,53)
+  });
+
+  it('velocidade = Q/área (0 quando sem fluxo)', () => {
+    expect(velocidadeTuboMs(areaTuboM2(50) * 2, 50)).toBeCloseTo(2, 9);
+    expect(velocidadeTuboMs(0, 50)).toBe(0);
+  });
+});
+
+describe('alerta de tubo subdimensionado (v > 3 m/s)', () => {
+  it('sinaliza o tubo estreito e ignora o bem dimensionado (mesma vazão de bomba)', () => {
+    const cenario = (diam: number) =>
+      projeto(
+        [
+          res('A', { nivel: 5 }),
+          res('B', {}),
+          bomba('P', { ligada: true, vazaoNominal: 0.05 }), // 0,05 m³/s = 50 L/s
+          tubo('rec', { diametro: diam }),
+        ],
+        [criarConexao('A', 'P'), criarConexao('P', 'rec'), criarConexao('rec', 'B')],
+      );
+    // DN60 (Ø60): 0,05 m³/s → v ≈ 17,7 m/s → subdimensionado.
+    expect(tick(cenario(60)).tubosVelozes).toContain('rec');
+    // Ø300 mm: v ≈ 0,7 m/s → dentro do recomendado.
+    expect(tick(cenario(300)).tubosVelozes).not.toContain('rec');
   });
 });
 

@@ -30,7 +30,7 @@ import {
 } from '../domain/types';
 
 /** Uma entrada do log de eventos (acionamentos e alertas ao longo da execução). */
-export type TipoEvento = 'bomba' | 'sensor' | 'seco' | 'ladrao' | 'deficit' | 'overflow';
+export type TipoEvento = 'bomba' | 'sensor' | 'seco' | 'ladrao' | 'deficit' | 'overflow' | 'velocidade';
 export interface EventoLog {
   /** Tempo de simulação (s) em que o evento ocorreu. */
   tempo: number;
@@ -57,6 +57,7 @@ export interface EstadoApp {
   bombasASeco: string[];
   boiasFechadas: string[];
   ladroesAtivos: string[];
+  tubosVelozes: string[];
   consumoInsuficiente: string[];
   sensores: Record<string, Decisao>;
   /** Log de eventos (acionamentos de bomba/sensor e alertas) da execução. */
@@ -106,6 +107,7 @@ export function estadoInicial(projeto: ProjetoSimulacao): EstadoApp {
     bombasASeco: [],
     boiasFechadas: [],
     ladroesAtivos: [],
+    tubosVelozes: [],
     consumoInsuficiente: [],
     sensores: {},
     eventos: [],
@@ -178,6 +180,7 @@ function derivarEventos(anterior: EstadoApp, r: ResultadoTick): EventoLog[] {
   };
   entraram(r.bombasASeco, anterior.bombasASeco, 'seco', (n) => `${n}: rodando a seco (origem vazia)`);
   entraram(r.ladroesAtivos, anterior.ladroesAtivos, 'ladrao', (n) => `${n}: ladrão em transbordo`);
+  entraram(r.tubosVelozes, anterior.tubosVelozes, 'velocidade', (n) => `${n}: velocidade acima do recomendado (> 3 m/s)`);
   entraram(r.consumoInsuficiente, anterior.consumoInsuficiente, 'deficit', (n) => `${n}: déficit (bomba não acompanha)`);
   entraram(r.overflow, anterior.overflow, 'overflow', (n) => `${n}: transbordou`);
 
@@ -314,6 +317,7 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
         bombasASeco: [],
         boiasFechadas: [],
         ladroesAtivos: [],
+        tubosVelozes: [],
         consumoInsuficiente: [],
         sensores: {},
         eventos: [],
@@ -339,6 +343,7 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
         bombasASeco: [],
         boiasFechadas: [],
         ladroesAtivos: [],
+        tubosVelozes: [],
         consumoInsuficiente: [],
         sensores: {},
         eventos: [],
@@ -362,6 +367,7 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
         bombasASeco: r.bombasASeco,
         boiasFechadas: r.boiasFechadas,
         ladroesAtivos: r.ladroesAtivos,
+        tubosVelozes: r.tubosVelozes,
         consumoInsuficiente: r.consumoInsuficiente,
         sensores: r.sensores,
         eventos:

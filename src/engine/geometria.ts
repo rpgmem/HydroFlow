@@ -72,3 +72,22 @@ export function vazaoParaM3(vazaoUsuario: number, u: Unidades): number {
 export function vazaoDeM3(vazaoM3: number, u: Unidades): number {
   return vazaoM3 / m3PorVolume(u);
 }
+
+/**
+ * Velocidade máxima recomendada de escoamento em tubos (m/s). Regra clássica de
+ * projeto (limita perda de carga, ruído e golpe de aríete). As "vazões máximas
+ * recomendadas" das tabelas de bitola correspondem exatamente a esta velocidade
+ * aplicada ao diâmetro interno.
+ */
+export const VELOCIDADE_MAX_RECOMENDADA_MS = 3.0;
+
+/** Velocidade de escoamento (m/s) de uma vazão `qM3` (m³/s) num tubo de `diametroMM`. */
+export function velocidadeTuboMs(qM3: number, diametroMM: number): number {
+  const a = areaTuboM2(diametroMM);
+  return a > 0 ? Math.abs(qM3) / a : 0;
+}
+
+/** Vazão máxima recomendada (m³/s) de um tubo: área × velocidade recomendada. */
+export function vazaoMaxRecomendadaM3(diametroMM: number): number {
+  return areaTuboM2(diametroMM) * VELOCIDADE_MAX_RECOMENDADA_MS;
+}

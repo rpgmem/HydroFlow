@@ -48,6 +48,8 @@ interface Props {
   boiaFechada: boolean;
   /** Tubo ladrão em transbordo neste tick. */
   ladraoAtivo: boolean;
+  /** Tubo com velocidade acima da recomendada (subdimensionado) neste tick. */
+  tuboVeloz: boolean;
   /** Consumo cuja demanda excede a vazão da bomba (déficit) neste tick. */
   consumoInsuficiente: boolean;
   /** Modo impressão: rótulos em cor escura (legíveis sobre fundo branco). */
@@ -93,6 +95,7 @@ export function PecaView({
   aSeco,
   boiaFechada,
   ladraoAtivo,
+  tuboVeloz,
   consumoInsuficiente,
   temaClaro,
   sensorEstado,
@@ -135,6 +138,7 @@ export function PecaView({
           vazao={vazao}
           boiaFechada={boiaFechada}
           ladraoAtivo={ladraoAtivo}
+          tuboVeloz={tuboVeloz}
         />
       ) : peca.tipo === 'sensor' ? (
         <Circle
@@ -216,6 +220,7 @@ function TuboView({
   vazao,
   boiaFechada,
   ladraoAtivo,
+  tuboVeloz,
 }: {
   props: PropsTubo;
   w: number;
@@ -225,11 +230,20 @@ function TuboView({
   vazao: number | undefined;
   boiaFechada: boolean;
   ladraoAtivo: boolean;
+  tuboVeloz: boolean;
 }) {
   const fluindo = vazao !== undefined && Math.abs(vazao) > 1e-9;
   const registroFechado = props.registro !== undefined && !props.registro.aberto;
-  // Ladrão transbordando pinta o cano de laranja (alerta).
-  const corTubo = props.ladrao && ladraoAtivo ? '#f59e0b' : fluindo ? '#2b8fe0' : COR.tubo;
+  // Prioridade de cor: ladrão transbordando (laranja) > velocidade acima da
+  // recomendada/subdimensionado (rosa) > fluindo normal (azul) > repouso (cinza).
+  const corTubo =
+    props.ladrao && ladraoAtivo
+      ? '#f59e0b'
+      : tuboVeloz
+        ? '#f43f5e'
+        : fluindo
+          ? '#2b8fe0'
+          : COR.tubo;
   return (
     <>
       <Rect
