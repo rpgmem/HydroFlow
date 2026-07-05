@@ -72,13 +72,25 @@ export function arbitrarBomba(
  */
 export function boiaAberta(
   boia: NivelControle,
-  nivelDestino: number,
+  nivelMonitorado: number,
   abertaAnterior: boolean,
 ): boolean {
-  if (boia.nivelMaximo !== undefined && nivelDestino >= boia.nivelMaximo) {
+  if (boia.reversa) {
+    // Reversa (corte por nível baixo): monitora a ORIGEM. Fecha no mínimo (para
+    // não esvaziar), reabre no máximo. O chamador passa o nível da origem.
+    if (boia.nivelMinimo !== undefined && nivelMonitorado <= boia.nivelMinimo) {
+      return false; // baixo → fecha
+    }
+    if (boia.nivelMaximo !== undefined && nivelMonitorado >= boia.nivelMaximo) {
+      return true; // recuperou → abre
+    }
+    return abertaAnterior;
+  }
+  // Normal: monitora o DESTINO. Fecha no máximo (cheio), abre no mínimo.
+  if (boia.nivelMaximo !== undefined && nivelMonitorado >= boia.nivelMaximo) {
     return false; // cheio → fecha
   }
-  if (boia.nivelMinimo !== undefined && nivelDestino <= boia.nivelMinimo) {
+  if (boia.nivelMinimo !== undefined && nivelMonitorado <= boia.nivelMinimo) {
     return true; // baixo → abre
   }
   return abertaAnterior;

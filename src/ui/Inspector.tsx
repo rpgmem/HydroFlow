@@ -300,14 +300,23 @@ function BoiaFields({
       </label>
       {ativa && (
         <>
+          <label className="checkbox" style={{ marginTop: 4 }}>
+            <input
+              type="checkbox"
+              checked={boia.reversa ?? false}
+              aria-label="Boia reversa (corte por nível baixo)"
+              onChange={(e) => upd({ boia: { ...boia, reversa: e.target.checked } })}
+            />
+            Reversa (monitora a origem; fecha no mínimo)
+          </label>
           <Num
-            label="Boia: abre com nível ≤"
+            label={boia.reversa ? 'Boia: fecha (origem) com nível ≤' : 'Boia: abre com nível ≤'}
             unidade={unidade}
             value={boia.nivelMinimo}
             onChange={(v) => upd({ boia: { ...boia, nivelMinimo: v } })}
           />
           <Num
-            label="Boia: fecha com nível ≥"
+            label={boia.reversa ? 'Boia: reabre (origem) com nível ≥' : 'Boia: fecha com nível ≥'}
             unidade={unidade}
             value={boia.nivelMaximo}
             onChange={(v) => upd({ boia: { ...boia, nivelMaximo: v } })}
@@ -328,12 +337,6 @@ function BombaForm({ props, emExecucao, upd, u }: { props: PropsBomba; emExecuca
         disabled={emExecucao}
         step={0.1}
         onChange={(v) => upd({ curva: v > 0 ? { k: v } : undefined })}
-      />
-      <Num
-        label="Proteção a seco: desliga se origem ≤"
-        unidade={u.comp}
-        value={props.protecaoSeco ?? 0}
-        onChange={(v) => upd({ protecaoSeco: v })}
       />
       <div className="field">
         <label>Controle da bomba</label>

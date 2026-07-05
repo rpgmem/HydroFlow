@@ -340,22 +340,22 @@ describe('bomba', () => {
     it("'ligado' força a bomba a funcionar sem sensor", () => {
       const r = tick(
         projeto(
-          [res('A', { nivel: 5 }), res('B', {}), bomba('P', { modoControle: 'ligado', vazaoNominal: 8, protecaoSeco: 0 })],
+          [res('A', { nivel: 5 }), res('B', {}), bomba('P', { modoControle: 'ligado', vazaoNominal: 8 })],
           [criarConexao('A', 'P'), criarConexao('P', 'B')],
         ),
       );
       expect(r.vazoes['P']).toBeCloseTo(8, 9);
     });
 
-    it("'ligado' ainda respeita a proteção a seco", () => {
+    it("'ligado' com a origem vazia roda a seco (vazão 0 + alerta)", () => {
       const r = tick(
         projeto(
-          [res('A', { nivel: 1 }), res('B', {}), bomba('P', { modoControle: 'ligado', protecaoSeco: 2 })],
+          [res('A', { nivel: 0 }), res('B', {}), bomba('P', { modoControle: 'ligado' })],
           [criarConexao('A', 'P'), criarConexao('P', 'B')],
         ),
       );
-      expect(r.bombasASeco).toContain('P');
       expect(r.vazoes['P']).toBe(0);
+      expect(r.bombasASeco).toContain('P'); // rodando a seco (origem vazia)
     });
   });
 
@@ -366,7 +366,7 @@ describe('bomba', () => {
         [
           res('A', { nivel: 5 }),
           tubo('suc', {}),
-          bomba('P', { ligada, vazaoNominal, protecaoSeco: 0 }),
+          bomba('P', { ligada, vazaoNominal }),
           { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: demanda, aberto: true } },
         ],
         [criarConexao('A', 'suc'), criarConexao('suc', 'P'), criarConexao('P', 'C')],
@@ -448,31 +448,31 @@ describe('overflow', () => {
 });
 
 // ===========================================================================
-// Proteção contra bomba a seco
+// Rodando a seco (origem vazia) — sem proteção automática; alerta/log
 // ===========================================================================
-describe('bomba a seco', () => {
-  it('desliga a bomba quando o reservatório de origem está vazio', () => {
+describe('bomba rodando a seco', () => {
+  it('origem vazia com a bomba ligada → vazão 0 e alerta (a bomba não se desliga)', () => {
     const r = tick(
       projeto(
         [res('A', { nivel: 0 }), res('B', {}), bomba('P', { ligada: true })],
         [criarConexao('A', 'P'), criarConexao('P', 'B')],
       ),
     );
-    expect(r.vazoes['P']).toBe(0);
-    expect(r.bombasASeco).toContain('P');
+    expect(r.vazoes['P']).toBe(0); // sem água → não move nada (sem fantasma)
+    expect(r.bombasASeco).toContain('P'); // sinaliza rodando a seco (para log/UI)
     const p = r.projeto.pecas.find((x) => x.id === 'P')!.props as PropsBomba;
-    expect(p.ligada).toBe(false);
+    expect(p.ligada).toBe(true); // NÃO desliga sozinha — proteção é via boia reversa
   });
 
-  it('respeita um limiar de proteção a seco configurável', () => {
+  it('com água na origem, a bomba funciona e não sinaliza a seco', () => {
     const r = tick(
       projeto(
-        [res('A', { nivel: 0.5 }), res('B', {}), bomba('P', { ligada: true, protecaoSeco: 1 })],
+        [res('A', { nivel: 3 }), res('B', {}), bomba('P', { ligada: true, vazaoNominal: 5 })],
         [criarConexao('A', 'P'), criarConexao('P', 'B')],
       ),
     );
-    expect(r.bombasASeco).toContain('P'); // 0.5 ≤ 1 → desliga antes de esvaziar
-    expect(r.vazoes['P']).toBe(0);
+    expect(r.vazoes['P']).toBeCloseTo(5, 9);
+    expect(r.bombasASeco).not.toContain('P');
   });
 });
 
@@ -545,6 +545,52 @@ describe('boia em tubo entre reservatórios', () => {
   it('reporta a boia como fechada quando o destino está cheio (para a UI)', () => {
     expect(tick(cenario(3)).boiasFechadas).toContain('T'); // 3 ≥ máximo
     expect(tick(cenario(0)).boiasFechadas).not.toContain('T'); // vazio → aberta
+  });
+});
+
+describe('boia reversa (corte por nível baixo, monitora a origem)', () => {
+  it('gravidade: protege a origem — drena só até o mínimo da boia e para', () => {
+    const p = projeto(
+      [
+        res('A', { cotaBase: 5, nivel: 5, largura: 1, comprimento: 1 }), // origem
+        tubo('T', { diametro: 200, boia: { nivelMinimo: 2, nivelMaximo: 4, reversa: true } }),
+        res('B', { cotaBase: 0, nivel: 0 }),
+      ],
+      [criarConexao('A', 'T'), criarConexao('T', 'B')],
+    );
+    const r = rodarTicks(p, 4000);
+    const a = r.projeto.pecas.find((x) => x.id === 'A')!.props as PropsReservatorio;
+    expect(a.nivel!).toBeGreaterThan(1.9);
+    expect(a.nivel!).toBeLessThan(2.1); // parou no mínimo (~2), não esvaziou
+  });
+
+  it('sucção da bomba: fecha quando a origem cai ao mínimo (não roda em seco)', () => {
+    const cenario = (nivelA: number) =>
+      projeto(
+        [
+          res('A', { nivel: nivelA }),
+          tubo('T', { diametro: 100, boia: { nivelMinimo: 2, nivelMaximo: 4, reversa: true } }),
+          bomba('P', { ligada: true, vazaoNominal: 5 }),
+          { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: 5, aberto: true } },
+        ],
+        [criarConexao('A', 'T'), criarConexao('T', 'P'), criarConexao('P', 'C')],
+      );
+    expect(tick(cenario(5)).vazoes['P']).toBeCloseTo(5, 9); // origem alta → puxa
+    expect(tick(cenario(1)).vazoes['P']).toBe(0); // origem no mínimo → boia fecha
+  });
+
+  it('reporta a boia reversa fechada quando a origem está baixa (UI)', () => {
+    const mk = (nivelA: number) =>
+      projeto(
+        [
+          res('A', { nivel: nivelA }),
+          tubo('T', { diametro: 100, boia: { nivelMinimo: 2, nivelMaximo: 4, reversa: true } }),
+          res('B', { cotaBase: 0, nivel: 0 }),
+        ],
+        [criarConexao('A', 'T'), criarConexao('T', 'B')],
+      );
+    expect(tick(mk(1)).boiasFechadas).toContain('T'); // origem baixa → fechada
+    expect(tick(mk(5)).boiasFechadas).not.toContain('T'); // origem alta → aberta
   });
 });
 

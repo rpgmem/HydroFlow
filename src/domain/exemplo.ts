@@ -78,11 +78,17 @@ export function projetoExemplo(): ProjetoSimulacao {
           vazaoNominal: 50,
           sensores: ['sensor_sup'],
           ligada: false,
-          protecaoSeco: 2,
         } as PropsBomba,
         rotulo: 'Bomba',
       },
-      tubo('succao', 'Cano de sucção', 381, 450, { diametro: 110, registro: { aberto: true }, checkValve: true }),
+      // Boia reversa na sucção: protege o inferior (fecha em 2 m, reabre em 3 m) —
+      // faz o papel da antiga proteção a seco, agora com histerese.
+      tubo('succao', 'Cano de sucção', 381, 450, {
+        diametro: 110,
+        registro: { aberto: true },
+        checkValve: true,
+        boia: { nivelMinimo: 2, nivelMaximo: 3, reversa: true },
+      }),
       tubo('recalque_meio', 'Recalque → meio', 381, 347, { diametro: 60, registro: { aberto: false }, checkValve: true, alturaSaida: 5.5 }),
       tubo('recalque_sup', 'Recalque → superior', 381, 226, { diametro: 60, registro: { aberto: true }, checkValve: true, alturaSaida: 5.5 }),
       {
@@ -123,7 +129,7 @@ export function projetoExemplo(): ProjetoSimulacao {
         x: 662.6446280991738,
         y: 574.5454545454545,
         portas: ['entrada', 'saida'],
-        props: { vazaoNominal: 10, sensores: [], ligada: false, protecaoSeco: 4 } as PropsBomba,
+        props: { vazaoNominal: 10, sensores: [], ligada: false } as PropsBomba,
         rotulo: 'Bomba Incêndio',
       },
       {
@@ -135,7 +141,12 @@ export function projetoExemplo(): ProjetoSimulacao {
         props: { vazaoDemanda: 0, aberto: false } as PropsConsumo,
         rotulo: 'Hidrantes',
       },
-      tubo('tub_23', 'Incêndio', 661.893313298272, 516.3185574755819, { diametro: 60, registro: { aberto: true } }),
+      // Boia reversa protege o meio (fecha em 4 m, reabre em 5 m).
+      tubo('tub_23', 'Incêndio', 661.893313298272, 516.3185574755819, {
+        diametro: 60,
+        registro: { aberto: true },
+        boia: { nivelMinimo: 4, nivelMaximo: 5, reversa: true },
+      }),
       {
         id: 'sen_26',
         tipo: 'sensor',

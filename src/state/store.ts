@@ -173,7 +173,7 @@ function derivarEventos(anterior: EstadoApp, r: ResultadoTick): EventoLog[] {
     const set = new Set(antes);
     for (const id of atual) if (!set.has(id)) ev.push({ tempo: t, tipo, mensagem: msg(rot(id)) });
   };
-  entraram(r.bombasASeco, anterior.bombasASeco, 'seco', (n) => `${n}: proteção a seco (desligada)`);
+  entraram(r.bombasASeco, anterior.bombasASeco, 'seco', (n) => `${n}: rodando a seco (origem vazia)`);
   entraram(r.ladroesAtivos, anterior.ladroesAtivos, 'ladrao', (n) => `${n}: ladrão em transbordo`);
   entraram(r.consumoInsuficiente, anterior.consumoInsuficiente, 'deficit', (n) => `${n}: déficit (bomba não acompanha)`);
   entraram(r.overflow, anterior.overflow, 'overflow', (n) => `${n}: transbordou`);

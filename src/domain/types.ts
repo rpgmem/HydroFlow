@@ -46,6 +46,19 @@ export interface NivelControle {
   histerese?: boolean;
   /** Só sensor eletrônico: tempo mínimo (s) entre liga/desliga. */
   delay?: number;
+  /**
+   * Só boia de tubo: lógica REVERSA (corte por nível baixo). Em vez de monitorar
+   * o destino e fechar quando cheio, monitora o reservatório de ORIGEM e FECHA no
+   * nível mínimo (reabre no máximo). Protege um reservatório de esvaziar / desliga
+   * a bomba de um reservatório para hidrantes quando ele baixa.
+   */
+  reversa?: boolean;
+  /**
+   * Só boia de tubo: estado atual aberta/fechada (mutável durante a execução).
+   * Persistido entre ticks para dar HISTERESE real — entre mín. e máx. a boia
+   * mantém o estado anterior, evitando chaveamento rápido (chatter).
+   */
+  aberta?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -103,12 +116,6 @@ export interface PropsBomba {
   modoControle?: 'auto' | 'ligado' | 'desligado';
   /** Estado atual liga/desliga (mutável durante a execução). */
   ligada?: boolean;
-  /**
-   * Proteção contra funcionamento a seco: a bomba desliga quando o nível do
-   * reservatório de origem fica em/abaixo deste valor. Default 0 (só desliga
-   * com a origem totalmente vazia).
-   */
-  protecaoSeco?: number;
 }
 
 export interface PropsFonte {

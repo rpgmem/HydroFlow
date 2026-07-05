@@ -282,7 +282,26 @@ export function carregarProjetoDeTexto(texto: string): ResultadoParse {
   return validarProjeto(dado);
 }
 
+/**
+ * Remove o estado INTERNO de execução das peças — bookkeeping que não é
+ * configuração e não deve viajar no arquivo exportado (foi um `ultimaTroca`
+ * salvo assim que congelou uma bomba por ~17000 s ao recarregar). Mantém o que é
+ * cenário (nível dos reservatórios, bomba ligada/desligada).
+ */
+export function limparEstadoTransitorio(projeto: ProjetoSimulacao): ProjetoSimulacao {
+  const clone = structuredClone(projeto);
+  for (const p of clone.pecas) {
+    const props = p.props as Record<string, unknown>;
+    delete props.ultimaTroca; // sensor: instante da última troca (delay)
+    delete props.pedindoLigar; // sensor: pedido corrente
+    const boia = props.boia as Record<string, unknown> | undefined;
+    if (boia) delete boia.aberta; // boia de tubo: estado de histerese
+  }
+  return clone;
+}
+
 /** Serializa um projeto para texto `.json` pronto para download. */
 export function serializarProjeto(projeto: ProjetoSimulacao): string {
-  return JSON.stringify({ ...projeto, versao: SCHEMA_VERSION }, null, 2);
+  const limpo = limparEstadoTransitorio(projeto);
+  return JSON.stringify({ ...limpo, versao: SCHEMA_VERSION }, null, 2);
 }
