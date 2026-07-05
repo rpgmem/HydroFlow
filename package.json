@@ -1,6 +1,6 @@
 {
   "name": "hydroflow",
-  "version": "1.10.0",
+  "version": "1.10.1",
   "private": true,
   "description": "Simulador visual de reservatórios, tubos e bombas — física hidráulica simplificada (Torricelli + continuidade de volume).",
   "type": "module",

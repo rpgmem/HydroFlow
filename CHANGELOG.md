@@ -5,6 +5,20 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 [SemVer](https://semver.org/lang/pt-BR/). As versões espelham os sprints da
 especificação técnica.
 
+## [1.10.1] — Layout do exemplo em 6 colunas
+
+### Alterado
+
+- **Projeto de exemplo** reorganizado: peças alinhadas no eixo x em **6 colunas
+  com espaçamento uniforme** (passo 120) — bomba (240), ladrões/recalques (360),
+  reservatórios (480), boias eletrônicas/saídas/incêndio (600), bomba de
+  incêndio (720) e consumos (840).
+- Adicionada a **linha de limpeza/interligação** (cavalete de incêndio →
+  interligação com registro fechado → cavalete de recalque → inferior) e o
+  rótulo do cavalete de incêndio. Sem mudança de comportamento na simulação
+  (posições e novas conexões não alteram o cenário inicial; níveis iniciais
+  mantidos em 2 m).
+
 ## [1.10.0] — Bomba dupla em revezamento
 
 ### Adicionado
