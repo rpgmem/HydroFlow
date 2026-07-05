@@ -501,6 +501,39 @@ describe('consumo', () => {
     expect(r.vazoes['C']).toBeLessThan(1); // muito abaixo da demanda
   });
 
+  it('demanda 0 com cano no caminho NÃO drena o reservatório (o cano não vira ralo)', () => {
+    const r = tick(
+      projeto(
+        [
+          res('A', { nivel: 4 }),
+          tubo('T', { diametro: 200 }),
+          consumo('C', { vazaoDemanda: 0, aberto: true }),
+        ],
+        [criarConexao('A', 'T'), criarConexao('T', 'C')],
+      ),
+    );
+    expect(r.vazoes['C']).toBe(0);
+    expect(r.vazoes['T'] ?? 0).toBe(0); // cano reivindicado pelo consumo, sem ralo
+    const a = r.projeto.pecas.find((x) => x.id === 'A')!.props as PropsReservatorio;
+    expect(a.nivel!).toBeCloseTo(4, 9); // nível intacto
+  });
+
+  it('saída fechada com cano no caminho também não drena o reservatório', () => {
+    const r = tick(
+      projeto(
+        [
+          res('A', { nivel: 4 }),
+          tubo('T', { diametro: 200 }),
+          consumo('C', { vazaoDemanda: 5, aberto: false }),
+        ],
+        [criarConexao('A', 'T'), criarConexao('T', 'C')],
+      ),
+    );
+    expect(r.vazoes['T'] ?? 0).toBe(0);
+    const a = r.projeto.pecas.find((x) => x.id === 'A')!.props as PropsReservatorio;
+    expect(a.nivel!).toBeCloseTo(4, 9);
+  });
+
   it('perfil senoidal varia entre mínimo e máximo ao longo do tempo', () => {
     const mk = (t: number) =>
       tick(
