@@ -67,6 +67,14 @@ export interface PropsReservatorio {
 export interface PropsTubo {
   /** Diâmetro interno em MILÍMETROS. */
   diametro: number;
+  /**
+   * Altura em que o tubo toca cada reservatório, relativa à BASE dele (unidade
+   * de comprimento). Default 0 = conexão no fundo. Uma tomada em altura só escoa
+   * a água ACIMA dela (bocal lateral): `alturaEntrada` é a ponta ligada ao
+   * reservatório de origem; `alturaSaida`, a ligada ao destino.
+   */
+  alturaEntrada?: number;
+  alturaSaida?: number;
   /** Impede refluxo (fluxo apenas origem→destino). */
   checkValve?: boolean;
   /** Controle manual on/off. */

@@ -195,6 +195,22 @@ function TuboForm({ props, emExecucao, upd, u }: { props: PropsTubo; emExecucao:
   return (
     <>
       <Num label="Diâmetro" unidade="mm" value={props.diametro} disabled={emExecucao} step={1} onChange={(v) => upd({ diametro: v })} />
+      {/* Altura de conexão em cada ponta (relativa à base do reservatório).
+          0 = fundo; acima disso, só escoa a água acima do bocal. */}
+      <Num
+        label="Altura da ponta de entrada"
+        unidade={u.comp}
+        value={props.alturaEntrada ?? 0}
+        disabled={emExecucao}
+        onChange={(v) => upd({ alturaEntrada: v })}
+      />
+      <Num
+        label="Altura da ponta de saída"
+        unidade={u.comp}
+        value={props.alturaSaida ?? 0}
+        disabled={emExecucao}
+        onChange={(v) => upd({ alturaSaida: v })}
+      />
       {/* Com boia, o registro manual perde o sentido (a boia governa a abertura). */}
       {!temBoia && (
         <label className="checkbox">

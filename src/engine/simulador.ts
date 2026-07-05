@@ -341,32 +341,46 @@ function calcularTubo(
     return q;
   }
 
-  const hUp = cargaM(up, kL);
-  const hDown = down ? cargaM(down, kL) : 0; // destino ausente = saída ao ambiente
-  const deltaH = hUp - hDown;
+  // Altura em que o tubo toca cada reservatório (relativa à base). Uma tomada em
+  // altura só escoa a água ACIMA dela.
+  const alturaEnt = tubo.props.alturaEntrada ?? 0;
+  const alturaSai = tubo.props.alturaSaida ?? 0;
+  const nivelUp = up.props.nivel ?? 0;
+  const nivelDown = down?.props.nivel ?? 0;
+
+  const supUp = cargaM(up, kL); // elevação da superfície da origem
+  const tapUp = (up.props.cotaBase + alturaEnt) * kL; // bocal na origem
+  const supDown = down ? cargaM(down, kL) : 0; // superfície do destino (0 = ambiente)
+  const tapDown = down ? (down.props.cotaBase + alturaSai) * kL : 0; // bocal no destino
 
   // Boia mecânica: monitora o reservatório de destino (fecha quando cheio).
-  if (boia && down) {
-    const aberta = boiaAberta(boia, down.props.nivel ?? 0, true);
-    if (!aberta) return 0;
+  if (boia && down && !boiaAberta(boia, nivelDown, true)) return 0;
+
+  // Fluxo natural origem→destino. A origem precisa ter água ACIMA do seu bocal
+  // (senão o bocal "chupa ar" e nada sai). A água descarrega no MAIOR entre a
+  // superfície e o bocal do destino: um bocal alto exige mais carga para ser
+  // vencido (não dá para empurrar água acima da própria superfície da origem).
+  if (nivelUp > alturaEnt + 1e-9) {
+    const recebe = down ? Math.max(supDown, tapDown) : 0; // ambiente = solo (0)
+    const deltaH = supUp - recebe;
+    if (deltaH > 1e-12) {
+      const q = areaM2 * Math.sqrt(2 * g * deltaH);
+      fluxos.push({ origem: up.id, destino: down?.id ?? null, vazao: q });
+      return q;
+    }
   }
 
-  if (Math.abs(deltaH) < 1e-12) return 0;
-
-  const v = Math.sqrt(2 * g * Math.abs(deltaH));
-  const q = areaM2 * v;
-
-  if (deltaH > 0) {
-    // Fluxo natural origem→destino.
-    if (reservatorioVazio(up)) return 0; // origem vazia → nada a escoar
-    fluxos.push({ origem: up.id, destino: down?.id ?? null, vazao: q });
-    return q;
+  // Refluxo destino→origem — simétrico, bloqueado por checkValve.
+  if (!checkValve && down && nivelDown > alturaSai + 1e-9) {
+    const deltaH = supDown - Math.max(supUp, tapUp);
+    if (deltaH > 1e-12) {
+      const q = areaM2 * Math.sqrt(2 * g * deltaH);
+      fluxos.push({ origem: down.id, destino: up.id, vazao: q });
+      return -q; // sinal indica sentido reverso na telemetria
+    }
   }
-  // deltaH < 0 → refluxo destino→origem, bloqueado por checkValve.
-  if (checkValve) return 0;
-  if (!down || reservatorioVazio(down)) return 0; // origem do refluxo vazia → sem fluxo
-  fluxos.push({ origem: down.id, destino: up.id, vazao: q });
-  return -q; // sinal indica sentido reverso na telemetria
+
+  return 0;
 }
 
 /** Anota a vazão (m³/s) de um caminho nos tubos em série (telemetria/animação). */

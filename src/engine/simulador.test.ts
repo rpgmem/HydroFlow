@@ -157,6 +157,53 @@ describe('vazão por gravidade em tubo', () => {
 });
 
 // ===========================================================================
+// Altura de conexão do tubo (tomada em altura nas pontas)
+// ===========================================================================
+describe('altura de conexão do tubo', () => {
+  it('tomada de entrada em altura só drena a água acima do bocal (para nesse nível)', () => {
+    const p = projeto(
+      // A (tanque pequeno) → tubo (entrada a 2 m) → ambiente. Drena de 4 até ~2.
+      [res('A', { largura: 1, comprimento: 1, cotaBase: 0, nivel: 4, alturaMaxima: 5 }), tubo('T', { diametro: 200, alturaEntrada: 2 })],
+      [criarConexao('A', 'T')],
+    );
+    const r = rodarTicks(p, 3000);
+    const a = r.projeto.pecas.find((x) => x.id === 'A')!.props as PropsReservatorio;
+    expect(a.nivel!).toBeGreaterThan(1.9);
+    expect(a.nivel!).toBeLessThan(2.1); // parou na altura da tomada, não esvaziou
+  });
+
+  it('bocal alto no destino exige carga: não empurra acima da superfície da origem', () => {
+    const r = tick(
+      projeto(
+        [
+          res('A', { cotaBase: 0, nivel: 3 }),
+          res('B', { cotaBase: 0, nivel: 0, alturaMaxima: 10 }),
+          tubo('T', { diametro: 200, alturaSaida: 5 }), // bocal do destino na elevação 5
+        ],
+        [criarConexao('A', 'T'), criarConexao('T', 'B')],
+      ),
+    );
+    expect(r.vazoes['T']).toBe(0); // superfície de A (3) abaixo do bocal do destino (5)
+  });
+
+  it('com bocais no fundo (0) o comportamento é o de sempre', () => {
+    const semAltura = tick(
+      projeto(
+        [res('A', { cotaBase: 5, nivel: 2 }), res('B', {}), tubo('T', { diametro: 100 })],
+        [criarConexao('A', 'T'), criarConexao('T', 'B')],
+      ),
+    ).vazoes['T'];
+    const comAltura0 = tick(
+      projeto(
+        [res('A', { cotaBase: 5, nivel: 2 }), res('B', {}), tubo('T', { diametro: 100, alturaEntrada: 0, alturaSaida: 0 })],
+        [criarConexao('A', 'T'), criarConexao('T', 'B')],
+      ),
+    ).vazoes['T'];
+    expect(comAltura0).toBeCloseTo(semAltura!, 9);
+  });
+});
+
+// ===========================================================================
 // Bomba com/sem curva
 // ===========================================================================
 describe('bomba', () => {
