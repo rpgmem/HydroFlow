@@ -386,8 +386,9 @@ function calcularBomba(
   // Uma bomba pode alimentar múltiplas saídas (ex.: recalque para dois
   // reservatórios). Primeiro descobrimos quais saídas estão realmente ABERTAS
   // (registro/boia/destino) — a vazão nominal é dividida só entre elas. Assim,
-  // fechar uma saída NÃO desperdiça sua parcela: a bomba manda a vazão cheia
-  // pelas saídas que restam.
+  // fechar uma saída NÃO desperdiça a sua parcela: a bomba manda a vazão cheia
+  // pelas saídas que restam. Empurrar para um reservatório cheio é permitido
+  // (transborda, com alerta do ladrão) — só o consumo em 0 não recebe fluxo.
   const abertas = (idx.saida.get(bomba.id) ?? [])
     .map((c) => ({ c, dp: idx.resolverFluxo(c.destino, 'down') }))
     .filter((x) => x.dp.res && x.dp.aberto);
@@ -480,9 +481,21 @@ function calcularConsumo(
   fluxos: FluxoResolvido[],
   vazoes: Record<string, number>,
 ): number {
-  if (consumo.props.aberto === false) return 0; // saída fechada
   const cp = idx.resolverFluxo(consumo.id, 'up');
-  if (!cp.res || !cp.aberto) return 0; // sem origem, ou registro fechado no caminho
+  // REIVINDICA os canos do caminho do consumo (mesmo com demanda 0, consumo
+  // fechado ou caminho bloqueado). Sem isso, o cano ficaria "sem dono" e o
+  // calcularTubo o trataria como ralo para o ambiente, drenando o reservatório
+  // na vazão cheia da gravidade e ignorando a demanda do consumo. É QUEM o
+  // consumo consome que sai — nada mais.
+  const reivindicar = (q: number): void => {
+    if (cp.tubos.length > 0) anotarTubos(vazoes, cp.tubos, q);
+  };
+
+  if (!cp.res) return 0; // sem reservatório de origem → nada a drenar
+  if (consumo.props.aberto === false || !cp.aberto) {
+    reivindicar(0); // saída fechada ou registro fechado no caminho → sem fluxo
+    return 0;
+  }
   const up = cp.res;
   const kL = metrosPorComprimento(u);
 
@@ -500,9 +513,9 @@ function calcularConsumo(
     }
     q = Math.min(q, capMin);
   }
+  reivindicar(q); // canos entre o reservatório e o consumo (0 se demanda 0)
   if (q > 0) {
     fluxos.push({ origem: up.id, destino: null, vazao: q });
-    anotarTubos(vazoes, cp.tubos, q); // canos entre o reservatório e o consumo
   }
   return q;
 }

@@ -5,6 +5,19 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 [SemVer](https://semver.org/lang/pt-BR/). As versões espelham os sprints da
 especificação técnica.
 
+## [1.4.1] — Correção: consumo em 0 drenava o reservatório
+
+### Corrigido
+
+- **Cano que alimenta um ponto de consumo virava "ralo para o ambiente"** quando
+  a demanda do consumo era 0 (ou o consumo estava fechado): o tubo drenava o
+  reservatório na vazão cheia da gravidade, ignorando a demanda. Como o nível
+  caía, o sensor religava a bomba e o fluxo nunca parava. Agora o consumo
+  **reivindica os canos do seu caminho mesmo com demanda 0**, então nada sai além
+  do que ele realmente consome. Empurrar água para um **reservatório** cheio
+  segue permitido (transborda, com alerta do ladrão) — a restrição é só para o
+  consumo em 0.
+
 ## [1.4.0] — Navegação do canvas (pan e zoom)
 
 ### Adicionado
