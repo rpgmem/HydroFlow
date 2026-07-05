@@ -86,9 +86,9 @@ export function projetoExemplo(): ProjetoSimulacao {
         } as PropsBomba,
         rotulo: 'Bomba',
       },
-      tubo('succao', 'Cano de sucção', 360, 427.6859504132231, { diametro: 110, registro: { aberto: true }, checkValve: true }),
-      tubo('recalque_meio', 'Recalque → meio', 360, 339.56198347107454, { diametro: 60, registro: { aberto: false }, checkValve: true, alturaSaida: 5.5 }),
-      tubo('recalque_sup', 'Recalque → superior', 360, 216.08264462809922, { diametro: 60, registro: { aberto: true }, checkValve: true, alturaSaida: 5.5 }),
+      tubo('succao', 'Cano de sucção', 360, 427.6859504132231, { bitola: 'DN110', diametro: 97.8, registro: { aberto: true }, checkValve: true }),
+      tubo('recalque_meio', 'Recalque → meio', 360, 339.56198347107454, { bitola: 'DN60', diametro: 53.4, registro: { aberto: false }, checkValve: true, alturaSaida: 5.5 }),
+      tubo('recalque_sup', 'Recalque → superior', 360, 216.08264462809922, { bitola: 'DN60', diametro: 53.4, registro: { aberto: true }, checkValve: true, alturaSaida: 5.5 }),
       {
         id: 'consumo',
         tipo: 'consumo',
@@ -105,8 +105,8 @@ export function projetoExemplo(): ProjetoSimulacao {
         } as PropsConsumo,
         rotulo: 'Consumo',
       },
-      tubo('saida_sup', 'Saída superior', 600, 201, { diametro: 150, registro: { aberto: true } }),
-      tubo('saida_meio', 'Saída meio', 600, 301.38692712246433, { diametro: 150, registro: { aberto: false }, alturaEntrada: 2.5 }),
+      tubo('saida_sup', 'Saída superior', 600, 201, { bitola: 'DN160', diametro: 147.0, registro: { aberto: true } }),
+      tubo('saida_meio', 'Saída meio', 600, 301.38692712246433, { bitola: 'DN160', diametro: 147.0, registro: { aberto: false }, alturaEntrada: 2.5 }),
       {
         id: 'sensor_sup',
         tipo: 'sensor',
@@ -127,11 +127,11 @@ export function projetoExemplo(): ProjetoSimulacao {
         props: { bombasAlvo: ['bomba'], nivelMinimo: 2, nivelMaximo: 3, reversa: true, histerese: false } as PropsSensor,
         rotulo: 'Boia Eletrônica (inferior)',
       },
-      tubo('boia_manual', 'Boia Manual', 360, 578, { diametro: 110, registro: { aberto: true }, boia: { nivelMinimo: 6, nivelMaximo: 8.5 }, alturaSaida: 8.5 }),
-      tubo('bypass', 'bypass Boia Manual', 600, 248.44477836213346, { diametro: 32, registro: { aberto: true }, boia: { nivelMinimo: 4, nivelMaximo: 5.5 }, alturaEntrada: 4, alturaSaida: 4 }),
-      tubo('ladrao_sup', 'Ladrão (superior)', 360, 134, { diametro: 50, registro: { aberto: true }, ladrao: { nivel: 6.5 } }),
-      tubo('ladrao_meio', 'Ladrão (meio)', 360, 278.77685950413223, { diametro: 50, registro: { aberto: true }, ladrao: { nivel: 6.5 } }),
-      tubo('ladrao_inf', 'Ladrão (inferior)', 360, 522, { diametro: 50, registro: { aberto: true }, ladrao: { nivel: 9 } }),
+      tubo('boia_manual', 'Boia Manual', 360, 578, { bitola: 'DN110', diametro: 97.8, registro: { aberto: true }, boia: { nivelMinimo: 6, nivelMaximo: 8.5 }, alturaSaida: 8.5 }),
+      tubo('bypass', 'bypass Boia Manual', 600, 248.44477836213346, { bitola: 'DN32', diametro: 27.8, registro: { aberto: true }, boia: { nivelMinimo: 4, nivelMaximo: 5.5 }, alturaEntrada: 4, alturaSaida: 4 }),
+      tubo('ladrao_sup', 'Ladrão (superior)', 360, 134, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true }, ladrao: { nivel: 6.5 } }),
+      tubo('ladrao_meio', 'Ladrão (meio)', 360, 278.77685950413223, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true }, ladrao: { nivel: 6.5 } }),
+      tubo('ladrao_inf', 'Ladrão (inferior)', 360, 522, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true }, ladrao: { nivel: 9 } }),
       {
         id: 'bom_19',
         tipo: 'bomba',
@@ -150,7 +150,7 @@ export function projetoExemplo(): ProjetoSimulacao {
         props: { vazaoDemanda: 0, aberto: false } as PropsConsumo,
         rotulo: 'Hidrantes',
       },
-      tubo('tub_23', 'Cavalete Incêndio', 600, 426.91209616829417, { diametro: 60, registro: { aberto: true } }),
+      tubo('tub_23', 'Cavalete Incêndio', 600, 426.91209616829417, { bitola: 'DN60', diametro: 53.4, registro: { aberto: true } }),
       {
         // Sensor REVERSO no meio: desliga a bomba de incêndio em 4 m (protege o
         // meio de esvaziar), libera em 5 m.
@@ -164,8 +164,8 @@ export function projetoExemplo(): ProjetoSimulacao {
       },
       // Linha de limpeza/interligação: cavalete de incêndio → interligação
       // (registro fechado) → cavalete de recalque → volta ao inferior.
-      tubo('tub_29', 'Interligação de Limpeza', 600, 490.3981968444768, { diametro: 50, registro: { aberto: false }, checkValve: false }),
-      tubo('tub_34', 'Cavalete bomba recalque', 600, 555.7625845229148, { diametro: 50, registro: { aberto: true } }),
+      tubo('tub_29', 'Interligação de Limpeza', 600, 490.3981968444768, { bitola: 'DN50', diametro: 44.0, registro: { aberto: false }, checkValve: false }),
+      tubo('tub_34', 'Cavalete bomba recalque', 600, 555.7625845229148, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true } }),
     ],
     conexoes: [
       { id: 'c_2', origem: 'inferior', destino: 'succao' },

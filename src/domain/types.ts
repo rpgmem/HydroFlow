@@ -79,8 +79,14 @@ export interface PropsReservatorio {
 }
 
 export interface PropsTubo {
-  /** Diâmetro interno em MILÍMETROS. */
+  /** Diâmetro interno em MILÍMETROS (fonte da verdade para o cálculo de vazão). */
   diametro: number;
+  /**
+   * Rótulo da bitola pré-configurada selecionada (ex.: 'DN110'), do catálogo em
+   * `tubosCatalogo.ts`. Apenas informativo/UI: selecionar um preset grava
+   * `diametro = internoMm`. Ausente = diâmetro "Personalizado".
+   */
+  bitola?: string;
   /**
    * Altura em que o tubo toca cada reservatório, relativa à BASE dele (unidade
    * de comprimento). Default 0 = conexão no fundo. Uma tomada em altura só escoa
