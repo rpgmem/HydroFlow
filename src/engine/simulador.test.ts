@@ -59,7 +59,7 @@ function sensor(id: string, over: Partial<PropsSensor>): Peca {
     tipo: 'sensor',
     x: 0,
     y: 0,
-    props: { bombaAlvo: '', ...over } as PropsSensor,
+    props: { bombasAlvo: [], ...over } as PropsSensor,
   };
 }
 function projeto(pecas: Peca[], conexoes = projetoVazio().conexoes): ProjetoSimulacao {
@@ -328,7 +328,7 @@ describe('bomba', () => {
             res('A', { nivel: 5 }),
             res('B', { nivel: 0 }),
             bomba('P', { ligada: true, modoControle: 'desligado' }),
-            sensor('S', { bombaAlvo: 'P', nivelMinimo: 3, nivelMaximo: 4 }),
+            sensor('S', { bombasAlvo: ['P'], nivelMinimo: 3, nivelMaximo: 4 }),
           ],
           [criarConexao('A', 'P'), criarConexao('P', 'B'), criarConexao('S', 'B')],
         ),
@@ -461,7 +461,7 @@ describe('bomba rodando a seco', () => {
     expect(r.vazoes['P']).toBe(0); // sem água → não move nada (sem fantasma)
     expect(r.bombasASeco).toContain('P'); // sinaliza rodando a seco (para log/UI)
     const p = r.projeto.pecas.find((x) => x.id === 'P')!.props as PropsBomba;
-    expect(p.ligada).toBe(true); // NÃO desliga sozinha — proteção é via boia reversa
+    expect(p.ligada).toBe(true); // NÃO desliga sozinha — proteção é via sensor reverso
   });
 
   it('com água na origem, a bomba funciona e não sinaliza a seco', () => {
@@ -548,49 +548,64 @@ describe('boia em tubo entre reservatórios', () => {
   });
 });
 
-describe('boia reversa (corte por nível baixo, monitora a origem)', () => {
-  it('gravidade: protege a origem — drena só até o mínimo da boia e para', () => {
-    const p = projeto(
-      [
-        res('A', { cotaBase: 5, nivel: 5, largura: 1, comprimento: 1 }), // origem
-        tubo('T', { diametro: 200, boia: { nivelMinimo: 2, nivelMaximo: 4, reversa: true } }),
-        res('B', { cotaBase: 0, nivel: 0 }),
-      ],
-      [criarConexao('A', 'T'), criarConexao('T', 'B')],
-    );
-    const r = rodarTicks(p, 4000);
-    const a = r.projeto.pecas.find((x) => x.id === 'A')!.props as PropsReservatorio;
-    expect(a.nivel!).toBeGreaterThan(1.9);
-    expect(a.nivel!).toBeLessThan(2.1); // parou no mínimo (~2), não esvaziou
+describe('sensor reverso (corte por nível baixo, protege a origem)', () => {
+  it('desliga no mínimo e liga no máximo (invertido do normal)', () => {
+    const s: PropsSensor = { bombasAlvo: ['P'], nivelMinimo: 2, nivelMaximo: 4, reversa: true };
+    expect(avaliarSensor(s, 1, 0)).toBe('desligar'); // baixo → desliga (protege)
+    expect(avaliarSensor(s, 5, 0)).toBe('ligar'); // alto → libera
+    expect(avaliarSensor(s, 3, 0)).toBe('manter'); // banda morta
   });
 
-  it('sucção da bomba: fecha quando a origem cai ao mínimo (não roda em seco)', () => {
-    const cenario = (nivelA: number) =>
+  it('a bomba respeita sensor normal e reverso ao mesmo tempo (desligar vence)', () => {
+    // Sensor normal no destino pede LIGAR; sensor reverso na origem (baixa) pede
+    // DESLIGAR → a bomba fica desligada (protege a origem de esvaziar).
+    const cenario = (nivelOrigem: number) =>
       projeto(
         [
-          res('A', { nivel: nivelA }),
-          tubo('T', { diametro: 100, boia: { nivelMinimo: 2, nivelMaximo: 4, reversa: true } }),
+          res('ORIG', { nivel: nivelOrigem }),
+          res('DEST', { nivel: 0 }), // baixo → sensor normal quer ligar
           bomba('P', { ligada: true, vazaoNominal: 5 }),
-          { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: 5, aberto: true } },
+          sensor('SN', { bombasAlvo: ['P'], nivelMinimo: 3, nivelMaximo: 6 }), // normal no destino
+          sensor('SR', { bombasAlvo: ['P'], nivelMinimo: 2, nivelMaximo: 4, reversa: true }), // reverso na origem
         ],
-        [criarConexao('A', 'T'), criarConexao('T', 'P'), criarConexao('P', 'C')],
+        [
+          criarConexao('ORIG', 'P'),
+          criarConexao('P', 'DEST'),
+          criarConexao('SN', 'DEST'),
+          criarConexao('SR', 'ORIG'),
+        ],
       );
-    expect(tick(cenario(5)).vazoes['P']).toBeCloseTo(5, 9); // origem alta → puxa
-    expect(tick(cenario(1)).vazoes['P']).toBe(0); // origem no mínimo → boia fecha
+    // Origem cheia (5): reverso libera, normal liga → bomba puxa.
+    expect(tick(cenario(5)).vazoes['P']).toBeCloseTo(5, 9);
+    // Origem no mínimo (1): reverso desliga (vence) → bomba parada.
+    expect(tick(cenario(1)).vazoes['P']).toBe(0);
   });
+});
 
-  it('reporta a boia reversa fechada quando a origem está baixa (UI)', () => {
-    const mk = (nivelA: number) =>
+describe('um sensor controla várias bombas', () => {
+  it('a decisão do sensor chega a todas as bombas em bombasAlvo', () => {
+    const r = tick(
       projeto(
         [
-          res('A', { nivel: nivelA }),
-          tubo('T', { diametro: 100, boia: { nivelMinimo: 2, nivelMaximo: 4, reversa: true } }),
-          res('B', { cotaBase: 0, nivel: 0 }),
+          res('A', { nivel: 5 }),
+          res('B', {}),
+          res('C', {}),
+          bomba('P1', { ligada: false, vazaoNominal: 4 }),
+          bomba('P2', { ligada: false, vazaoNominal: 6 }),
+          res('D', { nivel: 0 }), // baixo → sensor pede ligar
+          sensor('S', { bombasAlvo: ['P1', 'P2'], nivelMinimo: 1, nivelMaximo: 4 }),
         ],
-        [criarConexao('A', 'T'), criarConexao('T', 'B')],
-      );
-    expect(tick(mk(1)).boiasFechadas).toContain('T'); // origem baixa → fechada
-    expect(tick(mk(5)).boiasFechadas).not.toContain('T'); // origem alta → aberta
+        [
+          criarConexao('A', 'P1'),
+          criarConexao('P1', 'B'),
+          criarConexao('A', 'P2'),
+          criarConexao('P2', 'C'),
+          criarConexao('S', 'D'),
+        ],
+      ),
+    );
+    expect(r.vazoes['P1']).toBeCloseTo(4, 9); // ambas ligaram pelo mesmo sensor
+    expect(r.vazoes['P2']).toBeCloseTo(6, 9);
   });
 });
 
@@ -786,7 +801,7 @@ describe('arbitragem de bombas', () => {
   });
 
   it('sensor pede ligar abaixo do mínimo e desligar acima do máximo', () => {
-    const s: PropsSensor = { bombaAlvo: 'P', nivelMinimo: 1, nivelMaximo: 4 };
+    const s: PropsSensor = { bombasAlvo: ['P'], nivelMinimo: 1, nivelMaximo: 4 };
     expect(avaliarSensor(s, 0.5, 0)).toBe('ligar');
     expect(avaliarSensor(s, 4.5, 0)).toBe('desligar');
     expect(avaliarSensor(s, 2, 0)).toBe('manter'); // banda morta (histerese)
@@ -796,7 +811,7 @@ describe('arbitragem de bombas', () => {
     // Projeto exportado durante um run guardou ultimaTroca=16696; ao recarregar,
     // o tempo volta a 0. O delay NÃO deve congelar o sensor até o relógio chegar
     // lá — ele decide normalmente pelo nível.
-    const s: PropsSensor = { bombaAlvo: 'P', nivelMinimo: 3, nivelMaximo: 5.5, delay: 10, ultimaTroca: 16696 };
+    const s: PropsSensor = { bombasAlvo: ['P'], nivelMinimo: 3, nivelMaximo: 5.5, delay: 10, ultimaTroca: 16696 };
     expect(avaliarSensor(s, 2, 0)).toBe('ligar'); // nível 2 < mínimo → liga já em t=0
     // Com ultimaTroca no passado dentro da janela, o delay volta a valer.
     expect(avaliarSensor(s, 2, 16700)).toBe('manter'); // 16700-16696=4 < 10
@@ -811,9 +826,9 @@ describe('arbitragem de bombas', () => {
           res('CHEIO', { nivel: 4.5 }),
           res('MEIO', { nivel: 2 }),
           bomba('P', { ligada: true }),
-          sensor('SL', { bombaAlvo: 'P', nivelMinimo: 1, nivelMaximo: 4 }),
-          sensor('SD', { bombaAlvo: 'P', nivelMinimo: 1, nivelMaximo: 4 }),
-          sensor('SM', { bombaAlvo: 'P', nivelMinimo: 1, nivelMaximo: 4 }),
+          sensor('SL', { bombasAlvo: ['P'], nivelMinimo: 1, nivelMaximo: 4 }),
+          sensor('SD', { bombasAlvo: ['P'], nivelMinimo: 1, nivelMaximo: 4 }),
+          sensor('SM', { bombasAlvo: ['P'], nivelMinimo: 1, nivelMaximo: 4 }),
         ],
         [
           criarConexao('SL', 'BAIXO'),
@@ -835,8 +850,8 @@ describe('arbitragem de bombas', () => {
           res('CHEIO', { nivel: 4.5 }), // sensor pede DESLIGAR
           res('DEST', {}),
           bomba('P', { ligada: true }),
-          sensor('S1', { bombaAlvo: 'P', nivelMinimo: 1, nivelMaximo: 4 }),
-          sensor('S2', { bombaAlvo: 'P', nivelMinimo: 1, nivelMaximo: 4 }),
+          sensor('S1', { bombasAlvo: ['P'], nivelMinimo: 1, nivelMaximo: 4 }),
+          sensor('S2', { bombasAlvo: ['P'], nivelMinimo: 1, nivelMaximo: 4 }),
         ],
         [
           criarConexao('BAIXO', 'P'),

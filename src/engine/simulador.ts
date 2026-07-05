@@ -246,17 +246,40 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     const resMon = reservatorioMonitorado(idx, p.id);
     const nivel = resMon?.props.nivel ?? 0;
     const decisao = avaliarSensor(p.props, nivel, tempoAtual);
-    sensores[p.id] = decisao;
-    const lista = decisoesPorBomba.get(p.props.bombaAlvo) ?? [];
-    lista.push(decisao);
-    decisoesPorBomba.set(p.props.bombaAlvo, lista);
+    // Na banda morta ('manter'), o sensor assere a SUA intenção persistida
+    // (pedindoLigar) — histerese real por sensor. Sem isso, com vários sensores
+    // um "manter" deixaria outro sensor vencer (ex.: o reverso segurando a bomba
+    // desligada perderia para o normal pedindo ligar → chatter).
+    const efetiva: Decisao =
+      decisao !== 'manter'
+        ? decisao
+        : p.props.pedindoLigar === true
+          ? 'ligar'
+          : p.props.pedindoLigar === false
+            ? 'desligar'
+            : 'manter';
+    sensores[p.id] = efetiva;
+    // Persiste a intenção (para a histerese e o delay) a partir da decisão
+    // EFETIVA deste tick — no início do tick, coerente com a arbitragem.
+    const querLigar =
+      efetiva === 'ligar' ? true : efetiva === 'desligar' ? false : p.props.pedindoLigar;
+    if (querLigar !== p.props.pedindoLigar) {
+      p.props.ultimaTroca = tempoAtual;
+      p.props.pedindoLigar = querLigar;
+    }
+    // Um sensor pode reger várias bombas simultaneamente.
+    for (const alvo of p.props.bombasAlvo) {
+      const lista = decisoesPorBomba.get(alvo) ?? [];
+      lista.push(efetiva);
+      decisoesPorBomba.set(alvo, lista);
+    }
   }
 
   // ---- (2) Controle de bombas (modo/arbitragem) -----------------------
   // 'ligado'/'desligado' forçam o estado (o botão manual); 'auto' segue os
-  // sensores. A bomba NÃO desliga sozinha por nível — a proteção contra rodar em
-  // seco é feita por uma boia reversa na sucção. Se mesmo assim a origem esvaziar
-  // com a bomba ligada, isso é detectado como "rodando a seco" (ver calcularBomba).
+  // sensores (normais e reversos — 'desligar' vence). A bomba NÃO desliga sozinha
+  // por nível: a proteção é feita por um sensor REVERSO na origem. Se mesmo assim
+  // a origem esvaziar com a bomba ligada, é detectado como "rodando a seco".
   for (const p of proj.pecas) {
     if (!isBomba(p)) continue;
     const modo = p.props.modoControle ?? 'auto';
@@ -266,13 +289,13 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   }
 
   // ---- (2b) Estado das boias mecânicas (histerese persistida) ----------
-  // Cada boia de tubo atualiza aberta/fechada monitorando seu reservatório
-  // (destino, ou origem se reversa). Entre mín. e máx. mantém o estado anterior
-  // (b.aberta) — histerese real, sem chatter. O resto do tick lê b.aberta.
+  // Cada boia de tubo atualiza aberta/fechada monitorando o reservatório de
+  // destino. Entre mín. e máx. mantém o estado anterior (b.aberta) — histerese
+  // real, sem chatter. O resto do tick lê b.aberta.
   for (const p of proj.pecas) {
     if (!isTubo(p) || !p.props.boia) continue;
     const b = p.props.boia;
-    const mon = idx.resolverReservatorio(p.id, b.reversa ? 'up' : 'down');
+    const mon = idx.resolverReservatorio(p.id, 'down');
     if (mon) b.aberta = boiaAberta(b, mon.props.nivel ?? 0, b.aberta ?? true);
   }
 
@@ -311,9 +334,6 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
 
   // ---- (4 + 5) Atualização de volume e overflow ------------------------
   const overflow = aplicarFluxos(proj, u, fluxos, dt);
-
-  // Persiste estado dos sensores (ultimaTroca / pedindoLigar) p/ delay.
-  atualizarEstadoSensores(proj, idx, tempoFim);
 
   // Telemetria: converte as vazões de m³/s para a unidade do usuário (volume/s).
   const vazoes: Record<string, number> = {};
@@ -666,28 +686,6 @@ function aplicarFluxos(
   return overflow;
 }
 
-/**
- * Registra a última troca de estado de cada sensor (para o `delay`) e o pedido
- * corrente. Executado ao final do tick para que o próximo tick veja o histórico.
- */
-function atualizarEstadoSensores(
-  proj: ProjetoSimulacao,
-  idx: GrafoIndex,
-  tempo: number,
-): void {
-  for (const p of proj.pecas) {
-    if (!isSensor(p)) continue;
-    const resMon = reservatorioMonitorado(idx, p.id);
-    const nivel = resMon?.props.nivel ?? 0;
-    const decisao = avaliarSensor(p.props, nivel, tempo);
-    const querLigar =
-      decisao === 'ligar' ? true : decisao === 'desligar' ? false : p.props.pedindoLigar;
-    if (querLigar !== p.props.pedindoLigar) {
-      p.props.ultimaTroca = tempo;
-      p.props.pedindoLigar = querLigar;
-    }
-  }
-}
 
 /** Roda N ticks encadeando estado e tempo (controle de velocidade — seção 7). */
 export function rodarTicks(

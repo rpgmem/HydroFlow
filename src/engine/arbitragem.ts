@@ -41,6 +41,12 @@ export function avaliarSensor(
   }
 
   const { nivelMaximo, nivelMinimo } = sensor;
+  if (sensor.reversa) {
+    // Reverso (corte por nível baixo): DESLIGA no mínimo, LIBERA (liga) no máximo.
+    if (nivelMinimo !== undefined && nivelMonitorado <= nivelMinimo) return 'desligar';
+    if (nivelMaximo !== undefined && nivelMonitorado >= nivelMaximo) return 'ligar';
+    return 'manter';
+  }
   if (nivelMaximo !== undefined && nivelMonitorado >= nivelMaximo) {
     return 'desligar';
   }
@@ -72,25 +78,15 @@ export function arbitrarBomba(
  */
 export function boiaAberta(
   boia: NivelControle,
-  nivelMonitorado: number,
+  nivelDestino: number,
   abertaAnterior: boolean,
 ): boolean {
-  if (boia.reversa) {
-    // Reversa (corte por nível baixo): monitora a ORIGEM. Fecha no mínimo (para
-    // não esvaziar), reabre no máximo. O chamador passa o nível da origem.
-    if (boia.nivelMinimo !== undefined && nivelMonitorado <= boia.nivelMinimo) {
-      return false; // baixo → fecha
-    }
-    if (boia.nivelMaximo !== undefined && nivelMonitorado >= boia.nivelMaximo) {
-      return true; // recuperou → abre
-    }
-    return abertaAnterior;
-  }
-  // Normal: monitora o DESTINO. Fecha no máximo (cheio), abre no mínimo.
-  if (boia.nivelMaximo !== undefined && nivelMonitorado >= boia.nivelMaximo) {
+  // Monitora o DESTINO: fecha no máximo (cheio), abre no mínimo; entre os dois
+  // mantém o estado anterior (histerese).
+  if (boia.nivelMaximo !== undefined && nivelDestino >= boia.nivelMaximo) {
     return false; // cheio → fecha
   }
-  if (boia.nivelMinimo !== undefined && nivelMonitorado <= boia.nivelMinimo) {
+  if (boia.nivelMinimo !== undefined && nivelDestino <= boia.nivelMinimo) {
     return true; // baixo → abre
   }
   return abertaAnterior;

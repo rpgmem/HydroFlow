@@ -5,6 +5,32 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 [SemVer](https://semver.org/lang/pt-BR/). As versões espelham os sprints da
 especificação técnica.
 
+## [1.8.0] — Sensor reverso, sensor multi-bomba e histerese por sensor
+
+### Adicionado
+
+- **Sensor reverso** (corte por nível baixo): em vez de LIGAR no mínimo e DESLIGAR
+  no máximo, DESLIGA a bomba no mínimo e a libera no máximo. Aplicado a um
+  reservatório de origem, protege-o de esvaziar / desliga a bomba de um
+  reservatório para hidrantes quando ele baixa. Substitui a boia reversa (a lógica
+  virou do sensor, que já tem min/máx/histerese/delay).
+- **Um sensor pode controlar VÁRIAS bombas** ao mesmo tempo (`bombasAlvo`). A
+  bomba respeita todos os seus sensores (normais e reversos) simultaneamente — e,
+  no empate, **desligar sempre vence**.
+- **Histerese real por sensor**: na banda morta o sensor mantém a SUA intenção
+  persistida (não o estado da bomba), então um sensor reverso segura a bomba
+  desligada mesmo com outro sensor pedindo para ligar — sem chatter.
+
+### Removido
+
+- **Boia reversa** no tubo (substituída pelo sensor reverso). A histerese das
+  boias normais (mecânicas, no destino) continua.
+
+### Alterado
+
+- O **exemplo padrão** usa sensores reversos (no inferior e no meio) para proteger
+  as origens, no lugar das boias reversas nas sucções.
+
 ## [1.7.0] — Boia reversa, histerese e fim da proteção a seco configurável
 
 ### Adicionado

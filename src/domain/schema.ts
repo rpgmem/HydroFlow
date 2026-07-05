@@ -143,10 +143,10 @@ function validarPeca(peca: unknown, idx: number, erros: ErroValidacao[]): void {
       });
     }
   } else if (peca.tipo === 'sensor') {
-    if (typeof props.bombaAlvo !== 'string') {
+    if (!Array.isArray(props.bombasAlvo) || props.bombasAlvo.some((x) => typeof x !== 'string')) {
       erros.push({
-        caminho: `${base}.props.bombaAlvo`,
-        mensagem: 'bombaAlvo (id da bomba) obrigatória',
+        caminho: `${base}.props.bombasAlvo`,
+        mensagem: 'bombasAlvo (lista de ids de bomba) obrigatória',
       });
     }
   }
