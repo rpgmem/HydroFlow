@@ -341,6 +341,18 @@ function BombaForm({ props, emExecucao, upd, u }: { props: PropsBomba; emExecuca
           <option value="desligado">Desligado (manual)</option>
         </select>
       </div>
+      {/* Bomba dupla em revezamento: rodízio de desgaste entre duas metades
+          (mesma vazão e tubulação). Padrão = bomba única. */}
+      <label className="checkbox">
+        <input
+          type="checkbox"
+          checked={props.revezamento ?? false}
+          disabled={emExecucao}
+          aria-label="Bomba dupla em revezamento"
+          onChange={(e) => upd({ revezamento: e.target.checked })}
+        />
+        Dupla em revezamento (alterna a cada acionamento)
+      </label>
     </>
   );
 }

@@ -159,7 +159,10 @@ function derivarEventos(anterior: EstadoApp, r: ResultadoTick): EventoLog[] {
     const antes = antLigada.get(p.id) ?? false;
     const agora = p.props.ligada ?? false;
     if (antes !== agora) {
-      ev.push({ tempo: t, tipo: 'bomba', mensagem: `${rot(p.id)} ${agora ? 'ligou' : 'desligou'}` });
+      // Revezamento: anota qual metade assumiu (a unidadeAtiva já foi alternada
+      // no tick da borda de subida).
+      const unidade = agora && p.props.revezamento ? ` (unidade ${p.props.unidadeAtiva ?? 1})` : '';
+      ev.push({ tempo: t, tipo: 'bomba', mensagem: `${rot(p.id)} ${agora ? 'ligou' : 'desligou'}${unidade}` });
     }
   }
 

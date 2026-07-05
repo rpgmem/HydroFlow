@@ -6,6 +6,7 @@ import {
   projetoVazio,
   _resetContadorIds,
 } from '../domain/factory';
+import { serializarProjeto } from '../domain/schema';
 import type {
   Peca,
   ProjetoSimulacao,
@@ -608,6 +609,63 @@ describe('um sensor controla várias bombas', () => {
     expect(r.vazoes['P2']).toBeCloseTo(6, 9);
   });
 });
+
+describe('bomba dupla em revezamento', () => {
+  it('alterna a metade ativa a cada acionamento (borda de subida)', () => {
+    const uni = (proj: ProjetoSimulacao): 1 | 2 | undefined =>
+      (proj.pecas.find((x) => x.id === 'P')!.props as PropsBomba).unidadeAtiva;
+    const setModo = (proj: ProjetoSimulacao, modo: 'ligado' | 'desligado'): ProjetoSimulacao => {
+      (proj.pecas.find((x) => x.id === 'P')!.props as PropsBomba).modoControle = modo;
+      return proj;
+    };
+
+    // Desligada de início → sem acionamento, sem unidade ativa.
+    let r = tick(
+      projeto(
+        [res('A', { nivel: 5 }), res('B', {}), bomba('P', { revezamento: true, modoControle: 'desligado', vazaoNominal: 5 })],
+        [criarConexao('A', 'P'), criarConexao('P', 'B')],
+      ),
+    );
+    expect(uni(r.projeto)).toBeUndefined();
+
+    // 1º acionamento → unidade 1.
+    r = tick(setModo(r.projeto, 'ligado'));
+    expect(uni(r.projeto)).toBe(1);
+    // Permanece ligada (não é borda) → não alterna.
+    r = tick(r.projeto);
+    expect(uni(r.projeto)).toBe(1);
+
+    // Desliga (queda de borda não alterna).
+    r = tick(setModo(r.projeto, 'desligado'));
+    expect(uni(r.projeto)).toBe(1);
+
+    // 2º acionamento → unidade 2 (a que rodou por último descansa).
+    r = tick(setModo(r.projeto, 'ligado'));
+    expect(uni(r.projeto)).toBe(2);
+
+    // Desliga e liga de novo → volta para a unidade 1.
+    r = tick(setModo(r.projeto, 'desligado'));
+    r = tick(setModo(r.projeto, 'ligado'));
+    expect(uni(r.projeto)).toBe(1);
+  });
+
+  it('export limpa a unidade ativa (estado transitório)', () => {
+    const p = projeto(
+      [res('A', { nivel: 5 }), res('B', {}), bomba('P', { revezamento: true, modoControle: 'ligado' })],
+      [criarConexao('A', 'P'), criarConexao('P', 'B')],
+    );
+    const r = tick(p);
+    expect(uniDe(r.projeto, 'P')).toBe(1); // rodou → unidade definida
+    const texto = serializarProjeto(r.projeto);
+    const bombaSerializada = JSON.parse(texto).pecas.find((x: { id: string }) => x.id === 'P');
+    expect(bombaSerializada.props.unidadeAtiva).toBeUndefined();
+    expect(bombaSerializada.props.revezamento).toBe(true); // config permanece
+  });
+});
+
+function uniDe(proj: ProjetoSimulacao, id: string): 1 | 2 | undefined {
+  return (proj.pecas.find((x) => x.id === id)!.props as PropsBomba).unidadeAtiva;
+}
 
 // ===========================================================================
 // Tubo ladrão (dreno de transbordo)

@@ -126,7 +126,7 @@ interface NivelControle {
 | --- | --- |
 | `reservatorio` | `formato` (`cilindro`\|`retangular`), `raio?`/`largura?`/`comprimento?`, `alturaMaxima`, `cotaBase`, `nivel?` |
 | `tubo` | `diametro` (**mm**), `checkValve?`, `registro?: {aberto}`, `boia?: NivelControle`, `ladrao?: {nivel}` (dreno de transbordo), `alturaEntrada?`/`alturaSaida?` (altura da conexão em cada ponta, relativa à base; default 0) |
-| `bomba` | `vazaoNominal`, `curva?: {k}`, `sensores: string[]`, `modoControle?` (`auto`\|`ligado`\|`desligado`), `ligada?` |
+| `bomba` | `vazaoNominal`, `curva?: {k}`, `sensores: string[]`, `modoControle?` (`auto`\|`ligado`\|`desligado`), `ligada?`, `revezamento?` (dupla alternada: metades "1"/"2" que se revezam a cada acionamento) |
 | `fonte` | `vazaoFixa`, `boia?: NivelControle` |
 | `consumo` | `vazaoDemanda`, `aberto?`, `perfil?` (`fixo`\|`senoidal`\|`intermitente`), `vazaoMin?`/`vazaoMax?`/`periodo?` (perfil variável) — ponto de saída/demanda; retira água e descarta |
 | `sensor` | `NivelControle & { bombasAlvo: string[] }` — controla **uma ou mais** bombas; `reversa` inverte a lógica (liga no máximo, desliga no mínimo) |
@@ -171,6 +171,10 @@ realistas (vazões em L/s enchendo tanques de milhares de litros) em segundos.
   com ela ligada, a vazão é 0 (sem fantasma) e um alerta é emitido. A proteção por
   nível baixo é feita por um **sensor reverso** monitorando a sucção.
 - **Controle da bomba** — modo `auto` (segue o sensor), `ligado` ou `desligado`.
+- **Bomba dupla em revezamento** — uma bomba marcada como `revezamento` alterna
+  entre duas metades ("1"/"2") a cada acionamento (quem rodou por último
+  descansa). É só rodízio de desgaste: hidraulicamente idêntica a uma bomba
+  comum. Puramente visual + registro no log — não muda a física.
 - **Check valve / registro / boia** — refluxo bloqueado; registro on/off manual;
   boia mecânica fecha ao encher o destino.
 - **Sensor reverso** — inverte a lógica do sensor eletrônico: **liga no nível

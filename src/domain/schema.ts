@@ -294,6 +294,7 @@ export function limparEstadoTransitorio(projeto: ProjetoSimulacao): ProjetoSimul
     const props = p.props as Record<string, unknown>;
     delete props.ultimaTroca; // sensor: instante da última troca (delay)
     delete props.pedindoLigar; // sensor: pedido corrente
+    delete props.unidadeAtiva; // bomba em revezamento: metade ativa corrente
     const boia = props.boia as Record<string, unknown> | undefined;
     if (boia) delete boia.aberta; // boia de tubo: estado de histerese
   }

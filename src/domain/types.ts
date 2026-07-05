@@ -117,6 +117,16 @@ export interface PropsBomba {
   modoControle?: 'auto' | 'ligado' | 'desligado';
   /** Estado atual liga/desliga (mutável durante a execução). */
   ligada?: boolean;
+  /**
+   * Bomba dupla em REVEZAMENTO: uma única bomba (mesmos sensores, mesma vazão e
+   * mesma tubulação) desenhada como um círculo dividido em duas metades ("1" e
+   * "2"). A cada ACIONAMENTO (borda de subida do liga), a metade ativa alterna —
+   * quem rodou por último descansa no ciclo seguinte. É só rodízio de desgaste:
+   * hidraulicamente equivale a uma bomba comum.
+   */
+  revezamento?: boolean;
+  /** Revezamento: metade atualmente/último a assumir (1 ou 2). Estado transitório. */
+  unidadeAtiva?: 1 | 2;
 }
 
 export interface PropsFonte {
