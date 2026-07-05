@@ -102,7 +102,7 @@ export function criarPeca(
     case 'consumo':
       return { ...base, props: { vazaoDemanda: 3, aberto: true } };
     case 'sensor':
-      return { ...base, props: { bombaAlvo: '', nivelMinimo: 1, nivelMaximo: 4 } };
+      return { ...base, props: { bombasAlvo: [], nivelMinimo: 1, nivelMaximo: 4 } };
     case 'juncao':
       return { ...base, props: {} };
   }

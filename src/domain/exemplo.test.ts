@@ -17,16 +17,16 @@ describe('projeto de exemplo (reservatórios empilhados)', () => {
     expect(cotas[0]! < cotas[1]! && cotas[1]! < cotas[2]!).toBe(true); // empilhados
   });
 
-  it('a fonte reabastece o reservatório inferior (sucção protegida pela boia reversa)', () => {
+  it('a fonte reabastece o reservatório inferior (bomba desligada pelo sensor reverso)', () => {
     const nivel = (proj: ReturnType<typeof projetoExemplo>, id: string): number => {
       const p = proj.pecas.find((x) => x.id === id)!;
       return isReservatorio(p) ? (p.props.nivel ?? 0) : 0;
     };
     const inicial = projetoExemplo();
-    const infAntes = nivel(inicial, 'inferior'); // 2 m — no mínimo da boia reversa
+    const infAntes = nivel(inicial, 'inferior'); // 2 m — no mínimo do sensor reverso
     const r = rodarTicks(inicial, 600); // ~60 s de simulação
-    // A boia reversa da sucção está fechada (inferior no mínimo), a bomba não
-    // puxa; a fonte enche o inferior, então o nível SOBE.
+    // O sensor reverso do inferior desliga a bomba (inferior no mínimo); a fonte
+    // enche o inferior, então o nível SOBE.
     expect(nivel(r.projeto, 'inferior')).toBeGreaterThan(infAntes);
   });
 
@@ -38,12 +38,13 @@ describe('projeto de exemplo (reservatórios empilhados)', () => {
     }
   });
 
-  it('a boia reversa da sucção protege o inferior no nível inicial', () => {
+  it('o sensor reverso do inferior desliga a bomba no nível inicial', () => {
     const r = rodarTicks(projetoExemplo(), 1);
-    // inferior = 2 = mínimo da boia reversa da sucção → sucção fechada: a bomba
-    // não puxa e NÃO é sinalizada "a seco" (é proteção, não falta d'água).
+    const bomba = r.projeto.pecas.find((x) => x.id === 'bomba')!;
+    // inferior = 2 = mínimo do sensor reverso → 'desligar' vence o pedido do
+    // sensor do superior → a bomba fica parada (protegida), sem "rodar a seco".
+    expect((bomba.props as { ligada?: boolean }).ligada).toBe(false);
     expect(r.vazoes['succao'] ?? 0).toBe(0);
-    expect(r.boiasFechadas).toContain('succao');
     expect(r.bombasASeco).not.toContain('bomba');
   });
 });

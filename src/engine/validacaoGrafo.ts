@@ -123,8 +123,8 @@ export function validarGrafo(
   }
   for (const p of projeto.pecas) {
     if (conectados.has(p.id)) continue;
-    // Sensor eletrônico se liga à bomba via props, não via conexão.
-    if (isSensor(p) && pecasPorId.has(p.props.bombaAlvo)) continue;
+    // Sensor eletrônico se liga à(s) bomba(s) via props, não via conexão.
+    if (isSensor(p) && p.props.bombasAlvo.some((id) => pecasPorId.has(id))) continue;
     erros.push({
       caminho: `pecas[${p.id}]`,
       mensagem: `peça "${p.id}" (${p.tipo}) está órfã — sem nenhuma conexão`,

@@ -76,19 +76,12 @@ export function projetoExemplo(): ProjetoSimulacao {
         portas: ['entrada', 'saida'],
         props: {
           vazaoNominal: 50,
-          sensores: ['sensor_sup'],
+          sensores: ['sensor_sup', 'sensor_inf'],
           ligada: false,
         } as PropsBomba,
         rotulo: 'Bomba',
       },
-      // Boia reversa na sucção: protege o inferior (fecha em 2 m, reabre em 3 m) —
-      // faz o papel da antiga proteção a seco, agora com histerese.
-      tubo('succao', 'Cano de sucção', 381, 450, {
-        diametro: 110,
-        registro: { aberto: true },
-        checkValve: true,
-        boia: { nivelMinimo: 2, nivelMaximo: 3, reversa: true },
-      }),
+      tubo('succao', 'Cano de sucção', 381, 450, { diametro: 110, registro: { aberto: true }, checkValve: true }),
       tubo('recalque_meio', 'Recalque → meio', 381, 347, { diametro: 60, registro: { aberto: false }, checkValve: true, alturaSaida: 5.5 }),
       tubo('recalque_sup', 'Recalque → superior', 381, 226, { diametro: 60, registro: { aberto: true }, checkValve: true, alturaSaida: 5.5 }),
       {
@@ -115,8 +108,19 @@ export function projetoExemplo(): ProjetoSimulacao {
         x: 660,
         y: 113,
         portas: ['sonda'],
-        props: { bombaAlvo: 'bomba', nivelMinimo: 3, nivelMaximo: 5.5, histerese: true, delay: 10 } as PropsSensor,
-        rotulo: 'Boia Eletrônica',
+        props: { bombasAlvo: ['bomba'], nivelMinimo: 3, nivelMaximo: 5.5, histerese: true, delay: 10 } as PropsSensor,
+        rotulo: 'Boia Eletrônica (superior)',
+      },
+      {
+        // Sensor REVERSO no inferior: desliga a bomba em 2 m (protege a origem),
+        // libera em 3 m. Faz o papel da antiga proteção a seco, com histerese.
+        id: 'sensor_inf',
+        tipo: 'sensor',
+        x: 340,
+        y: 620,
+        portas: ['sonda'],
+        props: { bombasAlvo: ['bomba'], nivelMinimo: 2, nivelMaximo: 3, reversa: true } as PropsSensor,
+        rotulo: 'Sensor reverso (inferior)',
       },
       tubo('boia_manual', 'Boia Manual', 383, 578, { diametro: 110, registro: { aberto: true }, boia: { nivelMinimo: 6, nivelMaximo: 8.5 }, alturaSaida: 8.5 }),
       tubo('bypass', 'bypass Boia Manual', 663, 280, { diametro: 32, registro: { aberto: true }, boia: { nivelMinimo: 4, nivelMaximo: 5.5 }, alturaEntrada: 4, alturaSaida: 4 }),
@@ -129,7 +133,7 @@ export function projetoExemplo(): ProjetoSimulacao {
         x: 662.6446280991738,
         y: 574.5454545454545,
         portas: ['entrada', 'saida'],
-        props: { vazaoNominal: 10, sensores: [], ligada: false } as PropsBomba,
+        props: { vazaoNominal: 10, sensores: ['sen_26'], ligada: false } as PropsBomba,
         rotulo: 'Bomba Incêndio',
       },
       {
@@ -141,20 +145,17 @@ export function projetoExemplo(): ProjetoSimulacao {
         props: { vazaoDemanda: 0, aberto: false } as PropsConsumo,
         rotulo: 'Hidrantes',
       },
-      // Boia reversa protege o meio (fecha em 4 m, reabre em 5 m).
-      tubo('tub_23', 'Incêndio', 661.893313298272, 516.3185574755819, {
-        diametro: 60,
-        registro: { aberto: true },
-        boia: { nivelMinimo: 4, nivelMaximo: 5, reversa: true },
-      }),
+      tubo('tub_23', 'Incêndio', 661.893313298272, 516.3185574755819, { diametro: 60, registro: { aberto: true } }),
       {
+        // Sensor REVERSO no meio: desliga a bomba de incêndio em 4 m (protege o
+        // meio de esvaziar), libera em 5 m.
         id: 'sen_26',
         tipo: 'sensor',
         x: 663.5161532682188,
         y: 428.9406461307286,
         portas: ['sonda'],
-        props: { bombaAlvo: 'bom_19', nivelMinimo: 1, nivelMaximo: 4 } as PropsSensor,
-        rotulo: 'Boia Eletrônica',
+        props: { bombasAlvo: ['bom_19'], nivelMinimo: 4, nivelMaximo: 5, reversa: true } as PropsSensor,
+        rotulo: 'Sensor reverso (meio)',
       },
     ],
     conexoes: [
@@ -182,6 +183,7 @@ export function projetoExemplo(): ProjetoSimulacao {
       { id: 'c_24', origem: 'meio', destino: 'tub_23' },
       { id: 'c_25', origem: 'tub_23', destino: 'bom_19' },
       { id: 'c_27', origem: 'sen_26', destino: 'meio' },
+      { id: 'c_inf', origem: 'sensor_inf', destino: 'inferior' },
     ],
   };
 }

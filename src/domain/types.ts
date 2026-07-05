@@ -47,10 +47,11 @@ export interface NivelControle {
   /** Só sensor eletrônico: tempo mínimo (s) entre liga/desliga. */
   delay?: number;
   /**
-   * Só boia de tubo: lógica REVERSA (corte por nível baixo). Em vez de monitorar
-   * o destino e fechar quando cheio, monitora o reservatório de ORIGEM e FECHA no
-   * nível mínimo (reabre no máximo). Protege um reservatório de esvaziar / desliga
-   * a bomba de um reservatório para hidrantes quando ele baixa.
+   * Só sensor: lógica REVERSA (corte por nível baixo). Em vez de LIGAR no mínimo
+   * e DESLIGAR no máximo, o sensor reverso DESLIGA a bomba no nível mínimo e a
+   * libera (LIGAR) no máximo. Aplicado a um reservatório de origem, protege-o de
+   * esvaziar / desliga a bomba de um reservatório para hidrantes quando ele baixa.
+   * A bomba respeita os sensores normais e reversos ao mesmo tempo (desligar vence).
    */
   reversa?: boolean;
   /**
@@ -146,8 +147,8 @@ export interface PropsConsumo {
 }
 
 export type PropsSensor = NivelControle & {
-  /** ID da bomba controlada por este sensor. */
-  bombaAlvo: string;
+  /** IDs das bombas controladas por este sensor (um sensor pode reger várias). */
+  bombasAlvo: string[];
   /** Estado interno do sensor (pedido de liga/desliga do tick anterior). */
   pedindoLigar?: boolean;
   /** Instante (s de simulação) da última troca de estado — usado pelo delay. */

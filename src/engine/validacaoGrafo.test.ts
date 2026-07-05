@@ -98,8 +98,8 @@ describe('validação de grafo — permitidos', () => {
     const p = criarPeca('bomba', 0, 0, 'P');
     const s1 = criarPeca('sensor', 0, 0, 'S1');
     const s2 = criarPeca('sensor', 0, 0, 'S2');
-    (s1.props as { bombaAlvo: string }).bombaAlvo = 'P';
-    (s2.props as { bombaAlvo: string }).bombaAlvo = 'P';
+    (s1.props as { bombasAlvo: string[] }).bombasAlvo = ['P'];
+    (s2.props as { bombasAlvo: string[] }).bombasAlvo = ['P'];
     const r = validarGrafo(
       proj(
         [a, d, p, s1, s2],
@@ -142,7 +142,7 @@ describe('validação de grafo — permitidos', () => {
     const a = criarPeca('reservatorio', 0, 0, 'A');
     const d = criarPeca('reservatorio', 0, 0, 'D');
     const s = criarPeca('sensor', 0, 0, 'S');
-    (s.props as { bombaAlvo: string }).bombaAlvo = 'P';
+    (s.props as { bombasAlvo: string[] }).bombasAlvo = ['P'];
     const r = validarGrafo(
       proj([p, a, d, s], [criarConexao('A', 'P'), criarConexao('P', 'D')]),
     );

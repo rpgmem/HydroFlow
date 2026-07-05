@@ -300,23 +300,14 @@ function BoiaFields({
       </label>
       {ativa && (
         <>
-          <label className="checkbox" style={{ marginTop: 4 }}>
-            <input
-              type="checkbox"
-              checked={boia.reversa ?? false}
-              aria-label="Boia reversa (corte por nível baixo)"
-              onChange={(e) => upd({ boia: { ...boia, reversa: e.target.checked } })}
-            />
-            Reversa (monitora a origem; fecha no mínimo)
-          </label>
           <Num
-            label={boia.reversa ? 'Boia: fecha (origem) com nível ≤' : 'Boia: abre com nível ≤'}
+            label="Boia: abre com nível ≤"
             unidade={unidade}
             value={boia.nivelMinimo}
             onChange={(v) => upd({ boia: { ...boia, nivelMinimo: v } })}
           />
           <Num
-            label={boia.reversa ? 'Boia: reabre (origem) com nível ≥' : 'Boia: fecha com nível ≥'}
+            label="Boia: fecha com nível ≥"
             unidade={unidade}
             value={boia.nivelMaximo}
             onChange={(v) => upd({ boia: { ...boia, nivelMaximo: v } })}
@@ -436,25 +427,51 @@ function SensorForm({
   u: UniLabel;
 }) {
   const bombas = projeto.pecas.filter(isBomba);
+  const alvos = props.bombasAlvo;
+  const alternarAlvo = (id: string, marcado: boolean): void =>
+    upd({ bombasAlvo: marcado ? [...alvos, id] : alvos.filter((x) => x !== id) });
+  const reversa = props.reversa ?? false;
   return (
     <>
       <div className="field">
-        <label>Bomba controlada</label>
-        <select
-          value={props.bombaAlvo}
-          aria-label="Bomba controlada"
-          onChange={(e) => upd({ bombaAlvo: e.target.value })}
-        >
-          <option value="">—</option>
-          {bombas.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.id}
-            </option>
-          ))}
-        </select>
+        <label>Bombas controladas</label>
+        {bombas.length === 0 ? (
+          <p className="telemetry" style={{ margin: 0 }}>Nenhuma bomba no projeto.</p>
+        ) : (
+          bombas.map((b) => (
+            <label className="checkbox" key={b.id}>
+              <input
+                type="checkbox"
+                checked={alvos.includes(b.id)}
+                aria-label={`Controlar ${b.rotulo && b.rotulo.trim() ? b.rotulo : b.id}`}
+                onChange={(e) => alternarAlvo(b.id, e.target.checked)}
+              />
+              {b.rotulo && b.rotulo.trim() ? b.rotulo : b.id}
+            </label>
+          ))
+        )}
       </div>
-      <Num label="Nível mínimo (liga)" unidade={u.comp} value={props.nivelMinimo} onChange={(v) => upd({ nivelMinimo: v })} />
-      <Num label="Nível máximo (desliga)" unidade={u.comp} value={props.nivelMaximo} onChange={(v) => upd({ nivelMaximo: v })} />
+      <label className="checkbox">
+        <input
+          type="checkbox"
+          checked={reversa}
+          aria-label="Sensor reverso (corte por nível baixo)"
+          onChange={(e) => upd({ reversa: e.target.checked })}
+        />
+        Reverso (desliga no mínimo; protege a origem)
+      </label>
+      <Num
+        label={reversa ? 'Nível mínimo (desliga)' : 'Nível mínimo (liga)'}
+        unidade={u.comp}
+        value={props.nivelMinimo}
+        onChange={(v) => upd({ nivelMinimo: v })}
+      />
+      <Num
+        label={reversa ? 'Nível máximo (libera/liga)' : 'Nível máximo (desliga)'}
+        unidade={u.comp}
+        value={props.nivelMaximo}
+        onChange={(v) => upd({ nivelMaximo: v })}
+      />
       <label className="checkbox">
         <input
           type="checkbox"
