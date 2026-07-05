@@ -37,7 +37,18 @@ simulação; depois **▶ Play**.
 **Interação no editor:** clique numa peça para selecioná-la (e editar/renomear no
 inspetor); **arraste do ponto ciano (saída)** de uma peça até outra para criar uma
 conexão — conexões nunca são criadas por acaso. Clique numa linha para
-selecioná-la e apague com **Delete** (ou no botão flutuante).
+selecioná-la e apague com **Delete** (ou no botão flutuante). O canvas tem
+**pan** (arrastar o fundo) e **zoom** (roda do mouse / pinça / botões `+`/`−`).
+
+**Recursos da interface:**
+
+- **Log de eventos** (📋) — histórico com acionamento de bomba, disparos de
+  sensores e alertas (ladrão/transbordo, déficit, rodando a seco).
+- **Tema** — escuro (padrão) ou claro, alternável na barra (`☀ Claro`/`🌙 Escuro`).
+- **Imprimir** (🖨) — enquadra todo o diagrama, aplica fundo branco com rótulos
+  escuros e envia para impressão, restaurando a vista ao terminar.
+- **Mobile** — em telas pequenas a interface fica em modo **ver e simular**
+  (a edição de grafo permanece exclusiva do desktop).
 
 ## Arquitetura
 
@@ -104,6 +115,8 @@ interface NivelControle {
   nivelMaximo?: number;
   histerese?: boolean;                  // só sensor eletrônico
   delay?: number;                       // só sensor eletrônico (s)
+  reversa?: boolean;                    // sensor: liga no máximo, desliga no mínimo
+  aberta?: boolean;                     // boia de tubo: estado (mutável na execução)
 }
 ```
 
@@ -112,11 +125,11 @@ interface NivelControle {
 | Tipo | Campos |
 | --- | --- |
 | `reservatorio` | `formato` (`cilindro`\|`retangular`), `raio?`/`largura?`/`comprimento?`, `alturaMaxima`, `cotaBase`, `nivel?` |
-| `tubo` | `diametro` (**mm**), `checkValve?`, `registro?: {aberto}`, `boia?: NivelControle`, `ladrao?: {nivel}` (dreno de transbordo) |
+| `tubo` | `diametro` (**mm**), `checkValve?`, `registro?: {aberto}`, `boia?: NivelControle`, `ladrao?: {nivel}` (dreno de transbordo), `alturaEntrada?`/`alturaSaida?` (altura da conexão em cada ponta, relativa à base; default 0) |
 | `bomba` | `vazaoNominal`, `curva?: {k}`, `sensores: string[]`, `modoControle?` (`auto`\|`ligado`\|`desligado`), `ligada?` |
 | `fonte` | `vazaoFixa`, `boia?: NivelControle` |
-| `consumo` | `vazaoDemanda`, `aberto?` (ponto de saída/demanda; retira água e descarta) |
-| `sensor` | `NivelControle & { bombaAlvo: string }` |
+| `consumo` | `vazaoDemanda`, `aberto?`, `perfil?` (`fixo`\|`senoidal`\|`intermitente`), `vazaoMin?`/`vazaoMax?`/`periodo?` (perfil variável) — ponto de saída/demanda; retira água e descarta |
+| `sensor` | `NivelControle & { bombasAlvo: string[] }` — controla **uma ou mais** bombas; `reversa` inverte a lógica (liga no máximo, desliga no mínimo) |
 | `juncao` | `{}` (só distribui vazão, sem volume próprio) |
 
 `cotaBase` é a elevação física da base do reservatório — permite **empilhamento**
@@ -133,7 +146,10 @@ Fórmulas implementadas em `src/engine/simulador.ts`:
 - **Bomba** — `Q = vazaoNominal` (sem curva) ou `Q = vazaoNominal − k·Δh_lift`
   (com curva). Sentido **forçado** pela conexão, independe do Δh natural; `Q ≥ 0`.
   Com **múltiplas saídas**, a vazão nominal é dividida entre elas (por
-  `vazaoAlocada` se informada, senão igualmente).
+  `vazaoAlocada` se informada, senão igualmente). A bomba pode empurrar direto
+  para um **consumo**: entrega `min(vazão da bomba, demanda do consumo)` — se a
+  demanda for maior que a vazão nominal, a bomba não acompanha e um **alerta de
+  déficit** é emitido; se a demanda for zero, a bomba não liga por ali.
 - **Fonte** — vazão fixa constante, externa ao grafo; múltiplos destinos usam
   `vazaoAlocada`.
 - **Consumo** — ponto de saída/demanda: retira `vazaoDemanda` do reservatório de
@@ -153,11 +169,14 @@ realistas (vazões em L/s enchendo tanques de milhares de litros) em segundos.
   gerar erro nem travar o tick.
 - **Rodando a seco** — a bomba não desliga sozinha por nível; se a origem esvaziar
   com ela ligada, a vazão é 0 (sem fantasma) e um alerta é emitido. A proteção por
-  nível é feita por uma **boia reversa** na sucção.
+  nível baixo é feita por um **sensor reverso** monitorando a sucção.
 - **Controle da bomba** — modo `auto` (segue o sensor), `ligado` ou `desligado`.
 - **Check valve / registro / boia** — refluxo bloqueado; registro on/off manual;
-  boia mecânica fecha ao encher o destino. Boia **reversa** monitora a origem e
-  fecha no nível mínimo (corte por nível baixo).
+  boia mecânica fecha ao encher o destino.
+- **Sensor reverso** — inverte a lógica do sensor eletrônico: **liga no nível
+  máximo, desliga no mínimo**. Serve para proteger a sucção (não rodar a seco) ou
+  acionar uma bomba de hidrantes. Uma bomba respeita **todos** os seus sensores em
+  conjunto (normal + reverso) e um sensor pode reger **várias** bombas.
 
 ### Ordem de avaliação no `tick()`
 
@@ -174,15 +193,16 @@ Se falhar, permanece em edição e exibe os erros.
 
 **Bloqueia:** nó órfão · aresta sem origem/destino · ciclo bomba→…→origem sem
 dreno (moto-perpétuo) · fonte com `Σ vazaoAlocada > vazaoFixa`.
-**Permite:** fonte com múltiplos destinos · múltiplos sensores por bomba.
+**Permite:** fonte com múltiplos destinos · múltiplos sensores por bomba · um
+sensor regendo várias bombas.
 
 ## Modos de operação
 
 - **`edicao`** — grafo mutável (add/remove peça, conexão, mover no canvas).
 - **`execucao`** — grafo estruturalmente imutável; só valores mudam (nível, vazão,
   registro, bomba on/off, thresholds de sensor). Voltar à edição exige pause/reset.
-- **Controle de velocidade** — 1x / 2x / 5x roda N ticks por frame **sem alterar o
-  `dt`** da física (seção 7).
+- **Controle de velocidade** — 1x / 5x / 30x / 120x roda N ticks por frame **sem
+  alterar o `dt`** da física (seção 7).
 
 ## Persistência
 
