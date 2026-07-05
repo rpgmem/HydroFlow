@@ -17,6 +17,10 @@ especificação técnica.
 - **Histerese real nas boias mecânicas**: o estado aberta/fechada é mantido entre
   o mínimo e o máximo (persistido entre ticks), eliminando o chaveamento rápido
   (chatter). Vale para boias normais e reversas.
+- **Export limpa o estado interno de execução**: ao salvar, o bookkeeping das
+  peças (`ultimaTroca`/`pedindoLigar` do sensor, `aberta` da boia) é removido do
+  arquivo — era o tipo de estado que congelava uma bomba por ~17000 s ao
+  recarregar. O cenário (níveis, bomba ligada/desligada) é preservado.
 
 ### Alterado / Removido
 

@@ -30,6 +30,24 @@ describe('round-trip export/import', () => {
   });
 });
 
+describe('limpeza de estado transitório no export', () => {
+  it('remove ultimaTroca/pedindoLigar do sensor e aberta da boia', () => {
+    const s = criarPeca('sensor', 0, 0, 'S');
+    (s.props as Record<string, unknown>).ultimaTroca = 16696;
+    (s.props as Record<string, unknown>).pedindoLigar = false;
+    const t = criarPeca('tubo', 0, 0, 'T');
+    (t.props as Record<string, unknown>).boia = { nivelMinimo: 1, nivelMaximo: 2, aberta: false };
+    const proj = { ...projetoVazio('X'), pecas: [s, t], conexoes: [] };
+
+    const texto = serializarProjeto(proj);
+    expect(texto).not.toContain('ultimaTroca');
+    expect(texto).not.toContain('pedindoLigar');
+    expect(texto).not.toContain('aberta');
+    // O objeto original não é mutado (a limpeza clona).
+    expect((s.props as Record<string, unknown>).ultimaTroca).toBe(16696);
+  });
+});
+
 describe('tratamento de versão incompatível no import', () => {
   it('recusa MAJOR incompatível', () => {
     const proj = { ...projetoRico(), versao: '2.0.0' };
