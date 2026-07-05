@@ -83,6 +83,15 @@ function cargaM(peca: PecaDe<'reservatorio'>, kL: number): number {
 }
 
 /**
+ * Reservatório VAZIO: sem coluna d'água na origem não há o que escoar, ainda que
+ * a carga (cotaBase + nível) seja positiva pela elevação. Evita vazão "fantasma"
+ * saindo de um tanque vazio.
+ */
+function reservatorioVazio(r: PecaDe<'reservatorio'>): boolean {
+  return (r.props.nivel ?? 0) <= 1e-9;
+}
+
+/**
  * Índices de vizinhança para consultas O(1) durante o tick.
  */
 class GrafoIndex {
@@ -349,12 +358,14 @@ function calcularTubo(
 
   if (deltaH > 0) {
     // Fluxo natural origem→destino.
+    if (reservatorioVazio(up)) return 0; // origem vazia → nada a escoar
     fluxos.push({ origem: up.id, destino: down?.id ?? null, vazao: q });
     return q;
   }
   // deltaH < 0 → refluxo destino→origem, bloqueado por checkValve.
   if (checkValve) return 0;
-  fluxos.push({ origem: down?.id ?? null, destino: up.id, vazao: q });
+  if (!down || reservatorioVazio(down)) return 0; // origem do refluxo vazia → sem fluxo
+  fluxos.push({ origem: down.id, destino: up.id, vazao: q });
   return -q; // sinal indica sentido reverso na telemetria
 }
 
@@ -492,8 +503,8 @@ function calcularConsumo(
   };
 
   if (!cp.res) return 0; // sem reservatório de origem → nada a drenar
-  if (consumo.props.aberto === false || !cp.aberto) {
-    reivindicar(0); // saída fechada ou registro fechado no caminho → sem fluxo
+  if (consumo.props.aberto === false || !cp.aberto || reservatorioVazio(cp.res)) {
+    reivindicar(0); // fechado, caminho bloqueado ou origem vazia → sem fluxo
     return 0;
   }
   const up = cp.res;

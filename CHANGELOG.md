@@ -5,6 +5,17 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 [SemVer](https://semver.org/lang/pt-BR/). As versões espelham os sprints da
 especificação técnica.
 
+## [1.4.2] — Correção: vazão fantasma de reservatório vazio
+
+### Corrigido
+
+- **Tubo/consumo saindo de um reservatório vazio mostrava vazão "fantasma"**. A
+  carga hidráulica usa `cotaBase + nível`; num tanque **vazio mas elevado** a
+  carga continua positiva pela cota, então o motor calculava vazão pela gravidade
+  mesmo sem água para escoar (a telemetria/animação indicava consumo, embora o
+  volume real não se movesse). Agora, sem coluna d'água na origem, não há fluxo —
+  nem no tubo (ida e refluxo) nem no ponto de consumo.
+
 ## [1.4.1] — Correção: consumo em 0 drenava o reservatório
 
 ### Corrigido
