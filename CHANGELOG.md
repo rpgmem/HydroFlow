@@ -5,6 +5,14 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 [SemVer](https://semver.org/lang/pt-BR/). As versões espelham os sprints da
 especificação técnica.
 
+## [1.8.1] — Ajuste de layout do exemplo
+
+### Alterado
+
+- **Projeto de exemplo**: reposicionamento das peças (bomba, sucção, recalques,
+  sensores) e rótulos dos sensores padronizados como "Boia Eletrônica
+  (superior/inferior/meio)". Sem mudança de comportamento na simulação.
+
 ## [1.8.0] — Sensor reverso, sensor multi-bomba e histerese por sensor
 
 ### Adicionado
