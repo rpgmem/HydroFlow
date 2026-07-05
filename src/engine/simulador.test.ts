@@ -101,7 +101,7 @@ describe('vazão por gravidade em tubo', () => {
     const mk = (d: number) =>
       tick(
         projeto(
-          [res('A', { cotaBase: 5, nivel: 0 }), res('B', {}), tubo('T', { diametro: d })],
+          [res('A', { cotaBase: 5, nivel: 2 }), res('B', {}), tubo('T', { diametro: d })],
           [criarConexao('A', 'T'), criarConexao('T', 'B')],
         ),
       ).vazoes['T']!;
@@ -129,13 +129,77 @@ describe('vazão por gravidade em tubo', () => {
   });
 
   it('checkValve impede refluxo quando Δh < 0', () => {
+    const p = () =>
+      projeto(
+        // B (com água) mais alto que A → sem check valve refluiria B→A.
+        [res('A', { cotaBase: 0, nivel: 0 }), res('B', { cotaBase: 5, nivel: 2 }), tubo('T', { checkValve: true })],
+        [criarConexao('A', 'T'), criarConexao('T', 'B')],
+      );
+    expect(tick(p()).vazoes['T']).toBe(0); // check valve bloqueia o refluxo
+    // Sem check valve, o refluxo B→A acontece (B tem água).
+    const semCv = p();
+    (semCv.pecas.find((x) => x.id === 'T')!.props as PropsTubo).checkValve = false;
+    expect(tick(semCv).vazoes['T']).toBeLessThan(0); // sinal negativo = refluxo
+  });
+
+  it('reservatório vazio não escoa pelo tubo, mesmo elevado (sem vazão fantasma)', () => {
+    // A vazio mas elevado (carga positiva pela cota) não deve gerar fluxo.
     const r = tick(
       projeto(
-        [res('A', { cotaBase: 0, nivel: 0 }), res('B', { cotaBase: 5, nivel: 0 }), tubo('T', { checkValve: true })],
+        [res('A', { cotaBase: 10, nivel: 0 }), res('B', { cotaBase: 0, nivel: 0 }), tubo('T', { diametro: 200 })],
         [criarConexao('A', 'T'), criarConexao('T', 'B')],
       ),
     );
-    expect(r.vazoes['T']).toBe(0); // sem check valve fluiria de B para A
+    expect(r.vazoes['T']).toBe(0);
+    const b = r.projeto.pecas.find((x) => x.id === 'B')!.props as PropsReservatorio;
+    expect(b.nivel ?? 0).toBe(0); // B não recebeu nada
+  });
+});
+
+// ===========================================================================
+// Altura de conexão do tubo (tomada em altura nas pontas)
+// ===========================================================================
+describe('altura de conexão do tubo', () => {
+  it('tomada de entrada em altura só drena a água acima do bocal (para nesse nível)', () => {
+    const p = projeto(
+      // A (tanque pequeno) → tubo (entrada a 2 m) → ambiente. Drena de 4 até ~2.
+      [res('A', { largura: 1, comprimento: 1, cotaBase: 0, nivel: 4, alturaMaxima: 5 }), tubo('T', { diametro: 200, alturaEntrada: 2 })],
+      [criarConexao('A', 'T')],
+    );
+    const r = rodarTicks(p, 3000);
+    const a = r.projeto.pecas.find((x) => x.id === 'A')!.props as PropsReservatorio;
+    expect(a.nivel!).toBeGreaterThan(1.9);
+    expect(a.nivel!).toBeLessThan(2.1); // parou na altura da tomada, não esvaziou
+  });
+
+  it('bocal alto no destino exige carga: não empurra acima da superfície da origem', () => {
+    const r = tick(
+      projeto(
+        [
+          res('A', { cotaBase: 0, nivel: 3 }),
+          res('B', { cotaBase: 0, nivel: 0, alturaMaxima: 10 }),
+          tubo('T', { diametro: 200, alturaSaida: 5 }), // bocal do destino na elevação 5
+        ],
+        [criarConexao('A', 'T'), criarConexao('T', 'B')],
+      ),
+    );
+    expect(r.vazoes['T']).toBe(0); // superfície de A (3) abaixo do bocal do destino (5)
+  });
+
+  it('com bocais no fundo (0) o comportamento é o de sempre', () => {
+    const semAltura = tick(
+      projeto(
+        [res('A', { cotaBase: 5, nivel: 2 }), res('B', {}), tubo('T', { diametro: 100 })],
+        [criarConexao('A', 'T'), criarConexao('T', 'B')],
+      ),
+    ).vazoes['T'];
+    const comAltura0 = tick(
+      projeto(
+        [res('A', { cotaBase: 5, nivel: 2 }), res('B', {}), tubo('T', { diametro: 100, alturaEntrada: 0, alturaSaida: 0 })],
+        [criarConexao('A', 'T'), criarConexao('T', 'B')],
+      ),
+    ).vazoes['T'];
+    expect(comAltura0).toBeCloseTo(semAltura!, 9);
   });
 });
 

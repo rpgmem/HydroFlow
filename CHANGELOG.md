@@ -5,6 +5,26 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 [SemVer](https://semver.org/lang/pt-BR/). As versões espelham os sprints da
 especificação técnica.
 
+## [1.5.0] — Altura de conexão do tubo
+
+### Adicionado
+
+- **Altura de conexão em cada ponta do tubo** (`alturaEntrada` / `alturaSaida`,
+  na unidade de comprimento, relativa à base do reservatório; default 0 = fundo,
+  editável por peça no inspetor). Uma tomada em altura só escoa a água **acima**
+  do bocal: dá para modelar saídas laterais (que não esvaziam o tanque todo) e
+  bocais elevados no destino, que exigem mais carga para serem vencidos (não se
+  empurra água acima da própria superfície da origem).
+
+### Corrigido
+
+- **Tubo/consumo saindo de um reservatório vazio mostrava vazão "fantasma"**. A
+  carga hidráulica usa `cotaBase + nível`; num tanque **vazio mas elevado** a
+  carga continua positiva pela cota, então o motor calculava vazão pela gravidade
+  mesmo sem água para escoar (a telemetria/animação indicava consumo, embora o
+  volume real não se movesse). Agora, sem coluna d'água na origem (acima do bocal
+  do tubo), não há fluxo — nem no tubo (ida e refluxo) nem no ponto de consumo.
+
 ## [1.4.1] — Correção: consumo em 0 drenava o reservatório
 
 ### Corrigido
