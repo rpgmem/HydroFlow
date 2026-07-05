@@ -5,6 +5,28 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 [SemVer](https://semver.org/lang/pt-BR/). As versões espelham os sprints da
 especificação técnica.
 
+## [1.11.0] — Bitolas de tubo pré-configuradas (catálogo)
+
+### Adicionado
+
+- **Catálogo de bitolas** de tubo (DN20 a DN250) em `tubosCatalogo.ts`: o usuário
+  seleciona a bitola no inspetor (agrupada por *Soldável Fria* e *Junta Elástica*,
+  ex.: `DN110 (4") — Ø 97,8 mm`) e a aplicação grava o **diâmetro interno
+  tabelado** — usado no cálculo de vazão (Torricelli). Mais realista do que
+  digitar o nominal, e mais rápido de configurar.
+- Campo `bitola` no tubo: apenas o rótulo do preset; `diametro` (mm) continua
+  sendo o interno que a física usa. Selecionar um preset grava `diametro`;
+  editar o mm na mão vira **"Personalizado"** (diâmetros arbitrários seguem
+  possíveis). Projetos sem `bitola` continuam válidos.
+- Os internos da *Junta Elástica* (DN125–250) são aproximados (variam com a
+  classe de pressão), sinalizados com `~` no seletor.
+
+### Alterado
+
+- **Projeto de exemplo** migrado para as bitolas padrão: os canos passaram a
+  usar o diâmetro interno real (ex.: sucção 110 mm → **DN110 Ø97,8**; saídas
+  150 mm → **DN160 Ø147**), deixando as vazões mais realistas.
+
 ## [1.10.1] — Layout do exemplo em 6 colunas
 
 ### Alterado

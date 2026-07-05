@@ -22,6 +22,7 @@ import {
   type PropsTubo,
 } from '../domain/types';
 import { labelComprimento, labelVazao } from '../domain/unidades';
+import { CATALOGO_TUBOS, CATEGORIAS_TUBO, bitolaPorDn, rotuloBitola } from '../domain/tubosCatalogo';
 
 /** Rótulos de unidade derivados das unidades do projeto. */
 interface UniLabel {
@@ -194,7 +195,41 @@ function TuboForm({ props, emExecucao, upd, u }: { props: PropsTubo; emExecucao:
   const temLadrao = props.ladrao !== undefined;
   return (
     <>
-      <Num label="Diâmetro" unidade="mm" value={props.diametro} disabled={emExecucao} step={1} onChange={(v) => upd({ diametro: v })} />
+      {/* Bitola pré-configurada: seleciona o DN e grava o diâmetro INTERNO
+          tabelado (usado no cálculo de vazão). "Personalizado" libera o mm. */}
+      <div className="field">
+        <label>Bitola</label>
+        <select
+          value={props.bitola ?? ''}
+          disabled={emExecucao}
+          aria-label="Bitola"
+          onChange={(e) => {
+            const b = bitolaPorDn(e.target.value);
+            if (b) upd({ bitola: b.dn, diametro: b.internoMm });
+            else upd({ bitola: undefined });
+          }}
+        >
+          <option value="">Personalizado</option>
+          {CATEGORIAS_TUBO.map((cat) => (
+            <optgroup key={cat} label={cat}>
+              {CATALOGO_TUBOS.filter((b) => b.categoria === cat).map((b) => (
+                <option key={b.dn} value={b.dn}>
+                  {rotuloBitola(b)}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+      </div>
+      {/* Editar o diâmetro na mão limpa a bitola (vira "Personalizado"). */}
+      <Num
+        label="Diâmetro interno"
+        unidade="mm"
+        value={props.diametro}
+        disabled={emExecucao}
+        step={0.1}
+        onChange={(v) => upd({ diametro: v, bitola: undefined })}
+      />
       {/* Altura de conexão em cada ponta (relativa à base do reservatório).
           0 = fundo; acima disso, só escoa a água acima do bocal. */}
       <Num

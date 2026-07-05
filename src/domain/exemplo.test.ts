@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { projetoExemplo } from './exemplo';
 import { validarGrafo } from '../engine/validacaoGrafo';
 import { rodarTicks } from '../engine/simulador';
-import { isReservatorio } from './types';
+import { isReservatorio, isTubo } from './types';
+import { bitolaPorDn } from './tubosCatalogo';
 
 describe('projeto de exemplo (reservatórios empilhados)', () => {
   it('passa na validação de grafo', () => {
@@ -15,6 +16,16 @@ describe('projeto de exemplo (reservatórios empilhados)', () => {
     expect(reservatorios.every((r) => r.props.formato === 'cilindro')).toBe(true);
     const cotas = reservatorios.map((r) => r.props.cotaBase).sort((a, b) => a - b);
     expect(cotas[0]! < cotas[1]! && cotas[1]! < cotas[2]!).toBe(true); // empilhados
+  });
+
+  it('os tubos com bitola usam o diâmetro interno tabelado', () => {
+    for (const t of projetoExemplo().pecas.filter(isTubo)) {
+      if (t.props.bitola) {
+        const b = bitolaPorDn(t.props.bitola);
+        expect(b, `bitola ${t.props.bitola} existe no catálogo`).toBeDefined();
+        expect(t.props.diametro).toBe(b!.internoMm);
+      }
+    }
   });
 
   it('a fonte reabastece o reservatório inferior (bomba desligada pelo sensor reverso)', () => {
