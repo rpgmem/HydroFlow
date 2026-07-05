@@ -71,6 +71,8 @@ export interface ResultadoTick {
   boiasFechadas: string[];
   /** Tubos ladrão em transbordo neste tick (origem acima do nível de ladrão). */
   ladroesAtivos: string[];
+  /** Consumos cuja demanda excede a vazão da bomba que os alimenta (déficit). */
+  consumoInsuficiente: string[];
   /** Decisão corrente de cada sensor (id → 'ligar' | 'desligar' | 'manter'). */
   sensores: Record<string, Decisao>;
   /** Tempo de simulação acumulado (s) após este tick. */
@@ -157,27 +159,48 @@ class GrafoIndex {
 
   /**
    * Resolve o caminho de FLUXO de um condutor ativo (bomba/fonte/consumo) até o
-   * reservatório, informando também se o caminho está ABERTO. Um caminho fecha
-   * quando um tubo em série tem o registro fechado OU uma boia fechada. A boia é
-   * mecânica: monitora o reservatório de destino (fecha ao encher) — por isso só
-   * é avaliada no sentido 'down' (empurrando água para o destino).
+   * TERMINAL — um reservatório (`res`) ou um ponto de consumo (`consumo`) —,
+   * informando também se o caminho está ABERTO. Fecha quando um tubo em série tem
+   * registro fechado OU boia fechada. A boia é mecânica: monitora o reservatório
+   * de destino (fecha ao encher) — só avaliada no sentido 'down'.
+   *
+   * `ehRaiz` distingue o nó de partida dos intermediários: no meio do caminho, um
+   * consumo é terminal (dreno) e uma bomba/fonte é BARREIRA (elemento ativo
+   * governa o próprio fluxo — não se atravessa). Na raiz isso não vale, para a
+   * própria bomba resolver a sucção e o próprio consumo achar sua origem.
    */
   resolverFluxo(
     start: string,
     dir: 'up' | 'down',
     visitado = new Set<string>(),
-  ): { res: PecaDe<'reservatorio'> | null; aberto: boolean; tubos: string[] } {
-    if (visitado.has(start)) return { res: null, aberto: true, tubos: [] };
+    ehRaiz = true,
+  ): {
+    res: PecaDe<'reservatorio'> | null;
+    consumo: PecaDe<'consumo'> | null;
+    aberto: boolean;
+    tubos: string[];
+  } {
+    const vazio = { res: null, consumo: null, aberto: true, tubos: [] };
+    if (visitado.has(start)) return vazio;
     visitado.add(start);
     const peca = this.porId.get(start);
-    if (!peca) return { res: null, aberto: true, tubos: [] };
-    if (isReservatorio(peca)) return { res: peca, aberto: true, tubos: [] };
+    if (!peca) return vazio;
+    if (isReservatorio(peca)) return { res: peca, consumo: null, aberto: true, tubos: [] };
+    // Consumo é terminal (dreno), inclusive na raiz de uma consulta 'down' (bomba
+    // ligada direto no consumo). Exceção: a raiz de uma consulta 'up' é o próprio
+    // consumo perguntando qual é a sua origem — aí atravessa.
+    if (isConsumo(peca) && !(ehRaiz && dir === 'up')) {
+      return { res: null, consumo: peca, aberto: true, tubos: [] };
+    }
+    // Elemento ativo (bomba/fonte) é barreira no meio do caminho: ele governa o
+    // próprio fluxo, não se atravessa por gravidade.
+    if (!ehRaiz && (isBomba(peca) || isFonte(peca))) return vazio;
 
     const arestas = dir === 'up' ? this.entrada.get(start) : this.saida.get(start);
     for (const c of arestas ?? []) {
       const prox = dir === 'up' ? c.origem : c.destino;
-      const sub = this.resolverFluxo(prox, dir, visitado);
-      if (!sub.res) continue;
+      const sub = this.resolverFluxo(prox, dir, visitado, false);
+      if (!sub.res && !sub.consumo) continue;
       let aberto = sub.aberto;
       const tubos = sub.tubos;
       if (isTubo(peca)) {
@@ -187,14 +210,14 @@ class GrafoIndex {
         } else if (
           peca.props.boia &&
           dir === 'down' &&
-          !boiaAberta(peca.props.boia, sub.res.props.nivel ?? 0, true)
+          !boiaAberta(peca.props.boia, sub.res?.props.nivel ?? 0, true)
         ) {
           aberto = false; // boia fechada (destino cheio)
         }
       }
-      return { res: sub.res, aberto, tubos };
+      return { res: sub.res, consumo: sub.consumo, aberto, tubos };
     }
-    return { res: null, aberto: true, tubos: [] };
+    return vazio;
   }
 }
 
@@ -252,12 +275,13 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   const u = proj.unidades;
   const fluxos: FluxoResolvido[] = [];
   const vazoesM3: Record<string, number> = {};
+  const consumoInsuficiente: string[] = [];
 
   // Elementos ATIVOS primeiro: além da própria vazão, anotam a vazão nos tubos
   // em série pelos quais empurram a água (para a telemetria/animação refletir o
   // fluxo que passa por esses canos).
   for (const p of proj.pecas) {
-    if (isBomba(p)) vazoesM3[p.id] = calcularBomba(idx, p, g, u, fluxos, vazoesM3);
+    if (isBomba(p)) vazoesM3[p.id] = calcularBomba(idx, p, g, u, tempoAtual, fluxos, vazoesM3, consumoInsuficiente);
     else if (isFonte(p)) vazoesM3[p.id] = calcularFonte(idx, p, u, fluxos, vazoesM3);
     else if (isConsumo(p)) vazoesM3[p.id] = calcularConsumo(idx, p, g, u, tempoAtual, fluxos, vazoesM3);
   }
@@ -299,6 +323,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     bombasASeco,
     boiasFechadas,
     ladroesAtivos,
+    consumoInsuficiente,
     sensores,
     tempo: tempoFim,
   };
@@ -340,6 +365,12 @@ function calcularTubo(
     ladroesAtivos.push(tubo.id);
     return q;
   }
+
+  // Tubo com conexão a jusante que NÃO alcança um reservatório (leva a uma bomba
+  // ou consumo) não é descarga livre ao ambiente — o elemento ativo governa esse
+  // fluxo. Só um tubo PENDURADO (sem conexão a jusante) descarrega ao ambiente.
+  // Sem isso, o cano de sucção de uma bomba drenava a origem à toa quando ociosa.
+  if (!down && (idx.saida.get(tubo.id)?.length ?? 0) > 0) return 0;
 
   // Altura em que o tubo toca cada reservatório (relativa à base). Uma tomada em
   // altura só escoa a água ACIMA dela.
@@ -393,8 +424,10 @@ function calcularBomba(
   bomba: PecaDe<'bomba'>,
   g: number,
   u: Unidades,
+  tempo: number,
   fluxos: FluxoResolvido[],
   vazoes: Record<string, number>,
+  consumoInsuficiente: string[],
 ): number {
   if (!bomba.props.ligada) return 0;
 
@@ -408,29 +441,49 @@ function calcularBomba(
 
   void g; // a bomba é forçada (não usa Torricelli); g mantém a assinatura uniforme
 
-  // Uma bomba pode alimentar múltiplas saídas (ex.: recalque para dois
-  // reservatórios). Primeiro descobrimos quais saídas estão realmente ABERTAS
-  // (registro/boia/destino) — a vazão nominal é dividida só entre elas. Assim,
-  // fechar uma saída NÃO desperdiça a sua parcela: a bomba manda a vazão cheia
-  // pelas saídas que restam. Empurrar para um reservatório cheio é permitido
-  // (transborda, com alerta do ladrão) — só o consumo em 0 não recebe fluxo.
+  // Uma bomba pode alimentar múltiplas saídas: reservatórios (recalque) ou
+  // pontos de CONSUMO (ex.: bomba de incêndio → hidrantes). A vazão nominal é
+  // dividida só entre as saídas ABERTAS. Uma saída para consumo só conta se o
+  // consumo estiver aberto e com demanda > 0 — por isso "consumo 0 = a bomba não
+  // empurra nada". Empurrar para um reservatório cheio é permitido (transborda).
+  const demandaDe = (cons: PecaDe<'consumo'>): number =>
+    cons.props.aberto === false ? 0 : demandaConsumo(cons.props, tempo);
+
   const abertas = (idx.saida.get(bomba.id) ?? [])
     .map((c) => ({ c, dp: idx.resolverFluxo(c.destino, 'down') }))
-    .filter((x) => x.dp.res && x.dp.aberto);
+    .filter((x) => {
+      if (!x.dp.aberto) return false;
+      if (x.dp.res) return true; // reservatório sempre aceita
+      if (x.dp.consumo) return demandaDe(x.dp.consumo) > 0; // consumo só com demanda
+      return false;
+    });
   const m = abertas.length;
-  if (m === 0) return 0; // nenhuma saída aberta → bomba não move nada
+  if (m === 0) return 0; // nenhuma saída aberta/demandada → bomba não move nada
 
   let total = 0;
   for (const { c, dp } of abertas) {
-    const down = dp.res!;
-    const liftM = cargaM(down, kL) - hUp; // carga (m) a vencer nesta saída
     const base = c.vazaoAlocada ?? bomba.props.vazaoNominal / m;
-    const qUser = bomba.props.curva ? base - bomba.props.curva.k * liftM : base;
+    let qUser: number;
+    let destino: string | null;
+    if (dp.res) {
+      const liftM = cargaM(dp.res, kL) - hUp; // carga (m) a vencer nesta saída
+      qUser = bomba.props.curva ? base - bomba.props.curva.k * liftM : base;
+      destino = dp.res.id;
+    } else {
+      // Saída para consumo: a bomba entrega a MENOR entre a sua vazão (parcela) e
+      // a demanda. Se a demanda excede a vazão da bomba, ela não acompanha →
+      // alerta de déficit no consumo (não é erro; a bomba entrega o que dá).
+      const cons = dp.consumo!;
+      const demanda = demandaDe(cons);
+      qUser = Math.min(base, demanda);
+      destino = null; // consumo descarta a água (dreno para o ambiente)
+      if (demanda > base + 1e-9) consumoInsuficiente.push(cons.id);
+    }
     const q = vazaoParaM3(Math.max(0, qUser), u); // bomba não gera vazão negativa
 
     if (q > 0) {
-      fluxos.push({ origem: up.id, destino: down.id, vazao: q });
-      anotarTubos(vazoes, dp.tubos, q); // canos de recalque desta saída
+      fluxos.push({ origem: up.id, destino, vazao: q });
+      anotarTubos(vazoes, dp.tubos, q); // canos desta saída
       total += q;
     }
   }
@@ -640,6 +693,7 @@ export function rodarTicks(
     bombasASeco: [],
     boiasFechadas: [],
     ladroesAtivos: [],
+    consumoInsuficiente: [],
     sensores: {},
     tempo,
   };

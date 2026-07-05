@@ -19,6 +19,7 @@ export function App() {
   // classe não tem efeito visual, então o estado é inofensivo lá).
   const [inspetorAberto, setInspetorAberto] = useState(false);
   const [avisoVisivel, setAvisoVisivel] = useState(true);
+  const [logAberto, setLogAberto] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useSimulationLoop(estado.rodando, dispatch);
@@ -55,6 +56,37 @@ export function App() {
             largura={tamanho.largura}
             altura={tamanho.altura}
           />
+          <button
+            className="log-toggle"
+            onClick={() => setLogAberto((v) => !v)}
+            aria-label="Log de eventos"
+          >
+            📋 Log{estado.eventos.length ? ` (${estado.eventos.length})` : ''}
+          </button>
+          {logAberto && (
+            <div className="log-panel">
+              <div className="log-head">
+                <strong>Log de eventos</strong>
+                <button onClick={() => setLogAberto(false)} aria-label="Fechar log">
+                  ✕
+                </button>
+              </div>
+              {estado.eventos.length === 0 ? (
+                <p className="telemetry" style={{ margin: '6px 0 0' }}>
+                  Sem eventos — inicie a execução (▶).
+                </p>
+              ) : (
+                <ul className="log-lista">
+                  {[...estado.eventos].reverse().map((e, i) => (
+                    <li key={estado.eventos.length - i} className={`ev ev-${e.tipo}`}>
+                      <span className="ev-t">{e.tempo.toFixed(1)}s</span>
+                      <span>{e.mensagem}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
           {avisoVisivel && (
             <div className="aviso-desktop" role="note">
               <span>

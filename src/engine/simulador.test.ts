@@ -319,6 +319,46 @@ describe('bomba', () => {
     );
     expect(r.vazoes['P']).toBe(0);
   });
+
+  describe('bomba empurrando para consumo', () => {
+    // A(reservatório) → suc → P(bomba) → C(consumo)
+    const cenario = (demanda: number, ligada: boolean, vazaoNominal = 10) =>
+      projeto(
+        [
+          res('A', { nivel: 5 }),
+          tubo('suc', {}),
+          bomba('P', { ligada, vazaoNominal, protecaoSeco: 0 }),
+          { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: demanda, aberto: true } },
+        ],
+        [criarConexao('A', 'suc'), criarConexao('suc', 'P'), criarConexao('P', 'C')],
+      );
+
+    it('demanda < vazão da bomba → entrega a demanda', () => {
+      const r = tick(cenario(3, true, 10));
+      expect(r.vazoes['P']).toBeCloseTo(3, 9);
+      expect(r.consumoInsuficiente).not.toContain('C');
+    });
+
+    it('demanda > vazão da bomba → entrega a vazão da bomba e alerta déficit', () => {
+      const r = tick(cenario(25, true, 10));
+      expect(r.vazoes['P']).toBeCloseTo(10, 9); // a bomba não acompanha
+      expect(r.consumoInsuficiente).toContain('C');
+    });
+
+    it('consumo 0 → a bomba não empurra nada (nem drena a origem)', () => {
+      const r = tick(cenario(0, true));
+      expect(r.vazoes['P']).toBe(0);
+      const a = r.projeto.pecas.find((x) => x.id === 'A')!.props as PropsReservatorio;
+      expect(a.nivel!).toBeCloseTo(5, 9); // origem intacta
+    });
+
+    it('bomba desligada não drena a origem pelo cano de sucção', () => {
+      const r = tick(cenario(5, false));
+      expect(r.vazoes['P']).toBe(0);
+      const a = r.projeto.pecas.find((x) => x.id === 'A')!.props as PropsReservatorio;
+      expect(a.nivel!).toBeCloseTo(5, 9);
+    });
+  });
 });
 
 // ===========================================================================

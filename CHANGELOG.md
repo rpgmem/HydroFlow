@@ -5,6 +5,25 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 [SemVer](https://semver.org/lang/pt-BR/). As versões espelham os sprints da
 especificação técnica.
 
+## [1.6.0] — Bomba para consumo, alerta de déficit e log de eventos
+
+### Adicionado
+
+- **Bomba pode empurrar para um ponto de consumo** (ex.: bomba de incêndio →
+  hidrantes). A bomba entrega a MENOR entre a sua vazão e a demanda do consumo:
+  se a demanda é menor, entrega a demanda; se é maior, entrega a sua vazão (não
+  acompanha) e o **consumo acende em alerta de déficit** (laranja). Consumo com
+  demanda 0 (ou fechado) → a bomba não empurra nada por ali.
+- **Log de eventos** da execução: lista com acionamentos de bomba (liga/desliga),
+  decisões de sensor (ligar/desligar) e alertas (proteção a seco, ladrão em
+  transbordo, déficit de consumo, transbordo de reservatório), com o instante de
+  cada evento. Abre pelo botão **📋 Log** no canvas.
+
+### Corrigido
+
+- Um cano que leva a uma bomba/consumo não é mais tratado como dreno ao ambiente:
+  a sucção de uma bomba ociosa não drena mais a origem à toa.
+
 ## [1.5.1] — Correção: sensor congelado por estado exportado
 
 ### Corrigido
