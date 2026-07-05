@@ -110,8 +110,16 @@ export interface PropsTubo {
 
 export interface PropsBomba {
   vazaoNominal: number;
-  /** Curva simplificada: vazao = vazaoNominal - k·Δh. */
+  /** Curva simplificada (explícita): vazao = vazaoNominal - k·Δh. */
   curva?: { k: number };
+  /**
+   * Altura nominal de recalque (m) — a "plaquinha" da bomba. Quando informada, a
+   * curva é DERIVADA automaticamente: a bomba entrega `vazaoNominal` a 0 m e zera
+   * nesta altura (Q = vazaoNominal·(1 − Δh/alturaNominal)). Assim, entre dois
+   * reservatórios, a altura real da instalação reduz a vazão sozinha. Tem
+   * precedência sobre `curva`. Ausente = bomba ideal (ignora a altura).
+   */
+  alturaNominal?: number;
   /** IDs dos sensores eletrônicos que controlam esta bomba. */
   sensores: string[];
   /**

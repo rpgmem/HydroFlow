@@ -5,6 +5,26 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 [SemVer](https://semver.org/lang/pt-BR/). As versões espelham os sprints da
 especificação técnica.
 
+## [1.13.0] — Altura de recalque na vazão da bomba (curva automática)
+
+### Adicionado
+
+- **Altura nominal de recalque** na bomba: informando a "plaquinha" (ex.: 40 m),
+  a **curva é derivada automaticamente** — a bomba entrega a `vazaoNominal` a 0 m
+  e zera nessa altura (`Q = vazaoNominal·(1 − Δh/alturaNominal)`). Assim, entre
+  dois reservatórios, a **altura real da instalação reduz a vazão sozinha**, sem
+  precisar do coeficiente `k`. Tem precedência sobre `curva.k` (mantido para
+  compatibilidade); ausente = bomba ideal (ignora a altura).
+- Inspetor: campo "Altura nominal de recalque" (substitui o "Curva k"), com
+  explicação; projetos antigos com `curva.k` aparecem como a altura equivalente.
+
+### Alterado
+
+- **Bomba do exemplo** ganhou altura nominal de 40 m — a vazão cai dos 50 L/s
+  nominais para ~24–30 L/s conforme o recalque, deixando o cenário mais realista
+  (os recalques DN60 seguem sinalizados por velocidade).
+- **Bypass do exemplo**: alturas de conexão ajustadas (entrada 2 m, saída 6 m).
+
 ## [1.12.0] — Alerta de tubo subdimensionado (velocidade)
 
 ### Adicionado
