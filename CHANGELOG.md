@@ -5,15 +5,27 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 [SemVer](https://semver.org/lang/pt-BR/). As versões espelham os sprints da
 especificação técnica.
 
-## [1.7.0] — Boia reversa (corte por nível baixo)
+## [1.7.0] — Boia reversa, histerese e fim da proteção a seco configurável
 
 ### Adicionado
 
 - **Boia reversa** no tubo: em vez de monitorar o destino e fechar quando cheio,
   monitora o reservatório de **origem** e **fecha no nível mínimo** (reabre no
-  máximo, com histerese). Protege um reservatório de esvaziar e serve para
-  ligar/desligar a bomba de um reservatório para hidrantes quando ele baixa.
-  Ativável pelo campo "Reversa" nas propriedades da boia do tubo.
+  máximo). Protege um reservatório de esvaziar e serve para ligar/desligar a
+  bomba de um reservatório para hidrantes quando ele baixa. Ativável pelo campo
+  "Reversa" nas propriedades da boia do tubo.
+- **Histerese real nas boias mecânicas**: o estado aberta/fechada é mantido entre
+  o mínimo e o máximo (persistido entre ticks), eliminando o chaveamento rápido
+  (chatter). Vale para boias normais e reversas.
+
+### Alterado / Removido
+
+- **Removida a proteção a seco configurável** (`protecaoSeco`) da bomba. A bomba
+  não desliga mais sozinha por nível; a proteção passa a ser feita por uma **boia
+  reversa** na sucção (com histerese, sem o chatter que o limiar causava). Se
+  mesmo assim a origem esvaziar com a bomba ligada, ela **roda a seco**: vazão 0
+  (sem fantasma) e um **alerta/log** é emitido. O exemplo padrão passou a usar
+  boias reversas nas sucções no lugar da proteção a seco.
 
 ## [1.6.0] — Bomba para consumo, alerta de déficit e log de eventos
 

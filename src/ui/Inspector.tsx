@@ -338,12 +338,6 @@ function BombaForm({ props, emExecucao, upd, u }: { props: PropsBomba; emExecuca
         step={0.1}
         onChange={(v) => upd({ curva: v > 0 ? { k: v } : undefined })}
       />
-      <Num
-        label="Proteção a seco: desliga se origem ≤"
-        unidade={u.comp}
-        value={props.protecaoSeco ?? 0}
-        onChange={(v) => upd({ protecaoSeco: v })}
-      />
       <div className="field">
         <label>Controle da bomba</label>
         <select

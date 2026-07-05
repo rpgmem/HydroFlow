@@ -208,14 +208,8 @@ class GrafoIndex {
         const b = peca.props.boia;
         if (peca.props.registro && !peca.props.registro.aberto) {
           aberto = false; // registro fechado
-        } else if (b) {
-          // Boia normal monitora o DESTINO (relevante empurrando 'down'); a boia
-          // reversa monitora a ORIGEM (relevante puxando 'up', onde sub.res é a
-          // origem). Fora do sentido relevante a boia não interfere no caminho.
-          const relevante = b.reversa ? dir === 'up' : dir === 'down';
-          if (relevante && !boiaAberta(b, sub.res?.props.nivel ?? 0, true)) {
-            aberto = false;
-          }
+        } else if (b && !(b.aberta ?? true)) {
+          aberto = false; // boia fechada (estado calculado no passo 2b)
         }
       }
       return { res: sub.res, consumo: sub.consumo, aberto, tubos };
@@ -258,25 +252,28 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     decisoesPorBomba.set(p.props.bombaAlvo, lista);
   }
 
-  // ---- (2) Controle de bombas (modo) + arbitragem + proteção contra seco --
-  const bombasASeco: string[] = [];
+  // ---- (2) Controle de bombas (modo/arbitragem) -----------------------
+  // 'ligado'/'desligado' forçam o estado (o botão manual); 'auto' segue os
+  // sensores. A bomba NÃO desliga sozinha por nível — a proteção contra rodar em
+  // seco é feita por uma boia reversa na sucção. Se mesmo assim a origem esvaziar
+  // com a bomba ligada, isso é detectado como "rodando a seco" (ver calcularBomba).
   for (const p of proj.pecas) {
     if (!isBomba(p)) continue;
     const modo = p.props.modoControle ?? 'auto';
-    // 'ligado'/'desligado' forçam o estado (o botão manual); 'auto' segue os
-    // sensores. A proteção a seco vale em qualquer modo que resulte em ligada.
-    let ligada: boolean;
-    if (modo === 'ligado') ligada = true;
-    else if (modo === 'desligado') ligada = false;
-    else ligada = arbitrarBomba(decisoesPorBomba.get(p.id) ?? [], p.props.ligada ?? false);
+    if (modo === 'ligado') p.props.ligada = true;
+    else if (modo === 'desligado') p.props.ligada = false;
+    else p.props.ligada = arbitrarBomba(decisoesPorBomba.get(p.id) ?? [], p.props.ligada ?? false);
+  }
 
-    const origem = idx.resolverReservatorio(p.id, 'up');
-    const limiteSeco = p.props.protecaoSeco ?? 0;
-    if (ligada && origem && (origem.props.nivel ?? 0) <= limiteSeco) {
-      ligada = false; // bomba a seco: desliga mesmo forçada em 'ligado'
-      bombasASeco.push(p.id);
-    }
-    p.props.ligada = ligada;
+  // ---- (2b) Estado das boias mecânicas (histerese persistida) ----------
+  // Cada boia de tubo atualiza aberta/fechada monitorando seu reservatório
+  // (destino, ou origem se reversa). Entre mín. e máx. mantém o estado anterior
+  // (b.aberta) — histerese real, sem chatter. O resto do tick lê b.aberta.
+  for (const p of proj.pecas) {
+    if (!isTubo(p) || !p.props.boia) continue;
+    const b = p.props.boia;
+    const mon = idx.resolverReservatorio(p.id, b.reversa ? 'up' : 'down');
+    if (mon) b.aberta = boiaAberta(b, mon.props.nivel ?? 0, b.aberta ?? true);
   }
 
   // ---- (3) Cálculo de vazão de cada aresta condutora (em m³/s) ---------
@@ -284,12 +281,13 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   const fluxos: FluxoResolvido[] = [];
   const vazoesM3: Record<string, number> = {};
   const consumoInsuficiente: string[] = [];
+  const bombasASeco: string[] = []; // bombas ligadas com a origem vazia (rodando a seco)
 
   // Elementos ATIVOS primeiro: além da própria vazão, anotam a vazão nos tubos
   // em série pelos quais empurram a água (para a telemetria/animação refletir o
   // fluxo que passa por esses canos).
   for (const p of proj.pecas) {
-    if (isBomba(p)) vazoesM3[p.id] = calcularBomba(idx, p, g, u, tempoAtual, fluxos, vazoesM3, consumoInsuficiente);
+    if (isBomba(p)) vazoesM3[p.id] = calcularBomba(idx, p, g, u, tempoAtual, fluxos, vazoesM3, consumoInsuficiente, bombasASeco);
     else if (isFonte(p)) vazoesM3[p.id] = calcularFonte(idx, p, u, fluxos, vazoesM3);
     else if (isConsumo(p)) vazoesM3[p.id] = calcularConsumo(idx, p, g, u, tempoAtual, fluxos, vazoesM3);
   }
@@ -303,14 +301,10 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     }
   }
 
-  // Estado das boias (para a UI colorir): normal fecha com o destino cheio;
-  // reversa fecha com a origem no mínimo. Avaliado sobre os níveis do tick.
+  // Boias fechadas neste tick (para a UI colorir) — estado calculado no passo 2b.
   const boiasFechadas: string[] = [];
   for (const p of proj.pecas) {
-    if (!isTubo(p) || !p.props.boia) continue;
-    const b = p.props.boia;
-    const mon = idx.resolverReservatorio(p.id, b.reversa ? 'up' : 'down');
-    if (mon && !boiaAberta(b, mon.props.nivel ?? 0, true)) {
+    if (isTubo(p) && p.props.boia && !(p.props.boia.aberta ?? true)) {
       boiasFechadas.push(p.id);
     }
   }
@@ -393,13 +387,9 @@ function calcularTubo(
   const supDown = down ? cargaM(down, kL) : 0; // superfície do destino (0 = ambiente)
   const tapDown = down ? (down.props.cotaBase + alturaSai) * kL : 0; // bocal no destino
 
-  // Boia mecânica: normal monitora o destino (fecha cheio); reversa monitora a
-  // origem (fecha no mínimo — corte por nível baixo). A origem (up) sempre existe
-  // aqui; o destino (down) pode não existir.
-  if (boia && (boia.reversa || down)) {
-    const nivelMon = boia.reversa ? nivelUp : nivelDown;
-    if (!boiaAberta(boia, nivelMon, true)) return 0;
-  }
+  // Boia mecânica: fechada interrompe o fluxo (estado calculado no passo 2b, com
+  // histerese; normal monitora o destino, reversa monitora a origem).
+  if (boia && !(boia.aberta ?? true)) return 0;
 
   // Fluxo natural origem→destino. A origem precisa ter água ACIMA do seu bocal
   // (senão o bocal "chupa ar" e nada sai). A água descarrega no MAIOR entre a
@@ -442,6 +432,7 @@ function calcularBomba(
   fluxos: FluxoResolvido[],
   vazoes: Record<string, number>,
   consumoInsuficiente: string[],
+  bombasASeco: string[],
 ): number {
   if (!bomba.props.ligada) return 0;
 
@@ -450,6 +441,12 @@ function calcularBomba(
   const upPath = idx.resolverFluxo(bomba.id, 'up');
   if (!upPath.res || !upPath.aberto) return 0;
   const up = upPath.res;
+  // Origem vazia com a bomba ligada = RODANDO A SECO. Não move nada (evita vazão
+  // fantasma) e sinaliza o alerta/log — a proteção fica a cargo da boia reversa.
+  if (reservatorioVazio(up)) {
+    bombasASeco.push(bomba.id);
+    return 0;
+  }
   const kL = metrosPorComprimento(u);
   const hUp = cargaM(up, kL);
 

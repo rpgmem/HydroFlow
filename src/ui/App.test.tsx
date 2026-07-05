@@ -110,13 +110,14 @@ describe('inspetor — edição de props (Sprint 3/4)', () => {
     expect((screen.getByLabelText('Vazão de saída') as HTMLInputElement).value).toBe('4.5');
   });
 
-  it('permite configurar a proteção contra bomba a seco', () => {
+  it('permite escolher o modo de controle da bomba', () => {
     render(<App />);
     const id = adicionar('Bomba');
     fireEvent.click(screen.getByTestId(`peca-${id}`));
-    const prot = screen.getByLabelText(/Proteção a seco/) as HTMLInputElement;
-    fireEvent.change(prot, { target: { value: '0.2' } });
-    expect((screen.getByLabelText(/Proteção a seco/) as HTMLInputElement).value).toBe('0.2');
+    const ctrl = screen.getByLabelText('Controle da bomba') as HTMLSelectElement;
+    expect(ctrl.value).toBe('auto');
+    fireEvent.change(ctrl, { target: { value: 'desligado' } });
+    expect((screen.getByLabelText('Controle da bomba') as HTMLSelectElement).value).toBe('desligado');
   });
 
   it('permite inserir uma boia (válvula de nível) no tubo', () => {

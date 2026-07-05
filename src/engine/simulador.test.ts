@@ -340,22 +340,22 @@ describe('bomba', () => {
     it("'ligado' força a bomba a funcionar sem sensor", () => {
       const r = tick(
         projeto(
-          [res('A', { nivel: 5 }), res('B', {}), bomba('P', { modoControle: 'ligado', vazaoNominal: 8, protecaoSeco: 0 })],
+          [res('A', { nivel: 5 }), res('B', {}), bomba('P', { modoControle: 'ligado', vazaoNominal: 8 })],
           [criarConexao('A', 'P'), criarConexao('P', 'B')],
         ),
       );
       expect(r.vazoes['P']).toBeCloseTo(8, 9);
     });
 
-    it("'ligado' ainda respeita a proteção a seco", () => {
+    it("'ligado' com a origem vazia roda a seco (vazão 0 + alerta)", () => {
       const r = tick(
         projeto(
-          [res('A', { nivel: 1 }), res('B', {}), bomba('P', { modoControle: 'ligado', protecaoSeco: 2 })],
+          [res('A', { nivel: 0 }), res('B', {}), bomba('P', { modoControle: 'ligado' })],
           [criarConexao('A', 'P'), criarConexao('P', 'B')],
         ),
       );
-      expect(r.bombasASeco).toContain('P');
       expect(r.vazoes['P']).toBe(0);
+      expect(r.bombasASeco).toContain('P'); // rodando a seco (origem vazia)
     });
   });
 
@@ -366,7 +366,7 @@ describe('bomba', () => {
         [
           res('A', { nivel: 5 }),
           tubo('suc', {}),
-          bomba('P', { ligada, vazaoNominal, protecaoSeco: 0 }),
+          bomba('P', { ligada, vazaoNominal }),
           { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: demanda, aberto: true } },
         ],
         [criarConexao('A', 'suc'), criarConexao('suc', 'P'), criarConexao('P', 'C')],
@@ -448,31 +448,31 @@ describe('overflow', () => {
 });
 
 // ===========================================================================
-// Proteção contra bomba a seco
+// Rodando a seco (origem vazia) — sem proteção automática; alerta/log
 // ===========================================================================
-describe('bomba a seco', () => {
-  it('desliga a bomba quando o reservatório de origem está vazio', () => {
+describe('bomba rodando a seco', () => {
+  it('origem vazia com a bomba ligada → vazão 0 e alerta (a bomba não se desliga)', () => {
     const r = tick(
       projeto(
         [res('A', { nivel: 0 }), res('B', {}), bomba('P', { ligada: true })],
         [criarConexao('A', 'P'), criarConexao('P', 'B')],
       ),
     );
-    expect(r.vazoes['P']).toBe(0);
-    expect(r.bombasASeco).toContain('P');
+    expect(r.vazoes['P']).toBe(0); // sem água → não move nada (sem fantasma)
+    expect(r.bombasASeco).toContain('P'); // sinaliza rodando a seco (para log/UI)
     const p = r.projeto.pecas.find((x) => x.id === 'P')!.props as PropsBomba;
-    expect(p.ligada).toBe(false);
+    expect(p.ligada).toBe(true); // NÃO desliga sozinha — proteção é via boia reversa
   });
 
-  it('respeita um limiar de proteção a seco configurável', () => {
+  it('com água na origem, a bomba funciona e não sinaliza a seco', () => {
     const r = tick(
       projeto(
-        [res('A', { nivel: 0.5 }), res('B', {}), bomba('P', { ligada: true, protecaoSeco: 1 })],
+        [res('A', { nivel: 3 }), res('B', {}), bomba('P', { ligada: true, vazaoNominal: 5 })],
         [criarConexao('A', 'P'), criarConexao('P', 'B')],
       ),
     );
-    expect(r.bombasASeco).toContain('P'); // 0.5 ≤ 1 → desliga antes de esvaziar
-    expect(r.vazoes['P']).toBe(0);
+    expect(r.vazoes['P']).toBeCloseTo(5, 9);
+    expect(r.bombasASeco).not.toContain('P');
   });
 });
 
@@ -570,7 +570,7 @@ describe('boia reversa (corte por nível baixo, monitora a origem)', () => {
         [
           res('A', { nivel: nivelA }),
           tubo('T', { diametro: 100, boia: { nivelMinimo: 2, nivelMaximo: 4, reversa: true } }),
-          bomba('P', { ligada: true, vazaoNominal: 5, protecaoSeco: 0 }),
+          bomba('P', { ligada: true, vazaoNominal: 5 }),
           { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: 5, aberto: true } },
         ],
         [criarConexao('A', 'T'), criarConexao('T', 'P'), criarConexao('P', 'C')],

@@ -53,6 +53,12 @@ export interface NivelControle {
    * a bomba de um reservatório para hidrantes quando ele baixa.
    */
   reversa?: boolean;
+  /**
+   * Só boia de tubo: estado atual aberta/fechada (mutável durante a execução).
+   * Persistido entre ticks para dar HISTERESE real — entre mín. e máx. a boia
+   * mantém o estado anterior, evitando chaveamento rápido (chatter).
+   */
+  aberta?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -110,12 +116,6 @@ export interface PropsBomba {
   modoControle?: 'auto' | 'ligado' | 'desligado';
   /** Estado atual liga/desliga (mutável durante a execução). */
   ligada?: boolean;
-  /**
-   * Proteção contra funcionamento a seco: a bomba desliga quando o nível do
-   * reservatório de origem fica em/abaixo deste valor. Default 0 (só desliga
-   * com a origem totalmente vazia).
-   */
-  protecaoSeco?: number;
 }
 
 export interface PropsFonte {
