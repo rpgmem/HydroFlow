@@ -5,6 +5,50 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 [SemVer](https://semver.org/lang/pt-BR/). As versões espelham os sprints da
 especificação técnica.
 
+## [1.6.0] — Bomba para consumo, alerta de déficit e log de eventos
+
+### Adicionado
+
+- **Controle da bomba** com modo **Automático / Ligado / Desligado** (seletor nas
+  propriedades da bomba): Automático segue o sensor; Ligado força a bomba a
+  funcionar (ainda respeitando a proteção a seco); Desligado a mantém parada. É o
+  "botão" liga/desliga/automático — substitui o antigo checkbox manual.
+
+- **Bomba pode empurrar para um ponto de consumo** (ex.: bomba de incêndio →
+  hidrantes). A bomba entrega a MENOR entre a sua vazão e a demanda do consumo:
+  se a demanda é menor, entrega a demanda; se é maior, entrega a sua vazão (não
+  acompanha) e o **consumo acende em alerta de déficit** (laranja). Consumo com
+  demanda 0 (ou fechado) → a bomba não empurra nada por ali.
+- **Log de eventos** da execução: lista com acionamentos de bomba (liga/desliga),
+  decisões de sensor (ligar/desligar) e alertas (proteção a seco, ladrão em
+  transbordo, déficit de consumo, transbordo de reservatório), com o instante de
+  cada evento. Abre pelo botão **📋 Log** no canvas.
+
+### Corrigido
+
+- Um cano que leva a uma bomba/consumo não é mais tratado como dreno ao ambiente:
+  a sucção de uma bomba ociosa não drena mais a origem à toa.
+
+## [1.5.1] — Correção: sensor congelado por estado exportado
+
+### Corrigido
+
+- **Bomba só ligava após ~17000 s** ao recarregar um projeto exportado durante a
+  execução. O sensor guarda `ultimaTroca` (instante da última troca) para o
+  `delay`; ao exportar no meio de um run, esse valor (ex.: 16696 s) ia junto no
+  JSON. Recarregado com o tempo zerado, a checagem `tempoAtual − ultimaTroca <
+  delay` ficava verdadeira até o relógio alcançar aquele instante, congelando o
+  sensor. Agora um `ultimaTroca` no **futuro** relativo ao tempo atual é tratado
+  como obsoleto e ignorado — o sensor decide normalmente pelo nível.
+
+### Alterado
+
+- **Novo projeto de exemplo padrão** (revisão do usuário): tomadas de tubo com
+  **altura de conexão** (recalques e bypass em altura), bomba sem curva com
+  `protecaoSeco` 2, e um **sistema secundário de incêndio** (bomba + hidrantes)
+  alimentado pelo reservatório do meio. O estado transitório dos sensores
+  (`ultimaTroca`/`pedindoLigar`) não é embutido no exemplo.
+
 ## [1.5.0] — Altura de conexão do tubo
 
 ### Adicionado

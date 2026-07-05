@@ -319,6 +319,85 @@ describe('bomba', () => {
     );
     expect(r.vazoes['P']).toBe(0);
   });
+
+  describe('modo de controle (Automático / Ligado / Desligado)', () => {
+    it("'desligado' força a bomba parada mesmo com sensor pedindo ligar", () => {
+      const r = tick(
+        projeto(
+          [
+            res('A', { nivel: 5 }),
+            res('B', { nivel: 0 }),
+            bomba('P', { ligada: true, modoControle: 'desligado' }),
+            sensor('S', { bombaAlvo: 'P', nivelMinimo: 3, nivelMaximo: 4 }),
+          ],
+          [criarConexao('A', 'P'), criarConexao('P', 'B'), criarConexao('S', 'B')],
+        ),
+      );
+      expect(r.vazoes['P']).toBe(0);
+      expect((r.projeto.pecas.find((x) => x.id === 'P')!.props as PropsBomba).ligada).toBe(false);
+    });
+
+    it("'ligado' força a bomba a funcionar sem sensor", () => {
+      const r = tick(
+        projeto(
+          [res('A', { nivel: 5 }), res('B', {}), bomba('P', { modoControle: 'ligado', vazaoNominal: 8, protecaoSeco: 0 })],
+          [criarConexao('A', 'P'), criarConexao('P', 'B')],
+        ),
+      );
+      expect(r.vazoes['P']).toBeCloseTo(8, 9);
+    });
+
+    it("'ligado' ainda respeita a proteção a seco", () => {
+      const r = tick(
+        projeto(
+          [res('A', { nivel: 1 }), res('B', {}), bomba('P', { modoControle: 'ligado', protecaoSeco: 2 })],
+          [criarConexao('A', 'P'), criarConexao('P', 'B')],
+        ),
+      );
+      expect(r.bombasASeco).toContain('P');
+      expect(r.vazoes['P']).toBe(0);
+    });
+  });
+
+  describe('bomba empurrando para consumo', () => {
+    // A(reservatório) → suc → P(bomba) → C(consumo)
+    const cenario = (demanda: number, ligada: boolean, vazaoNominal = 10) =>
+      projeto(
+        [
+          res('A', { nivel: 5 }),
+          tubo('suc', {}),
+          bomba('P', { ligada, vazaoNominal, protecaoSeco: 0 }),
+          { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: demanda, aberto: true } },
+        ],
+        [criarConexao('A', 'suc'), criarConexao('suc', 'P'), criarConexao('P', 'C')],
+      );
+
+    it('demanda < vazão da bomba → entrega a demanda', () => {
+      const r = tick(cenario(3, true, 10));
+      expect(r.vazoes['P']).toBeCloseTo(3, 9);
+      expect(r.consumoInsuficiente).not.toContain('C');
+    });
+
+    it('demanda > vazão da bomba → entrega a vazão da bomba e alerta déficit', () => {
+      const r = tick(cenario(25, true, 10));
+      expect(r.vazoes['P']).toBeCloseTo(10, 9); // a bomba não acompanha
+      expect(r.consumoInsuficiente).toContain('C');
+    });
+
+    it('consumo 0 → a bomba não empurra nada (nem drena a origem)', () => {
+      const r = tick(cenario(0, true));
+      expect(r.vazoes['P']).toBe(0);
+      const a = r.projeto.pecas.find((x) => x.id === 'A')!.props as PropsReservatorio;
+      expect(a.nivel!).toBeCloseTo(5, 9); // origem intacta
+    });
+
+    it('bomba desligada não drena a origem pelo cano de sucção', () => {
+      const r = tick(cenario(5, false));
+      expect(r.vazoes['P']).toBe(0);
+      const a = r.projeto.pecas.find((x) => x.id === 'A')!.props as PropsReservatorio;
+      expect(a.nivel!).toBeCloseTo(5, 9);
+    });
+  });
 });
 
 // ===========================================================================
@@ -665,6 +744,17 @@ describe('arbitragem de bombas', () => {
     expect(avaliarSensor(s, 0.5, 0)).toBe('ligar');
     expect(avaliarSensor(s, 4.5, 0)).toBe('desligar');
     expect(avaliarSensor(s, 2, 0)).toBe('manter'); // banda morta (histerese)
+  });
+
+  it('ignora ultimaTroca no futuro (obsoleto de execução exportada e recarregada)', () => {
+    // Projeto exportado durante um run guardou ultimaTroca=16696; ao recarregar,
+    // o tempo volta a 0. O delay NÃO deve congelar o sensor até o relógio chegar
+    // lá — ele decide normalmente pelo nível.
+    const s: PropsSensor = { bombaAlvo: 'P', nivelMinimo: 3, nivelMaximo: 5.5, delay: 10, ultimaTroca: 16696 };
+    expect(avaliarSensor(s, 2, 0)).toBe('ligar'); // nível 2 < mínimo → liga já em t=0
+    // Com ultimaTroca no passado dentro da janela, o delay volta a valer.
+    expect(avaliarSensor(s, 2, 16700)).toBe('manter'); // 16700-16696=4 < 10
+    expect(avaliarSensor(s, 2, 16710)).toBe('ligar'); // 14 ≥ 10 → libera
   });
 
   it('expõe a decisão corrente de cada sensor (para a UI colorir)', () => {

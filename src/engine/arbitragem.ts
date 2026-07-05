@@ -26,10 +26,15 @@ export function avaliarSensor(
   tempoAtual: number,
 ): Decisao {
   // `delay` suprime trocas rápidas: dentro da janela, mantém o estado atual.
+  // A janela só vale para uma troca no PASSADO (ultimaTroca ≤ tempoAtual). Um
+  // ultimaTroca no futuro é lixo de outra execução (ex.: projeto exportado
+  // durante um run e recarregado com o tempo zerado) — ignorá-lo evita a bomba
+  // ficar "presa" até o relógio alcançar aquele instante.
   if (
     sensor.delay !== undefined &&
     sensor.delay > 0 &&
     sensor.ultimaTroca !== undefined &&
+    sensor.ultimaTroca <= tempoAtual &&
     tempoAtual - sensor.ultimaTroca < sensor.delay
   ) {
     return 'manter';

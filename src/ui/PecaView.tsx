@@ -46,6 +46,8 @@ interface Props {
   boiaFechada: boolean;
   /** Tubo ladrão em transbordo neste tick. */
   ladraoAtivo: boolean;
+  /** Consumo cuja demanda excede a vazão da bomba (déficit) neste tick. */
+  consumoInsuficiente: boolean;
   /** Decisão corrente do sensor ('ligar'|'desligar'|'manter'), se em execução. */
   sensorEstado?: string;
   onSelect: () => void;
@@ -87,6 +89,7 @@ export function PecaView({
   aSeco,
   boiaFechada,
   ladraoAtivo,
+  consumoInsuficiente,
   sensorEstado,
   onSelect,
   onMove,
@@ -143,13 +146,14 @@ export function PecaView({
       ) : peca.tipo === 'juncao' ? (
         <Circle radius={w / 2} fill={COR.juncao} stroke={borda} strokeWidth={larguraBorda} />
       ) : peca.tipo === 'consumo' ? (
-        // Triângulo apontando para baixo (dreno/saída).
+        // Triângulo apontando para baixo (dreno/saída). Laranja quando em déficit
+        // (a bomba que o alimenta não acompanha a demanda).
         <Line
           closed
           points={[-w / 2, -h / 2, w / 2, -h / 2, 0, h / 2]}
-          fill={COR.consumo}
-          stroke={borda}
-          strokeWidth={larguraBorda}
+          fill={consumoInsuficiente ? '#f59e0b' : COR.consumo}
+          stroke={consumoInsuficiente ? COR_FECHADO : borda}
+          strokeWidth={consumoInsuficiente ? 2 : larguraBorda}
         />
       ) : (
         <Rect

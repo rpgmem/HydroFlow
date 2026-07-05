@@ -335,15 +335,18 @@ function BombaForm({ props, emExecucao, upd, u }: { props: PropsBomba; emExecuca
         value={props.protecaoSeco ?? 0}
         onChange={(v) => upd({ protecaoSeco: v })}
       />
-      <label className="checkbox">
-        <input
-          type="checkbox"
-          checked={props.ligada ?? false}
-          aria-label="Bomba ligada"
-          onChange={(e) => upd({ ligada: e.target.checked })}
-        />
-        Ligada (manual)
-      </label>
+      <div className="field">
+        <label>Controle da bomba</label>
+        <select
+          value={props.modoControle ?? 'auto'}
+          aria-label="Controle da bomba"
+          onChange={(e) => upd({ modoControle: e.target.value })}
+        >
+          <option value="auto">Automático (pelo sensor)</option>
+          <option value="ligado">Ligado (manual)</option>
+          <option value="desligado">Desligado (manual)</option>
+        </select>
+      </div>
     </>
   );
 }

@@ -94,6 +94,13 @@ export interface PropsBomba {
   curva?: { k: number };
   /** IDs dos sensores eletrônicos que controlam esta bomba. */
   sensores: string[];
+  /**
+   * Modo de controle da bomba:
+   *  - 'auto'      → segue os sensores (histerese/arbitragem). Default.
+   *  - 'ligado'    → forçada LIGADA (ainda sujeita à proteção a seco).
+   *  - 'desligado' → forçada DESLIGADA.
+   */
+  modoControle?: 'auto' | 'ligado' | 'desligado';
   /** Estado atual liga/desliga (mutável durante a execução). */
   ligada?: boolean;
   /**

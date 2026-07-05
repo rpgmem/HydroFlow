@@ -15,7 +15,7 @@
 
 import type { ErroValidacao } from '../domain/schema';
 import { validarGrafo } from '../engine/validacaoGrafo';
-import { rodarTicks } from '../engine/simulador';
+import { rodarTicks, type ResultadoTick } from '../engine/simulador';
 import type { Decisao } from '../engine/arbitragem';
 import { sincronizarContador } from '../domain/factory';
 import {
@@ -28,6 +28,17 @@ import {
   type ProjetoSimulacao,
   type PropsPorTipo,
 } from '../domain/types';
+
+/** Uma entrada do log de eventos (acionamentos e alertas ao longo da execução). */
+export type TipoEvento = 'bomba' | 'sensor' | 'seco' | 'ladrao' | 'deficit' | 'overflow';
+export interface EventoLog {
+  /** Tempo de simulação (s) em que o evento ocorreu. */
+  tempo: number;
+  tipo: TipoEvento;
+  mensagem: string;
+}
+
+const MAX_EVENTOS = 300;
 
 // Multiplicador de ticks por frame. Valores altos permitem acompanhar cenários
 // realistas (vazões em L/s enchendo tanques de milhares de litros) em segundos.
@@ -46,7 +57,10 @@ export interface EstadoApp {
   bombasASeco: string[];
   boiasFechadas: string[];
   ladroesAtivos: string[];
+  consumoInsuficiente: string[];
   sensores: Record<string, Decisao>;
+  /** Log de eventos (acionamentos de bomba/sensor e alertas) da execução. */
+  eventos: EventoLog[];
   /** id da peça selecionada no inspetor (ou null). */
   selecionada: string | null;
   /** id da conexão selecionada (para exclusão), ou null. */
@@ -92,7 +106,9 @@ export function estadoInicial(projeto: ProjetoSimulacao): EstadoApp {
     bombasASeco: [],
     boiasFechadas: [],
     ladroesAtivos: [],
+    consumoInsuficiente: [],
     sensores: {},
+    eventos: [],
     selecionada: null,
     conexaoSelecionada: null,
     snapshotEdicao: null,
@@ -117,6 +133,52 @@ function atualizarPeca(
     ...projeto,
     pecas: projeto.pecas.map((p) => (p.id === id ? fn(p) : p)),
   };
+}
+
+function rotuloDePeca(projeto: ProjetoSimulacao, id: string): string {
+  const p = projeto.pecas.find((x) => x.id === id);
+  return p?.rotulo && p.rotulo.trim() ? p.rotulo : id;
+}
+
+/**
+ * Deriva os eventos novos comparando o estado anterior com o resultado do tick:
+ * transições de bomba (liga/desliga), decisões de sensor e a ENTRADA em cada
+ * condição de alerta (a seco, ladrão, déficit, transbordo). Só transições — uma
+ * condição contínua é registrada uma vez, quando começa.
+ */
+function derivarEventos(anterior: EstadoApp, r: ResultadoTick): EventoLog[] {
+  const ev: EventoLog[] = [];
+  const t = r.tempo;
+  const rot = (id: string): string => rotuloDePeca(r.projeto, id);
+
+  const antLigada = new Map(
+    anterior.projeto.pecas.filter(isBomba).map((p) => [p.id, p.props.ligada ?? false]),
+  );
+  for (const p of r.projeto.pecas) {
+    if (!isBomba(p)) continue;
+    const antes = antLigada.get(p.id) ?? false;
+    const agora = p.props.ligada ?? false;
+    if (antes !== agora) {
+      ev.push({ tempo: t, tipo: 'bomba', mensagem: `${rot(p.id)} ${agora ? 'ligou' : 'desligou'}` });
+    }
+  }
+
+  for (const [id, dec] of Object.entries(r.sensores)) {
+    if (anterior.sensores[id] !== dec && (dec === 'ligar' || dec === 'desligar')) {
+      ev.push({ tempo: t, tipo: 'sensor', mensagem: `${rot(id)} pediu ${dec}` });
+    }
+  }
+
+  const entraram = (atual: string[], antes: string[], tipo: TipoEvento, msg: (n: string) => string): void => {
+    const set = new Set(antes);
+    for (const id of atual) if (!set.has(id)) ev.push({ tempo: t, tipo, mensagem: msg(rot(id)) });
+  };
+  entraram(r.bombasASeco, anterior.bombasASeco, 'seco', (n) => `${n}: proteção a seco (desligada)`);
+  entraram(r.ladroesAtivos, anterior.ladroesAtivos, 'ladrao', (n) => `${n}: ladrão em transbordo`);
+  entraram(r.consumoInsuficiente, anterior.consumoInsuficiente, 'deficit', (n) => `${n}: déficit (bomba não acompanha)`);
+  entraram(r.overflow, anterior.overflow, 'overflow', (n) => `${n}: transbordou`);
+
+  return ev;
 }
 
 export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
@@ -231,6 +293,7 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
         rodando: false,
         tempo: 0,
         errosValidacao: [],
+        eventos: [], // novo run → log limpo
         snapshotEdicao: structuredClone(estado.projeto),
       };
     }
@@ -248,7 +311,9 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
         bombasASeco: [],
         boiasFechadas: [],
         ladroesAtivos: [],
+        consumoInsuficiente: [],
         sensores: {},
+        eventos: [],
         projeto: estado.snapshotEdicao ?? estado.projeto,
         snapshotEdicao: null,
       };
@@ -271,7 +336,9 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
         bombasASeco: [],
         boiasFechadas: [],
         ladroesAtivos: [],
+        consumoInsuficiente: [],
         sensores: {},
+        eventos: [],
         projeto: estado.snapshotEdicao ?? estado.projeto,
       };
 
@@ -283,6 +350,7 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
       // Controle de velocidade (seção 7): roda N ticks por frame, sem alterar
       // o dt da física.
       const r = rodarTicks(estado.projeto, estado.velocidade, estado.tempo);
+      const novosEventos = derivarEventos(estado, r);
       return {
         ...estado,
         projeto: r.projeto,
@@ -291,7 +359,12 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
         bombasASeco: r.bombasASeco,
         boiasFechadas: r.boiasFechadas,
         ladroesAtivos: r.ladroesAtivos,
+        consumoInsuficiente: r.consumoInsuficiente,
         sensores: r.sensores,
+        eventos:
+          novosEventos.length > 0
+            ? [...estado.eventos, ...novosEventos].slice(-MAX_EVENTOS)
+            : estado.eventos,
         tempo: r.tempo,
       };
     }

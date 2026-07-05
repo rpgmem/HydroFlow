@@ -50,6 +50,7 @@ export function Canvas({ estado, dispatch, largura, altura }: Props) {
   const secoSet = new Set(estado.bombasASeco);
   const boiaFechadaSet = new Set(estado.boiasFechadas);
   const ladraoAtivoSet = new Set(estado.ladroesAtivos);
+  const consumoDeficitSet = new Set(estado.consumoInsuficiente);
 
   // Tecla Delete/Backspace exclui a conexão selecionada (fora de execução).
   useEffect(() => {
@@ -318,6 +319,7 @@ export function Canvas({ estado, dispatch, largura, altura }: Props) {
               aSeco={secoSet.has(peca.id)}
               boiaFechada={boiaFechadaSet.has(peca.id)}
               ladraoAtivo={ladraoAtivoSet.has(peca.id)}
+              consumoInsuficiente={consumoDeficitSet.has(peca.id)}
               sensorEstado={emExecucao ? estado.sensores[peca.id] : undefined}
               onSelect={() => dispatch({ tipo: 'SELECIONAR', id: peca.id })}
               onMove={(x, y) => dispatch({ tipo: 'MOVER_PECA', id: peca.id, x, y })}
