@@ -2,7 +2,7 @@
  * Barra de ferramentas (Sprint 4/5): nome do projeto, transição de modo,
  * play/pause/reset, controle de velocidade e persistência (salvar/carregar).
  */
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import type { Acao, EstadoApp, Velocidade } from '../state/store';
 import { baixarProjeto, carregarArquivo } from '../persistence/arquivo';
 import { projetoVazio } from '../domain/factory';
@@ -21,6 +21,7 @@ const VELOCIDADES: Velocidade[] = [1, 5, 30, 120];
 
 export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAlternarTema }: Props) {
   const inputFile = useRef<HTMLInputElement>(null);
+  const [menuAberto, setMenuAberto] = useState(false);
   const emExecucao = estado.modo === 'execucao';
 
   return (
@@ -110,43 +111,77 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
 
       <span className="spacer" />
 
-      {!emExecucao && (
+      {/* No mobile, as ações secundárias recolhem sob "⋯" (o botão some no
+          desktop, onde elas seguem inline via `display: contents`). */}
+      <button
+        className="menu-toggle"
+        aria-label="Mais ações"
+        aria-expanded={menuAberto}
+        onClick={() => setMenuAberto((v) => !v)}
+      >
+        ⋯
+      </button>
+      <div className={`acoes-secundarias${menuAberto ? ' aberto' : ''}`}>
+        {!emExecucao && (
+          <button
+            onClick={() => {
+              setMenuAberto(false);
+              if (window.confirm('Criar um projeto novo? Tudo que não foi salvo será perdido.')) {
+                dispatch({ tipo: 'CARREGAR_PROJETO', projeto: projetoVazio() });
+              }
+            }}
+          >
+            ✨ Novo
+          </button>
+        )}
+        <button
+          onClick={onAlternarTema}
+          title={tema === 'claro' ? 'Mudar para tema escuro' : 'Mudar para tema claro'}
+        >
+          {tema === 'claro' ? '🌙 Escuro' : '☀ Claro'}
+        </button>
         <button
           onClick={() => {
-            if (window.confirm('Criar um projeto novo? Tudo que não foi salvo será perdido.')) {
-              dispatch({ tipo: 'CARREGAR_PROJETO', projeto: projetoVazio() });
-            }
+            setMenuAberto(false);
+            onImprimir();
+          }}
+          title="Imprimir o diagrama (fundo branco)"
+        >
+          🖨 Imprimir
+        </button>
+        <button
+          onClick={() => {
+            setMenuAberto(false);
+            baixarProjeto(estado.projeto);
           }}
         >
-          ✨ Novo
+          💾 Salvar
         </button>
-      )}
-      <button
-        onClick={onAlternarTema}
-        title={tema === 'claro' ? 'Mudar para tema escuro' : 'Mudar para tema claro'}
-      >
-        {tema === 'claro' ? '🌙 Escuro' : '☀ Claro'}
-      </button>
-      <button onClick={onImprimir} title="Imprimir o diagrama (fundo branco)">🖨 Imprimir</button>
-      <button onClick={() => baixarProjeto(estado.projeto)}>💾 Salvar</button>
-      <button disabled={emExecucao} onClick={() => inputFile.current?.click()}>
-        📂 Carregar
-      </button>
-      <input
-        ref={inputFile}
-        type="file"
-        accept="application/json,.json"
-        aria-label="Carregar arquivo"
-        style={{ display: 'none' }}
-        onChange={async (e) => {
-          const file = e.target.files?.[0];
-          e.target.value = ''; // permite recarregar o mesmo arquivo
-          if (!file) return;
-          const r = await carregarArquivo(file);
-          if (r.ok) dispatch({ tipo: 'CARREGAR_PROJETO', projeto: r.projeto });
-          else onErroImport(r.erros.map((x) => `${x.caminho}: ${x.mensagem}`).join('\n'));
-        }}
-      />
+        <button
+          disabled={emExecucao}
+          onClick={() => {
+            setMenuAberto(false);
+            inputFile.current?.click();
+          }}
+        >
+          📂 Carregar
+        </button>
+        <input
+          ref={inputFile}
+          type="file"
+          accept="application/json,.json"
+          aria-label="Carregar arquivo"
+          style={{ display: 'none' }}
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            e.target.value = ''; // permite recarregar o mesmo arquivo
+            if (!file) return;
+            const r = await carregarArquivo(file);
+            if (r.ok) dispatch({ tipo: 'CARREGAR_PROJETO', projeto: r.projeto });
+            else onErroImport(r.erros.map((x) => `${x.caminho}: ${x.mensagem}`).join('\n'));
+          }}
+        />
+      </div>
     </div>
   );
 }

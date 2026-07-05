@@ -5,6 +5,14 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 [SemVer](https://semver.org/lang/pt-BR/). As versões espelham os sprints da
 especificação técnica.
 
+## [1.13.1] — Menu recolhido no mobile
+
+### Alterado
+
+- No **mobile**, as ações secundárias (Novo, Claro/Escuro, Imprimir, Salvar,
+  Carregar) recolhem sob um botão **"⋯"**, ocupando bem menos a barra. No
+  desktop seguem inline, sem mudança.
+
 ## [1.13.0] — Altura de recalque na vazão da bomba (curva automática)
 
 ### Adicionado
