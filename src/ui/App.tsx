@@ -20,6 +20,10 @@ export function App() {
   const [inspetorAberto, setInspetorAberto] = useState(false);
   const [avisoVisivel, setAvisoVisivel] = useState(true);
   const [logAberto, setLogAberto] = useState(false);
+  // Tema de exibição: escuro é o padrão; claro é opcional e usado na impressão.
+  const [tema, setTema] = useState<'escuro' | 'claro'>('escuro');
+  const [imprimindo, setImprimindo] = useState(false);
+  const temaClaro = imprimindo || tema === 'claro';
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useSimulationLoop(estado.rodando, dispatch);
@@ -40,12 +44,35 @@ export function App() {
     return () => window.removeEventListener('resize', medir);
   }, []);
 
+  // Impressão: usa o tema CLARO (rótulos escuros), o Canvas enquadra tudo, e
+  // então window.print() (o CSS @media print esconde a interface). Ao terminar,
+  // volta ao normal. Um pequeno atraso dá tempo do enquadramento/re-render.
+  useEffect(() => {
+    if (!imprimindo) return;
+    const fim = (): void => setImprimindo(false);
+    window.addEventListener('afterprint', fim);
+    const t = setTimeout(() => window.print(), 120);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('afterprint', fim);
+    };
+  }, [imprimindo]);
+
   const selecionada = estado.projeto.pecas.find((p) => p.id === estado.selecionada);
   const emExecucao = estado.modo === 'execucao';
 
   return (
-    <div className={`app${inspetorAberto ? ' inspetor-aberto' : ''}`}>
-      <Toolbar estado={estado} dispatch={dispatch} onErroImport={setErroImport} />
+    <div
+      className={`app${temaClaro ? ' tema-claro' : ''}${inspetorAberto ? ' inspetor-aberto' : ''}`}
+    >
+      <Toolbar
+        estado={estado}
+        dispatch={dispatch}
+        onErroImport={setErroImport}
+        onImprimir={() => setImprimindo(true)}
+        tema={tema}
+        onAlternarTema={() => setTema((t) => (t === 'claro' ? 'escuro' : 'claro'))}
+      />
       <div className="body">
         <Palette dispatch={dispatch} desabilitado={emExecucao} />
 
@@ -55,6 +82,8 @@ export function App() {
             dispatch={dispatch}
             largura={tamanho.largura}
             altura={tamanho.altura}
+            temaClaro={temaClaro}
+            imprimindo={imprimindo}
           />
           <button
             className="log-toggle"

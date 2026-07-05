@@ -12,11 +12,14 @@ interface Props {
   estado: EstadoApp;
   dispatch: React.Dispatch<Acao>;
   onErroImport: (msg: string) => void;
+  onImprimir: () => void;
+  tema: 'escuro' | 'claro';
+  onAlternarTema: () => void;
 }
 
 const VELOCIDADES: Velocidade[] = [1, 5, 30, 120];
 
-export function Toolbar({ estado, dispatch, onErroImport }: Props) {
+export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAlternarTema }: Props) {
   const inputFile = useRef<HTMLInputElement>(null);
   const emExecucao = estado.modo === 'execucao';
 
@@ -118,6 +121,13 @@ export function Toolbar({ estado, dispatch, onErroImport }: Props) {
           ✨ Novo
         </button>
       )}
+      <button
+        onClick={onAlternarTema}
+        title={tema === 'claro' ? 'Mudar para tema escuro' : 'Mudar para tema claro'}
+      >
+        {tema === 'claro' ? '🌙 Escuro' : '☀ Claro'}
+      </button>
+      <button onClick={onImprimir} title="Imprimir o diagrama (fundo branco)">🖨 Imprimir</button>
       <button onClick={() => baixarProjeto(estado.projeto)}>💾 Salvar</button>
       <button disabled={emExecucao} onClick={() => inputFile.current?.click()}>
         📂 Carregar

@@ -48,6 +48,8 @@ interface Props {
   ladraoAtivo: boolean;
   /** Consumo cuja demanda excede a vazão da bomba (déficit) neste tick. */
   consumoInsuficiente: boolean;
+  /** Modo impressão: rótulos em cor escura (legíveis sobre fundo branco). */
+  temaClaro?: boolean;
   /** Decisão corrente do sensor ('ligar'|'desligar'|'manter'), se em execução. */
   sensorEstado?: string;
   onSelect: () => void;
@@ -90,6 +92,7 @@ export function PecaView({
   boiaFechada,
   ladraoAtivo,
   consumoInsuficiente,
+  temaClaro,
   sensorEstado,
   onSelect,
   onMove,
@@ -171,7 +174,7 @@ export function PecaView({
       <Text
         text={rotulo(peca, vazao)}
         fontSize={11}
-        fill="#cfe0ee"
+        fill={temaClaro ? '#0d1f2b' : '#cfe0ee'}
         align="center"
         width={Math.max(w, 90)}
         offsetX={Math.max(w, 90) / 2}
