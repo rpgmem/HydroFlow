@@ -2,8 +2,9 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é
-[SemVer](https://semver.org/lang/pt-BR/). As versões espelham os sprints da
-especificação técnica.
+[SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham
+os sprints da especificação técnica; as seguintes acompanham a evolução
+incremental por funcionalidade.
 
 ## [1.13.1] — Menu recolhido no mobile
 

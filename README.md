@@ -7,6 +7,8 @@ hidráulico estilo Lego (drag-and-drop) e simula o comportamento físico
 > Escopo explícito: simulação simplificada (**Torricelli + continuidade de
 > volume**), **não** CFD/Navier-Stokes. Ver [Fora de escopo](#fora-de-escopo).
 
+**🔗 Demo ao vivo:** <https://deeppink-dog-866880.hostingersite.com/hydroflow/>
+
 ## Stack
 
 | Camada | Tecnologia |
@@ -28,11 +30,15 @@ npm run typecheck  # tsc --noEmit
 npm run build      # build de produção
 ```
 
-A aplicação abre com um projeto de exemplo (três reservatórios cilíndricos
-empilhados: uma fonte enche o inferior, uma bomba recalca — dividindo a vazão —
-para o do meio e o superior, e dois canos escoam por gravidade até um ponto de
-consumo). Clique em **▶ Executar** para validar o grafo e entrar em modo de
-simulação; depois **▶ Play**.
+A aplicação abre com um projeto de exemplo: três reservatórios cilíndricos
+empilhados. Uma fonte enche o inferior por uma boia mecânica; uma **bomba em
+revezamento** (com altura nominal de recalque) puxa do inferior e recalca para o
+meio e o superior; do superior e do meio a água escoa por gravidade até um ponto
+de **consumo senoidal**. Sensores eletrônicos comandam a bomba — um normal no
+superior e um **reverso** no inferior (proteção contra rodar a seco) — e há ainda
+um **sistema secundário de incêndio** (bomba + hidrantes) alimentado pelo
+reservatório do meio. Clique em **▶ Executar** para validar o grafo e entrar em
+modo de simulação; depois **▶ Play**.
 
 **Interação no editor:** clique numa peça para selecioná-la (e editar/renomear no
 inspetor); **arraste do ponto ciano (saída)** de uma peça até outra para criar uma
@@ -47,8 +53,10 @@ selecioná-la e apague com **Delete** (ou no botão flutuante). O canvas tem
 - **Tema** — escuro (padrão) ou claro, alternável na barra (`☀ Claro`/`🌙 Escuro`).
 - **Imprimir** (🖨) — enquadra todo o diagrama, aplica fundo branco com rótulos
   escuros e envia para impressão, restaurando a vista ao terminar.
-- **Mobile** — em telas pequenas a interface fica em modo **ver e simular**
-  (a edição de grafo permanece exclusiva do desktop).
+- **Mobile** — em telas pequenas a interface fica em modo **ver e simular** (a
+  edição de grafo permanece exclusiva do desktop); as ações secundárias (Novo,
+  Tema, Imprimir, Salvar, Carregar) recolhem sob um botão **⋯** para poupar
+  espaço da barra.
 
 ## Arquitetura
 
