@@ -25,7 +25,8 @@ incremental por funcionalidade.
 ### Alterado
 
 - **Projeto de exemplo**: registro de **"Saída meio" fechado**; **"Cavalete Bomba
-  Recalque"** com a inicial maiúscula.
+  Recalque"** com a inicial maiúscula; junção **"Divisor" em DN60** e **"União" em
+  DN160** (estrangulamento pela bitola).
 
 ## [1.18.0] — Reservatório vazio não gera fluxo fantasma; bitola na junção
 

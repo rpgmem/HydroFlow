@@ -33,8 +33,15 @@ function tubo(id: string, rotulo: string, x: number, y: number, props: PropsTubo
   return { id, tipo: 'tubo', x, y, portas: ['entrada', 'saida'], props, rotulo };
 }
 
-function juncao(id: string, rotulo: string, x: number, y: number): Peca {
-  return { id, tipo: 'juncao', x, y, portas: ['a', 'b', 'c'], props: {}, rotulo };
+function juncao(
+  id: string,
+  rotulo: string,
+  x: number,
+  y: number,
+  estrangula?: { bitola: string; diametro: number },
+): Peca {
+  const props = estrangula ? { bitola: estrangula.bitola, diametro: estrangula.diametro } : {};
+  return { id, tipo: 'juncao', x, y, portas: ['a', 'b', 'c'], props, rotulo };
 }
 
 export function projetoExemplo(): ProjetoSimulacao {
@@ -181,8 +188,8 @@ export function projetoExemplo(): ProjetoSimulacao {
       // Divisor: a bomba recalca por aqui, dividindo para o superior e o meio (o
       // recalque do meio está com o registro fechado). União: as saídas do
       // superior e do meio se juntam antes do consumo.
-      juncao('jun_37', 'Divisor', 240, 253.18762379618877),
-      juncao('jun_41', 'União', 720, 272.99501400177576),
+      juncao('jun_37', 'Divisor', 240, 253.18762379618877, { bitola: 'DN60', diametro: 53.4 }),
+      juncao('jun_41', 'União', 720, 272.99501400177576, { bitola: 'DN160', diametro: 147.0 }),
     ],
     conexoes: [
       { id: 'c_2', origem: 'inferior', destino: 'succao' },
