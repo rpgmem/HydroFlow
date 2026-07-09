@@ -280,6 +280,34 @@ describe('junção divide e soma vazão', () => {
     expect(p1 + p2).toBeCloseTo(nivelDe(r, 'R3'), 8); // massa conservada
   });
 
+  it('ramo com registro fechado é zerado; o aberto leva tudo (massa conserva)', () => {
+    const r = tick(
+      projeto(
+        [
+          res('R1', { cotaBase: 10, nivel: 5 }),
+          res('R2', { nivel: 0 }),
+          res('R3', { nivel: 0 }),
+          tubo('tin'),
+          juncao('J'),
+          tubo('t2'),
+          tubo('t3', { registro: { aberto: false } }),
+        ],
+        [
+          criarConexao('R1', 'tin'),
+          criarConexao('tin', 'J'),
+          criarConexao('J', 't2'),
+          criarConexao('t2', 'R2'),
+          criarConexao('J', 't3'),
+          criarConexao('t3', 'R3'),
+        ],
+      ),
+    );
+    expect(nivelDe(r, 'R3')).toBeCloseTo(0, 12); // ramo fechado: zerado
+    expect(r.vazoes['t3'] ?? 0).toBe(0);
+    expect(nivelDe(r, 'R2')).toBeGreaterThan(1e-9); // ramo aberto leva tudo
+    expect(5 - nivelDe(r, 'R1')).toBeCloseTo(nivelDe(r, 'R2'), 8); // massa conservada
+  });
+
   it('bifurcação com diâmetros diferentes: o ramo mais largo leva mais', () => {
     const r = tick(
       projeto(
