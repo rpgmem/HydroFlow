@@ -297,6 +297,39 @@ button.ativo {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
 }
 
+/* Tooltip de peça (hover) — segue o cursor, não intercepta o mouse. */
+.peca-tooltip {
+  position: absolute;
+  z-index: 9;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-width: 200px;
+  padding: 6px 9px;
+  font-size: 12px;
+  line-height: 1.35;
+  background: rgba(15, 22, 32, 0.95);
+  color: #cfe0ee;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+
+.peca-tooltip strong {
+  color: #e6edf3;
+  margin-bottom: 1px;
+}
+
+.app.tema-claro .peca-tooltip {
+  background: rgba(255, 255, 255, 0.97);
+  color: #0d1f2b;
+}
+
+.app.tema-claro .peca-tooltip strong {
+  color: #0a1722;
+}
+
 /* Legenda: cartão no canto superior esquerdo (abaixo do botão de log). */
 .legenda-panel {
   position: absolute;

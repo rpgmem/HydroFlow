@@ -14,6 +14,15 @@ import type { Stage as KonvaStage } from 'konva/lib/Stage';
 import { PecaView } from './PecaView';
 import { tamanhoPeca } from './pecaGeom';
 import { criarConexao } from '../domain/factory';
+import {
+  isBomba,
+  isConsumo,
+  isFonte,
+  isReservatorio,
+  isSensor,
+  isTubo,
+  type Peca,
+} from '../domain/types';
 import type { Acao, EstadoApp } from '../state/store';
 
 interface Props {
@@ -35,6 +44,8 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
   const emExecucao = estado.modo === 'execucao';
   const [conectando, setConectando] = useState<string | null>(null);
   const [ponteiro, setPonteiro] = useState<{ x: number; y: number } | null>(null);
+  // Peça sob o cursor (para o tooltip). Guarda a posição na tela (px do container).
+  const [hover, setHover] = useState<{ id: string; x: number; y: number } | null>(null);
   const conectandoRef = useRef<string | null>(null);
   conectandoRef.current = conectando;
 
@@ -385,10 +396,35 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
               onMove={(x, y) => dispatch({ tipo: 'MOVER_PECA', id: peca.id, x, y })}
               onStartConnection={iniciarConexao}
               onEndConnection={terminarConexao}
+              onHover={conectando ? undefined : setHover}
             />
           ))}
         </Layer>
       </Stage>
+
+      {/* Tooltip: detalhes da peça sob o cursor (não aparece durante conexão). */}
+      {hover && !conectando && (() => {
+        const p = pecaPorId.get(hover.id);
+        if (!p) return null;
+        const linhas = linhasTooltip(p, estado);
+        // Mantém o tooltip dentro da área visível (vira p/ a esquerda perto da borda).
+        const viraEsq = hover.x > largura - 190;
+        return (
+          <div
+            className="peca-tooltip"
+            style={{
+              left: viraEsq ? undefined : hover.x + 14,
+              right: viraEsq ? largura - hover.x + 14 : undefined,
+              top: Math.min(hover.y + 12, Math.max(0, altura - 8 - 18 * linhas.length)),
+            }}
+          >
+            <strong>{rotuloDe(p)}</strong>
+            {linhas.map((l, i) => (
+              <span key={i}>{l}</span>
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -430,4 +466,56 @@ function limitesPecas(pcs: EstadoApp['projeto']['pecas']): {
 function rotuloDe(p: { id: string; rotulo?: string } | undefined): string {
   if (!p) return '';
   return p.rotulo && p.rotulo.trim() ? p.rotulo : p.id;
+}
+
+/**
+ * Linhas do tooltip de uma peça: dados de configuração (diâmetro, cota…) e, em
+ * execução, os valores correntes (vazão, nível). Unidades conforme o projeto.
+ */
+function linhasTooltip(peca: Peca, estado: EstadoApp): string[] {
+  const u = estado.projeto.unidades;
+  const volL = u.volume === 'm3' ? 'm³' : 'L';
+  const vazL = `${volL}/s`;
+  const compL = u.comprimento;
+  const emExec = estado.modo === 'execucao';
+  const q = estado.vazoes[peca.id];
+  const linhaVazao = (): string | null => {
+    if (!emExec || q === undefined || Math.abs(q) < 1e-6) return null;
+    return `Vazão: ${q.toFixed(2)} ${vazL}${q < -1e-6 ? ' (refluxo)' : ''}`;
+  };
+  const linhas: (string | null)[] = [];
+  if (isReservatorio(peca)) {
+    const p = peca.props;
+    linhas.push(`Nível: ${(p.nivel ?? 0).toFixed(2)} / ${p.alturaMaxima} ${compL}`);
+    linhas.push(`Cota base: ${p.cotaBase} ${compL}`);
+    linhas.push(`Carga: ${(p.cotaBase + (p.nivel ?? 0)).toFixed(2)} ${compL}`);
+  } else if (isTubo(peca)) {
+    const p = peca.props;
+    linhas.push(`Ø ${p.diametro} mm${p.bitola ? ` (${p.bitola})` : ''}`);
+    if (p.ladrao) linhas.push(`Ladrão em ${p.ladrao.nivel} ${compL}`);
+    if (p.registro) linhas.push(`Registro: ${p.registro.aberto ? 'aberto' : 'fechado'}`);
+    linhas.push(linhaVazao());
+  } else if (isBomba(peca)) {
+    const p = peca.props;
+    linhas.push(`Vazão nominal: ${p.vazaoNominal} ${vazL}`);
+    if (p.alturaNominal) linhas.push(`Altura nominal: ${p.alturaNominal} ${compL}`);
+    if (emExec) linhas.push(`Estado: ${p.ligada ? 'ligada' : 'desligada'}`);
+    linhas.push(linhaVazao());
+  } else if (isFonte(peca)) {
+    linhas.push(`Vazão fixa: ${peca.props.vazaoFixa} ${vazL}`);
+    linhas.push(linhaVazao());
+  } else if (isConsumo(peca)) {
+    const p = peca.props;
+    linhas.push(`Demanda: ${p.vazaoDemanda} ${vazL}${p.perfil && p.perfil !== 'fixo' ? ` (${p.perfil})` : ''}`);
+    if (p.aberto === false) linhas.push('Fechado');
+    linhas.push(linhaVazao());
+  } else if (isSensor(peca)) {
+    const p = peca.props;
+    linhas.push(`${p.reversa ? 'Reverso — ' : ''}liga/desliga: ${p.nivelMinimo}–${p.nivelMaximo} ${compL}`);
+  } else if (peca.tipo === 'juncao') {
+    const d = (peca.props as { diametro?: number; bitola?: string }).diametro;
+    linhas.push(d && d > 0 ? `Estrangula: Ø ${d} mm${(peca.props as { bitola?: string }).bitola ? ` (${(peca.props as { bitola?: string }).bitola})` : ''}` : 'Junção (sem estrangulamento)');
+    linhas.push(linhaVazao());
+  }
+  return linhas.filter((l): l is string => l !== null);
 }

@@ -42,6 +42,8 @@ interface Props {
   onMove: (x: number, y: number) => void;
   onStartConnection: (id: string) => void;
   onEndConnection: (id: string) => void;
+  /** Hover para o tooltip: reporta id + posição na tela (ou null ao sair). */
+  onHover?: (info: { id: string; x: number; y: number } | null) => void;
 }
 
 // Cores de estado. Registro: verde = aberto, vermelho = fechado.
@@ -85,6 +87,7 @@ export function PecaView({
   onMove,
   onStartConnection,
   onEndConnection,
+  onHover,
 }: Props) {
   const { w, h } = tamanhoPeca(peca.tipo);
   const borda = selecionada ? '#38bdf8' : '#0d1620';
@@ -110,6 +113,15 @@ export function PecaView({
       onDragEnd={handleDragEnd}
       onMouseUp={() => onEndConnection(peca.id)}
       onTouchEnd={() => onEndConnection(peca.id)}
+      onMouseEnter={(e) => {
+        const pos = e.target.getStage()?.getPointerPosition();
+        if (pos) onHover?.({ id: peca.id, x: pos.x, y: pos.y });
+      }}
+      onMouseMove={(e) => {
+        const pos = e.target.getStage()?.getPointerPosition();
+        if (pos) onHover?.({ id: peca.id, x: pos.x, y: pos.y });
+      }}
+      onMouseLeave={() => onHover?.(null)}
       name={`peca-${peca.id}`}
     >
       {isReservatorio(peca) ? (
