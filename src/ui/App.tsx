@@ -158,6 +158,7 @@ export function App() {
           projeto={estado.projeto}
           emExecucao={emExecucao}
           vazao={selecionada ? estado.vazoes[selecionada.id] : undefined}
+          historico={selecionada ? estado.historico[selecionada.id] : undefined}
           dispatch={dispatch}
         />
       </div>
