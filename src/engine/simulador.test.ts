@@ -355,6 +355,96 @@ describe('junção divide e soma vazão', () => {
 });
 
 // ===========================================================================
+// Terminais (consumo/fonte/bomba) na REDE de junções + refluxo
+// ===========================================================================
+describe('terminal na rede de junções', () => {
+  const juncao = (id: string): Peca => ({ id, tipo: 'juncao', x: 0, y: 0, props: {} });
+  const nivelDe = (r: ReturnType<typeof tick>, id: string): number =>
+    (r.projeto.pecas.find((x) => x.id === id)!.props as PropsReservatorio).nivel ?? 0;
+
+  it('consumo puxando de uma união reflui o ramo alto para o ramo baixo', () => {
+    // R_sup (alto) e R_meio (baixo) unem em J; um consumo pequeno puxa de J. O
+    // R_sup fornece MAIS que o consumo → o excedente reflui J→R_meio, enchendo o
+    // ramo baixo CONTRA a seta (R_meio→t_meio→J). Deve marcar t_meio como refluxo.
+    const r = tick(
+      projeto(
+        [
+          res('R_sup', { cotaBase: 10, nivel: 5 }), // carga 15 m
+          res('R_meio', { cotaBase: 0, nivel: 1 }), // carga 1 m
+          juncao('J'),
+          tubo('t_sup'),
+          tubo('t_meio'),
+          { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: 0.05, aberto: true } },
+        ],
+        [
+          criarConexao('R_sup', 't_sup'),
+          criarConexao('t_sup', 'J'),
+          criarConexao('R_meio', 't_meio'),
+          criarConexao('t_meio', 'J'),
+          criarConexao('J', 'C'),
+        ],
+      ),
+    );
+    expect(r.refluxos).toContain('t_meio'); // fluindo contra a seta (J→R_meio)
+    expect(nivelDe(r, 'R_meio')).toBeGreaterThan(1); // ramo baixo é INUNDADO
+    expect(nivelDe(r, 'R_sup')).toBeLessThan(5); // ramo alto esvazia
+    expect(r.vazoes['C']).toBeCloseTo(0.05, 6); // consumo recebe sua demanda
+    // Massa: o que sai do R_sup = consumo + o que entra no R_meio.
+    const saiuSup = (5 - nivelDe(r, 'R_sup')) * 100; // Δvolume (área 100)
+    const entrouMeio = (nivelDe(r, 'R_meio') - 1) * 100;
+    const consumido = 0.05 * r.projeto.configuracaoSimulacao.dt;
+    expect(saiuSup).toBeCloseTo(consumido + entrouMeio, 6);
+  });
+
+  it('sem refluxo quando o consumo excede o que o ramo alto entrega', () => {
+    // Consumo grande: os DOIS ramos alimentam a junção normalmente (nenhum reflui).
+    const r = tick(
+      projeto(
+        [
+          res('R_sup', { cotaBase: 10, nivel: 5 }),
+          res('R_meio', { cotaBase: 10, nivel: 5 }),
+          juncao('J'),
+          tubo('t_sup'),
+          tubo('t_meio'),
+          { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: 100, aberto: true } },
+        ],
+        [
+          criarConexao('R_sup', 't_sup'),
+          criarConexao('t_sup', 'J'),
+          criarConexao('R_meio', 't_meio'),
+          criarConexao('t_meio', 'J'),
+          criarConexao('J', 'C'),
+        ],
+      ),
+    );
+    expect(r.refluxos).toHaveLength(0);
+    expect(nivelDe(r, 'R_sup')).toBeLessThan(5); // ambos esvaziam
+    expect(nivelDe(r, 'R_meio')).toBeLessThan(5);
+  });
+
+  it('fonte ligada a uma junção abastece o reservatório da rede', () => {
+    const r = tick(
+      projeto(
+        [
+          res('R', { nivel: 0 }),
+          juncao('J'),
+          tubo('tout'),
+          fonte('F', { vazaoFixa: 3 }),
+        ],
+        [
+          criarConexao('F', 'J'),
+          criarConexao('J', 'tout'),
+          criarConexao('tout', 'R'),
+        ],
+      ),
+    );
+    expect(nivelDe(r, 'R')).toBeGreaterThan(0); // fonte injeta na junção → enche R
+    const entrou = nivelDe(r, 'R') * 100;
+    expect(entrou).toBeCloseTo(3 * r.projeto.configuracaoSimulacao.dt, 6); // vazão da fonte
+  });
+});
+
+// ===========================================================================
 // Altura de conexão do tubo (tomada em altura nas pontas)
 // ===========================================================================
 describe('altura de conexão do tubo', () => {
