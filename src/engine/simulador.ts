@@ -329,11 +329,39 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   // Tubos por gravidade / ladrão: só os que ainda não foram atribuídos por um
   // elemento ativo (um cano alimentado por fonte/bomba tem sua vazão dada pelo
   // driver).
+  //
+  // Uma CADEIA de tubos em série limitada por reservatórios nas duas pontas
+  // carrega UM único fluxo, limitado pelo cano mais estreito (o gargalo). Sem
+  // isso, cada tubo resolveria os mesmos reservatórios e empurraria o próprio
+  // fluxo — tubos em série viravam paralelos e a origem drenava N×. Ladrão,
+  // registro fechado e descarga ao ambiente/sucção seguem a lógica por tubo.
   const ladroesAtivos: string[] = [];
+  const cadeiaResolvida = new Set<string>();
   for (const p of proj.pecas) {
-    if (isTubo(p) && vazoesM3[p.id] === undefined) {
+    if (!isTubo(p) || vazoesM3[p.id] !== undefined || cadeiaResolvida.has(p.id)) continue;
+    const fechado = p.props.registro !== undefined && !p.props.registro.aberto;
+    const up = fechado || p.props.ladrao ? null : idx.resolverReservatorio(p.id, 'up', true);
+    const down = fechado || p.props.ladrao ? null : idx.resolverReservatorio(p.id, 'down', true);
+    if (!up || !down) {
+      // Registro fechado, ladrão, descarga ao ambiente ou sucção de bomba
+      // (sem reservatório nas duas pontas) → lógica por tubo, como antes.
       vazoesM3[p.id] = calcularTubo(idx, p, g, u, fluxos, ladroesAtivos);
+      continue;
     }
+    // Cadeia entre dois reservatórios → resolve UMA vez, pelo gargalo (menor
+    // diâmetro). Uma boia fechada em qualquer tubo da cadeia interrompe o fluxo.
+    const cadeia = coletarCadeiaTubos(idx, p.id);
+    cadeia.forEach((id) => cadeiaResolvida.add(id));
+    const diam = (id: string): number => (idx.porId.get(id) as PecaDe<'tubo'>).props.diametro;
+    const gargalo = cadeia.reduce((a, b) => (diam(b) < diam(a) ? b : a));
+    const boiaFechada = cadeia.some((id) => {
+      const b = (idx.porId.get(id) as PecaDe<'tubo'>).props.boia;
+      return b !== undefined && !(b.aberta ?? true);
+    });
+    const q = boiaFechada
+      ? 0
+      : calcularTubo(idx, idx.porId.get(gargalo) as PecaDe<'tubo'>, g, u, fluxos, ladroesAtivos);
+    for (const id of cadeia) vazoesM3[id] = q; // toda a cadeia carrega a mesma vazão
   }
 
   // Tubos com velocidade acima da recomendada (v = Q/A > limite) = subdimensionados
@@ -463,6 +491,43 @@ function calcularTubo(
 /** Anota a vazão (m³/s) de um caminho nos tubos em série (telemetria/animação). */
 function anotarTubos(vazoes: Record<string, number>, tubos: string[], q: number): void {
   for (const t of tubos) vazoes[t] = (vazoes[t] ?? 0) + q;
+}
+
+/**
+ * Coleta os IDs dos tubos ABERTOS (não-ladrão) de uma mesma cadeia em série a
+ * partir de `tuboInicial`: tubos ligados diretamente ou por junções, sem um
+ * reservatório/elemento ativo no meio. Um tubo de registro fechado ou ladrão é
+ * fronteira (quebra a cadeia) e não é incluído.
+ */
+function coletarCadeiaTubos(idx: GrafoIndex, tuboInicial: string): string[] {
+  const tubos = new Set<string>();
+  const visitado = new Set<string>([tuboInicial]);
+  const fila: string[] = [tuboInicial];
+  while (fila.length > 0) {
+    const id = fila.pop()!;
+    const peca = idx.porId.get(id);
+    if (peca && isTubo(peca)) tubos.add(id);
+    const vizinhos = [
+      ...(idx.entrada.get(id) ?? []).map((c) => c.origem),
+      ...(idx.saida.get(id) ?? []).map((c) => c.destino),
+    ];
+    for (const v of vizinhos) {
+      if (visitado.has(v)) continue;
+      const vp = idx.porId.get(v);
+      if (!vp) continue;
+      // Atravessa junções (sem volume) e tubos abertos não-ladrão; para em
+      // reservatório/bomba/fonte/consumo e em tubo de registro fechado/ladrão.
+      const atravessa =
+        vp.tipo === 'juncao' ||
+        (isTubo(vp) &&
+          !vp.props.ladrao &&
+          !(vp.props.registro !== undefined && !vp.props.registro.aberto));
+      if (!atravessa) continue;
+      visitado.add(v);
+      fila.push(v);
+    }
+  }
+  return [...tubos];
 }
 
 function calcularBomba(

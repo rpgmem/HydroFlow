@@ -159,6 +159,62 @@ describe('vazão por gravidade em tubo', () => {
 });
 
 // ===========================================================================
+// Tubos em série (uma cadeia carrega UM fluxo, limitado pelo gargalo)
+// ===========================================================================
+describe('tubos em série entre reservatórios', () => {
+  const perdaOrigem = (nivelInicial: number, r: ReturnType<typeof tick>): number =>
+    nivelInicial - (r.projeto.pecas.find((x) => x.id === 'R1')!.props as PropsReservatorio).nivel!;
+
+  it('dois tubos em série drenam IGUAL a um único (não dobram)', () => {
+    const um = tick(
+      projeto(
+        [res('R1', { cotaBase: 5, nivel: 3 }), res('R2', {}), tubo('T', { diametro: 100 })],
+        [criarConexao('R1', 'T'), criarConexao('T', 'R2')],
+      ),
+    );
+    const serie = tick(
+      projeto(
+        [res('R1', { cotaBase: 5, nivel: 3 }), res('R2', {}), tubo('A', { diametro: 100 }), tubo('B', { diametro: 100 })],
+        [criarConexao('R1', 'A'), criarConexao('A', 'B'), criarConexao('B', 'R2')],
+      ),
+    );
+    expect(perdaOrigem(3, serie)).toBeCloseTo(perdaOrigem(3, um), 9);
+  });
+
+  it('com diâmetros diferentes, o cano mais estreito limita (independe da ordem)', () => {
+    const soEstreito = tick(
+      projeto(
+        [res('R1', { cotaBase: 5, nivel: 3 }), res('R2', {}), tubo('T', { diametro: 60 })],
+        [criarConexao('R1', 'T'), criarConexao('T', 'R2')],
+      ),
+    ).vazoes['T']!;
+    const cenario = (dA: number, dB: number) =>
+      tick(
+        projeto(
+          [res('R1', { cotaBase: 5, nivel: 3 }), res('R2', {}), tubo('A', { diametro: dA }), tubo('B', { diametro: dB })],
+          [criarConexao('R1', 'A'), criarConexao('A', 'B'), criarConexao('B', 'R2')],
+        ),
+      );
+    const largoEstreito = cenario(150, 60);
+    const estreitoLargo = cenario(60, 150);
+    expect(largoEstreito.vazoes['A']).toBeCloseTo(soEstreito, 9); // limitado pelos 60 mm
+    expect(estreitoLargo.vazoes['A']).toBeCloseTo(soEstreito, 9); // idem, ordem inversa
+    expect(largoEstreito.vazoes['A']).toBeCloseTo(largoEstreito.vazoes['B']!, 9); // cadeia toda igual
+  });
+
+  it('registro fechado no meio quebra a cadeia (sem fluxo)', () => {
+    const r = tick(
+      projeto(
+        [res('R1', { cotaBase: 5, nivel: 3 }), res('R2', {}), tubo('A', { diametro: 100 }), tubo('B', { diametro: 100, registro: { aberto: false } })],
+        [criarConexao('R1', 'A'), criarConexao('A', 'B'), criarConexao('B', 'R2')],
+      ),
+    );
+    expect(perdaOrigem(3, r)).toBeCloseTo(0, 9);
+    expect(r.vazoes['A'] ?? 0).toBe(0);
+  });
+});
+
+// ===========================================================================
 // Altura de conexão do tubo (tomada em altura nas pontas)
 // ===========================================================================
 describe('altura de conexão do tubo', () => {
