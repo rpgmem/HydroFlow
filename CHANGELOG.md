@@ -6,6 +6,22 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.17.0] — Terminais na rede de junções e refluxo sinalizado
+
+### Adicionado
+
+- **Consumo, fonte e bomba entram na rede de junções** como **nós de vazão**.
+  Antes cada um resolvia o próprio caminho isolado: um consumo puxando de uma
+  **união** escolhia só um dos ramos e o outro ficava intocado — sem o refluxo
+  esperado. Agora o terminal injeta/retira vazão no nó em que se liga e a rede é
+  resolvida em conjunto (conservando massa). Assim, se um consumo puxa de uma
+  união e o ramo mais alto entrega **mais** que a demanda, o excedente **reflui**
+  para o ramo mais baixo, enchendo-o — o comportamento físico correto.
+- **Refluxo sinalizado**: um tubo com fluxo **contrário à sua seta** aparece na
+  cor **violeta** (as "formigas" já marchavam no sentido real) e gera uma
+  **entrada no log** (`refluxo: fluxo contrário à seta`). O refluxo é inesperado
+  na maioria dos projetos, então fica evidente na tela e no histórico.
+
 ## [1.16.0] — Diâmetro na junção e setas de sensor
 
 ### Adicionado

@@ -325,14 +325,18 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
             const sel = estado.conexaoSelecionada === c.id;
             // "Formigas marchando" no SENTIDO REAL do fluxo: quando reflui
             // (qSigned < 0) a marcha inverte, mostrando a água voltando.
-            const dir = qSigned < 0 ? -1 : 1;
+            const reflui = qSigned < -1e-6;
+            const dir = reflui ? -1 : 1;
             const marcha = (-(estado.tempo * 40) * dir) % 16;
+            // Refluxo (fluxo contrário à seta) sai em cor distinta (violeta) para
+            // sinalizar o sentido inesperado; fluxo normal ativo em ciano.
+            const cor = sel ? '#f87171' : ativa ? (reflui ? '#c084fc' : '#22d3ee') : '#4a5f73';
             return (
               <Arrow
                 key={c.id}
                 points={[a.x, a.y, b.x, b.y]}
-                stroke={sel ? '#f87171' : ativa ? '#22d3ee' : '#4a5f73'}
-                fill={sel ? '#f87171' : ativa ? '#22d3ee' : '#4a5f73'}
+                stroke={cor}
+                fill={cor}
                 strokeWidth={sel ? 3.5 : ativa ? 3 : 1.5}
                 dash={ativa ? [10, 6] : undefined}
                 dashOffset={ativa ? marcha : 0}

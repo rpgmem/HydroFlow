@@ -172,7 +172,9 @@ Fórmulas implementadas em `src/engine/simulador.ts`:
   conservando massa. Uma sub-rede de gravidade com junções é resolvida como rede
   de vazão (carga das junções por iteração até o fluxo líquido no nó zerar); cada
   trecho entre nós é limitado pelo cano mais estreito. Bifurcação enche os dois
-  ramos; união soma as origens no destino.
+  ramos; união soma as origens no destino. **Consumo, fonte e bomba** ligados a
+  uma junção entram na rede como **nós de vazão** — assim um consumo puxando de
+  uma união pode forçar o **refluxo** do ramo mais alto para o mais baixo.
 
 ### Unidades
 
@@ -197,6 +199,9 @@ realistas (vazões em L/s enchendo tanques de milhares de litros) em segundos.
   comum. Puramente visual + registro no log — não muda a física.
 - **Check valve / registro / boia** — refluxo bloqueado; registro on/off manual;
   boia mecânica fecha ao encher o destino.
+- **Refluxo sinalizado** — um tubo com fluxo **contrário à sua seta** aparece em
+  **violeta** (as "formigas" marcham no sentido real) e é registrado no log. Serve
+  para deixar evidente um sentido inesperado (ex.: refluxo numa união).
 - **Sensor reverso** — inverte a lógica do sensor eletrônico: **liga no nível
   máximo, desliga no mínimo**. Serve para proteger a sucção (não rodar a seco) ou
   acionar uma bomba de hidrantes. Uma bomba respeita **todos** os seus sensores em
