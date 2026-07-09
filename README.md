@@ -69,6 +69,7 @@ src/
 │   └── exemplo.ts      # projeto de demonstração
 ├── engine/         # Sprint 2 — motor de simulação (puro, sem UI)
 │   ├── geometria.ts       # relação nível↔volume (seção constante)
+│   ├── hidraulica.ts      # leis de vazão (Torricelli / Hazen-Williams)
 │   ├── arbitragem.ts      # sensores/boias e arbitragem de bombas
 │   ├── simulador.ts       # tick(): cálculo de vazão e atualização de estado
 │   ├── redeJuncoes.ts     # solver da rede de junções (divide/soma, conserva massa)
@@ -151,6 +152,10 @@ Fórmulas implementadas em `src/engine/simulador.ts`:
 
 - **Vazão por gravidade (tubo)** — Torricelli:
   `v = √(2·g·Δh)`, `A = π·(diametro/2)²`, `Q = A·v`.
+- **Perda de carga por atrito** (opcional, `configuracaoSimulacao.atrito`) —
+  Hazen-Williams: resolve `Δh = v²/2g + hf(Q)` com
+  `hf = 10,67·L·Q^1,85 / (C^1,85·D^4,87)` (usa o `comprimento` e o `coefC` do
+  tubo). Desligado por padrão (Torricelli puro). As leis ficam em `hidraulica.ts`.
 - **Carga hidráulica** — `Δh = (cotaBase + nivel)origem − (cotaBase + nivel)destino`
   (sempre a carga total; **nunca** só o nível bruto).
 - **Bomba** — `Q = vazaoNominal` (ideal) ou, com **altura nominal**,
