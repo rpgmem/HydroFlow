@@ -440,19 +440,55 @@ function JuncaoForm({ props, emExecucao, upd }: { props: PropsJuncao; emExecucao
           checked={temDiam}
           disabled={emExecucao}
           aria-label="Estrangular a junção (diâmetro)"
-          onChange={(e) => upd({ diametro: e.target.checked ? 100 : undefined })}
+          // Ao ligar, assume a bitola DN110 (mesmo default dos tubos maiores);
+          // ao desligar, limpa diâmetro e bitola.
+          onChange={(e) => {
+            const b = bitolaPorDn('DN110');
+            if (e.target.checked && b) upd({ diametro: b.internoMm, bitola: b.dn });
+            else if (e.target.checked) upd({ diametro: 100, bitola: undefined });
+            else upd({ diametro: undefined, bitola: undefined });
+          }}
         />
         Estrangular (limitar o fluxo pela junção)
       </label>
       {temDiam && (
-        <Num
-          label="Diâmetro interno da junção"
-          unidade="mm"
-          value={props.diametro}
-          disabled={emExecucao}
-          step={0.1}
-          onChange={(v) => upd({ diametro: v })}
-        />
+        <>
+          {/* Mesma lista de bitolas dos tubos: seleciona o DN e grava o diâmetro
+              INTERNO tabelado. "Personalizado" libera o mm. */}
+          <div className="field">
+            <label>Bitola</label>
+            <select
+              value={props.bitola ?? ''}
+              disabled={emExecucao}
+              aria-label="Bitola da junção"
+              onChange={(e) => {
+                const b = bitolaPorDn(e.target.value);
+                if (b) upd({ bitola: b.dn, diametro: b.internoMm });
+                else upd({ bitola: undefined });
+              }}
+            >
+              <option value="">Personalizado</option>
+              {CATEGORIAS_TUBO.map((cat) => (
+                <optgroup key={cat} label={cat}>
+                  {CATALOGO_TUBOS.filter((b) => b.categoria === cat).map((b) => (
+                    <option key={b.dn} value={b.dn}>
+                      {rotuloBitola(b)}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+          {/* Editar o diâmetro na mão limpa a bitola (vira "Personalizado"). */}
+          <Num
+            label="Diâmetro interno da junção"
+            unidade="mm"
+            value={props.diametro}
+            disabled={emExecucao}
+            step={0.1}
+            onChange={(v) => upd({ diametro: v, bitola: undefined })}
+          />
+        </>
       )}
     </>
   );

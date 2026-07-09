@@ -6,6 +6,31 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.18.0] — Reservatório vazio não gera fluxo fantasma; bitola na junção
+
+### Corrigido
+
+- **Reservatório vazio na rede de junções não FORNECE mais água.** O solver
+  tratava o reservatório como carga fixa `cotaBase + nível`; com o tanque vazio
+  (nível 0) a carga ainda era alta pela elevação, então ele **empurrava água que
+  não existe** — ex.: o `superior` já esvaziado continuava refluindo pela União
+  para o `meio`, com a seta de refluxo acesa. Agora um reservatório vazio só pode
+  **receber** (a aresta que o teria como fonte fica em 0), como já valia para os
+  tubos lineares. O refluxo legítimo (reservatório com água e mais alto empurrando
+  o mais baixo pela União) continua igual.
+
+### Adicionado
+
+- **Bitola na junção**: ao estrangular uma junção, a medida agora reusa o mesmo
+  **catálogo de bitolas (DN)** dos tubos — seleciona o DN e grava o diâmetro
+  interno tabelado, com opção **Personalizado** para digitar o mm na mão.
+
+### Alterado
+
+- **Projeto de exemplo atualizado** com as junções **Divisor** (na saída da
+  bomba) e **União** (antes do consumo), mantendo o alinhamento das peças nas 6
+  colunas (passo uniforme de 120 no eixo x). A saída do meio passa a ficar aberta.
+
 ## [1.17.0] — Terminais na rede de junções e refluxo sinalizado
 
 ### Adicionado

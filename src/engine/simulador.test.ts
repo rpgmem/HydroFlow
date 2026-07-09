@@ -422,6 +422,35 @@ describe('terminal na rede de junções', () => {
     expect(nivelDe(r, 'R_meio')).toBeLessThan(5);
   });
 
+  it('reservatório vazio na união não fornece (sem fluxo fantasma)', () => {
+    // R_sup está VAZIO (nível 0) mas com cota alta (10). O solver não pode usar a
+    // cota de fundo como carga e empurrar água que não existe: o superior vazio
+    // não fornece, então não há refluxo para o meio nem dreno do tanque vazio.
+    const r = tick(
+      projeto(
+        [
+          res('R_sup', { cotaBase: 10, nivel: 0 }), // vazio, cota alta
+          res('R_meio', { cotaBase: 0, nivel: 3 }),
+          juncao('J'),
+          tubo('t_sup'),
+          tubo('t_meio'),
+          { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: 0.02, aberto: true } },
+        ],
+        [
+          criarConexao('R_sup', 't_sup'),
+          criarConexao('t_sup', 'J'),
+          criarConexao('R_meio', 't_meio'),
+          criarConexao('t_meio', 'J'),
+          criarConexao('J', 'C'),
+        ],
+      ),
+    );
+    expect(r.refluxos).toHaveLength(0); // nada reflui para o meio
+    expect(nivelDe(r, 'R_sup')).toBe(0); // vazio continua vazio (não fornece nem dá fantasma)
+    expect(nivelDe(r, 'R_meio')).toBeLessThan(3); // meio alimenta o consumo (só perde)
+    expect(Math.abs(r.vazoes['t_sup'] ?? 0)).toBe(0); // aresta do superior vazio: sem vazão
+  });
+
   it('fonte ligada a uma junção abastece o reservatório da rede', () => {
     const r = tick(
       projeto(

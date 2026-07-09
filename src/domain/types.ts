@@ -184,6 +184,13 @@ export type PropsSensor = NivelControle & {
 export interface PropsJuncao {
   /** Diâmetro interno em MILÍMETROS que limita o fluxo pela junção (opcional). */
   diametro?: number;
+  /**
+   * Rótulo da bitola pré-configurada selecionada (ex.: 'DN110'), do catálogo em
+   * `tubosCatalogo.ts` — mesma lista dos tubos. Apenas informativo/UI: selecionar
+   * um preset grava `diametro` = diâmetro interno tabelado; editar o mm na mão
+   * limpa a bitola (vira "Personalizado").
+   */
+  bitola?: string;
 }
 
 export type PropsPorTipo =
