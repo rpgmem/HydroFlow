@@ -27,6 +27,7 @@ import {
 import { labelComprimento, labelVazao } from '../domain/unidades';
 import { vazaoDeM3, vazaoMaxRecomendadaM3, VELOCIDADE_MAX_RECOMENDADA_MS } from '../engine/geometria';
 import { CATALOGO_TUBOS, CATEGORIAS_TUBO, bitolaPorDn, rotuloBitola } from '../domain/tubosCatalogo';
+import { Sparkline } from './Sparkline';
 
 /** Rótulos de unidade derivados das unidades do projeto. */
 interface UniLabel {
@@ -40,6 +41,8 @@ interface Props {
   emExecucao: boolean;
   /** Vazão atual da peça selecionada (unidade de volume/s), se houver. */
   vazao?: number;
+  /** Série temporal da peça (nível/vazão) acumulada na execução, p/ o sparkline. */
+  historico?: number[];
   dispatch: React.Dispatch<Acao>;
 }
 
@@ -77,7 +80,7 @@ function Num({
   );
 }
 
-export function Inspector({ peca, projeto, emExecucao, vazao, dispatch }: Props) {
+export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatch }: Props) {
   if (!peca) {
     return (
       <div className="panel right">
@@ -111,6 +114,14 @@ export function Inspector({ peca, projeto, emExecucao, vazao, dispatch }: Props)
         <p className="telemetry" style={{ marginTop: 0 }}>
           Vazão atual: <strong>{vazao.toFixed(2)} {u.vazao}</strong>
         </p>
+      )}
+
+      {emExecucao && historico && historico.length >= 2 && (
+        <Sparkline
+          dados={historico}
+          titulo={isReservatorio(peca) ? 'Nível' : 'Vazão'}
+          unidade={isReservatorio(peca) ? u.comp : u.vazao}
+        />
       )}
 
       {/* Em execução tudo fica desabilitado: evita a falsa sensação de edição

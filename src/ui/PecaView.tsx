@@ -18,7 +18,7 @@ import {
   type PropsTubo,
 } from '../domain/types';
 
-import { tamanhoPeca } from './pecaGeom';
+import { tamanhoPeca, GRADE } from './pecaGeom';
 
 interface Props {
   peca: Peca;
@@ -42,6 +42,8 @@ interface Props {
   onMove: (x: number, y: number) => void;
   onStartConnection: (id: string) => void;
   onEndConnection: (id: string) => void;
+  /** Hover para o tooltip: reporta id + posição na tela (ou null ao sair). */
+  onHover?: (info: { id: string; x: number; y: number } | null) => void;
 }
 
 // Cores de estado. Registro: verde = aberto, vermelho = fechado.
@@ -85,13 +87,20 @@ export function PecaView({
   onMove,
   onStartConnection,
   onEndConnection,
+  onHover,
 }: Props) {
   const { w, h } = tamanhoPeca(peca.tipo);
   const borda = selecionada ? '#38bdf8' : '#0d1620';
   const larguraBorda = selecionada ? 2.5 : 1;
 
   const handleDragEnd = (e: KonvaEventObject<DragEvent>): void => {
-    onMove(e.target.x(), e.target.y());
+    // Snap à grade: encaixa o centro da peça no múltiplo de GRADE mais próximo,
+    // ajudando o alinhamento em colunas/linhas (as colunas do exemplo, múltiplas
+    // de 120, permanecem intactas — 120 é múltiplo da grade).
+    const gx = Math.round(e.target.x() / GRADE) * GRADE;
+    const gy = Math.round(e.target.y() / GRADE) * GRADE;
+    onMove(gx, gy); // o estado atualiza → o Group re-renderiza já encaixado
+
   };
 
   return (
@@ -104,6 +113,15 @@ export function PecaView({
       onDragEnd={handleDragEnd}
       onMouseUp={() => onEndConnection(peca.id)}
       onTouchEnd={() => onEndConnection(peca.id)}
+      onMouseEnter={(e) => {
+        const pos = e.target.getStage()?.getPointerPosition();
+        if (pos) onHover?.({ id: peca.id, x: pos.x, y: pos.y });
+      }}
+      onMouseMove={(e) => {
+        const pos = e.target.getStage()?.getPointerPosition();
+        if (pos) onHover?.({ id: peca.id, x: pos.x, y: pos.y });
+      }}
+      onMouseLeave={() => onHover?.(null)}
       name={`peca-${peca.id}`}
     >
       {isReservatorio(peca) ? (

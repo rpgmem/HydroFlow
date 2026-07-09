@@ -20,6 +20,7 @@ import type { Decisao } from '../engine/arbitragem';
 import { sincronizarContador } from '../domain/factory';
 import {
   isBomba,
+  isReservatorio,
   isSensor,
   isTubo,
   type Conexao,
@@ -39,6 +40,8 @@ export interface EventoLog {
 }
 
 const MAX_EVENTOS = 300;
+/** Máximo de amostras guardadas por peça para o sparkline do inspetor. */
+const MAX_HISTORICO = 150;
 
 // Multiplicador de ticks por frame. Valores altos permitem acompanhar cenários
 // realistas (vazões em L/s enchendo tanques de milhares de litros) em segundos.
@@ -61,6 +64,9 @@ export interface EstadoApp {
   refluxos: string[];
   consumoInsuficiente: string[];
   sensores: Record<string, Decisao>;
+  /** Série temporal por peça (nível dos reservatórios, vazão dos condutores)
+   *  acumulada durante a execução — alimenta o sparkline do inspetor. */
+  historico: Record<string, number[]>;
   /** Log de eventos (acionamentos de bomba/sensor e alertas) da execução. */
   eventos: EventoLog[];
   /** id da peça selecionada no inspetor (ou null). */
@@ -112,11 +118,30 @@ export function estadoInicial(projeto: ProjetoSimulacao): EstadoApp {
     refluxos: [],
     consumoInsuficiente: [],
     sensores: {},
+    historico: {},
     eventos: [],
     selecionada: null,
     conexaoSelecionada: null,
     snapshotEdicao: null,
   };
+}
+
+/** Anexa uma amostra por peça (nível/vazão) ao histórico, com corte no teto. */
+function registrarHistorico(
+  anterior: Record<string, number[]>,
+  r: ResultadoTick,
+): Record<string, number[]> {
+  const hist: Record<string, number[]> = {};
+  for (const p of r.projeto.pecas) {
+    let v: number | undefined;
+    if (isReservatorio(p)) v = p.props.nivel ?? 0;
+    else if (r.vazoes[p.id] !== undefined) v = r.vazoes[p.id];
+    if (v === undefined) continue; // sensor/junção sem série
+    const arr = anterior[p.id] ? anterior[p.id]!.slice(-(MAX_HISTORICO - 1)) : [];
+    arr.push(v);
+    hist[p.id] = arr;
+  }
+  return hist;
 }
 
 /** Mutações que alteram a ESTRUTURA do grafo — proibidas em execução. */
@@ -303,6 +328,7 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
         tempo: 0,
         errosValidacao: [],
         eventos: [], // novo run → log limpo
+        historico: {}, // novo run → série limpa
         snapshotEdicao: structuredClone(estado.projeto),
       };
     }
@@ -324,6 +350,7 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
         refluxos: [],
         consumoInsuficiente: [],
         sensores: {},
+        historico: {},
         eventos: [],
         projeto: estado.snapshotEdicao ?? estado.projeto,
         snapshotEdicao: null,
@@ -351,6 +378,7 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
         refluxos: [],
         consumoInsuficiente: [],
         sensores: {},
+        historico: {},
         eventos: [],
         projeto: estado.snapshotEdicao ?? estado.projeto,
       };
@@ -376,6 +404,7 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
         refluxos: r.refluxos,
         consumoInsuficiente: r.consumoInsuficiente,
         sensores: r.sensores,
+        historico: registrarHistorico(estado.historico, r),
         eventos:
           novosEventos.length > 0
             ? [...estado.eventos, ...novosEventos].slice(-MAX_EVENTOS)

@@ -14,6 +14,15 @@ import type { Stage as KonvaStage } from 'konva/lib/Stage';
 import { PecaView } from './PecaView';
 import { tamanhoPeca } from './pecaGeom';
 import { criarConexao } from '../domain/factory';
+import {
+  isBomba,
+  isConsumo,
+  isFonte,
+  isReservatorio,
+  isSensor,
+  isTubo,
+  type Peca,
+} from '../domain/types';
 import type { Acao, EstadoApp } from '../state/store';
 
 interface Props {
@@ -35,6 +44,11 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
   const emExecucao = estado.modo === 'execucao';
   const [conectando, setConectando] = useState<string | null>(null);
   const [ponteiro, setPonteiro] = useState<{ x: number; y: number } | null>(null);
+  // Peça sob o cursor (para o tooltip). Guarda a posição na tela (px do container).
+  const [hover, setHover] = useState<{ id: string; x: number; y: number } | null>(null);
+  // Transform corrente do Stage (escala/posição) espelhado em estado para o
+  // minimapa redesenhar o retângulo de viewport ao dar zoom/pan.
+  const [vista, setVista] = useState({ scale: 1, x: 0, y: 0 });
   const conectandoRef = useRef<string | null>(null);
   conectandoRef.current = conectando;
 
@@ -154,12 +168,25 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
     }
   };
 
+  const onStageDragMove = (e: KonvaEventObject<DragEvent>): void => {
+    if (e.target === stageRef.current) sincronizarVista(); // minimapa segue o pan
+  };
+
   const onStageDragEnd = (e: KonvaEventObject<DragEvent>): void => {
     // Pan do fundo (o próprio Stage) conta como interação → cessa o auto-fit.
-    if (e.target === stageRef.current) usuarioMexeu.current = true;
+    if (e.target === stageRef.current) {
+      usuarioMexeu.current = true;
+      sincronizarVista();
+    }
   };
 
   // ---- Zoom (imperativo sobre o Stage) ---------------------------------
+  // Espelha o transform do Stage no estado `vista` (para o minimapa acompanhar).
+  const sincronizarVista = (): void => {
+    const stage = stageRef.current;
+    if (stage) setVista({ scale: stage.scaleX(), x: stage.x(), y: stage.y() });
+  };
+
   const aplicarEscala = (novaEscala: number, centroTela: { x: number; y: number }): void => {
     const stage = stageRef.current;
     if (!stage) return;
@@ -173,6 +200,7 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
     stage.scale({ x: s, y: s });
     stage.position({ x: centroTela.x - ponto.x * s, y: centroTela.y - ponto.y * s });
     stage.batchDraw();
+    sincronizarVista();
   };
 
   const onWheel = (e: KonvaEventObject<WheelEvent>): void => {
@@ -190,6 +218,17 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
     if (!stage) return;
     usuarioMexeu.current = true;
     aplicarEscala(stage.scaleX() * fator, { x: largura / 2, y: altura / 2 });
+  };
+
+  // Centraliza a vista num ponto do CONTEÚDO (usado ao clicar no minimapa).
+  const centralizarEm = (cx: number, cy: number): void => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    usuarioMexeu.current = true;
+    const s = stage.scaleX();
+    stage.position({ x: largura / 2 - cx * s, y: altura / 2 - cy * s });
+    stage.batchDraw();
+    sincronizarVista();
   };
 
   const ajustarView = (): void => {
@@ -211,6 +250,7 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
       y: (altura - b.h * s) / 2 - b.minY * s,
     });
     stage.batchDraw();
+    sincronizarVista();
   };
 
   // Impressão: enquadra todo o diagrama (para nada ficar cortado) e restaura a
@@ -302,6 +342,7 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
         onTouchEnd={onTouchEnd}
         onWheel={onWheel}
         onDragStart={onStageDragStart}
+        onDragMove={onStageDragMove}
         onDragEnd={onStageDragEnd}
         onClick={onStageClick}
         onTap={onStageClick}
@@ -385,10 +426,87 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
               onMove={(x, y) => dispatch({ tipo: 'MOVER_PECA', id: peca.id, x, y })}
               onStartConnection={iniciarConexao}
               onEndConnection={terminarConexao}
+              onHover={conectando ? undefined : setHover}
             />
           ))}
         </Layer>
       </Stage>
+
+      {/* Tooltip: detalhes da peça sob o cursor (não aparece durante conexão). */}
+      {hover && !conectando && (() => {
+        const p = pecaPorId.get(hover.id);
+        if (!p) return null;
+        const linhas = linhasTooltip(p, estado);
+        // Mantém o tooltip dentro da área visível (vira p/ a esquerda perto da borda).
+        const viraEsq = hover.x > largura - 190;
+        return (
+          <div
+            className="peca-tooltip"
+            style={{
+              left: viraEsq ? undefined : hover.x + 14,
+              right: viraEsq ? largura - hover.x + 14 : undefined,
+              top: Math.min(hover.y + 12, Math.max(0, altura - 8 - 18 * linhas.length)),
+            }}
+          >
+            <strong>{rotuloDe(p)}</strong>
+            {linhas.map((l, i) => (
+              <span key={i}>{l}</span>
+            ))}
+          </div>
+        );
+      })()}
+
+      {/* Minimapa: visão geral + retângulo da viewport. Só quando o diagrama é
+          maior que o exemplo (senão é ruído — tudo já cabe na tela). Clicar
+          recentraliza a vista no ponto correspondente. */}
+      {(() => {
+        const pcs = estado.projeto.pecas;
+        if (pcs.length === 0) return null;
+        const b = limitesPecas(pcs);
+        if (b.rawW <= 800 && b.rawH <= 700) return null; // projeto pequeno → sem minimapa
+        const escala = Math.min(168 / b.w, 132 / b.h);
+        const mmW = b.w * escala;
+        const mmH = b.h * escala;
+        // Retângulo da viewport (conteúdo visível) mapeado no minimapa.
+        const vx = (-vista.x / vista.scale - b.minX) * escala;
+        const vy = (-vista.y / vista.scale - b.minY) * escala;
+        const vw = (largura / vista.scale) * escala;
+        const vh = (altura / vista.scale) * escala;
+        const rx = Math.max(0, Math.min(vx, mmW));
+        const ry = Math.max(0, Math.min(vy, mmH));
+        return (
+          <svg
+            className="minimapa"
+            width={mmW}
+            height={mmH}
+            onClick={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              const mx = e.clientX - r.left;
+              const my = e.clientY - r.top;
+              centralizarEm(mx / escala + b.minX, my / escala + b.minY);
+            }}
+          >
+            {pcs.map((p) => {
+              const cx = (p.x - b.minX) * escala;
+              const cy = (p.y - b.minY) * escala;
+              return p.tipo === 'reservatorio' ? (
+                <rect key={p.id} x={cx - 2.5} y={cy - 3} width={5} height={6} rx={1} fill="#2b8fe0" />
+              ) : (
+                <circle key={p.id} cx={cx} cy={cy} r={2} fill="#7d93a6" />
+              );
+            })}
+            <rect
+              x={rx}
+              y={ry}
+              width={Math.min(vw, mmW - rx)}
+              height={Math.min(vh, mmH - ry)}
+              fill="rgba(56,189,248,0.15)"
+              stroke="#38bdf8"
+              strokeWidth={1}
+            />
+          </svg>
+        );
+      })()}
     </div>
   );
 }
@@ -430,4 +548,56 @@ function limitesPecas(pcs: EstadoApp['projeto']['pecas']): {
 function rotuloDe(p: { id: string; rotulo?: string } | undefined): string {
   if (!p) return '';
   return p.rotulo && p.rotulo.trim() ? p.rotulo : p.id;
+}
+
+/**
+ * Linhas do tooltip de uma peça: dados de configuração (diâmetro, cota…) e, em
+ * execução, os valores correntes (vazão, nível). Unidades conforme o projeto.
+ */
+function linhasTooltip(peca: Peca, estado: EstadoApp): string[] {
+  const u = estado.projeto.unidades;
+  const volL = u.volume === 'm3' ? 'm³' : 'L';
+  const vazL = `${volL}/s`;
+  const compL = u.comprimento;
+  const emExec = estado.modo === 'execucao';
+  const q = estado.vazoes[peca.id];
+  const linhaVazao = (): string | null => {
+    if (!emExec || q === undefined || Math.abs(q) < 1e-6) return null;
+    return `Vazão: ${q.toFixed(2)} ${vazL}${q < -1e-6 ? ' (refluxo)' : ''}`;
+  };
+  const linhas: (string | null)[] = [];
+  if (isReservatorio(peca)) {
+    const p = peca.props;
+    linhas.push(`Nível: ${(p.nivel ?? 0).toFixed(2)} / ${p.alturaMaxima} ${compL}`);
+    linhas.push(`Cota base: ${p.cotaBase} ${compL}`);
+    linhas.push(`Carga: ${(p.cotaBase + (p.nivel ?? 0)).toFixed(2)} ${compL}`);
+  } else if (isTubo(peca)) {
+    const p = peca.props;
+    linhas.push(`Ø ${p.diametro} mm${p.bitola ? ` (${p.bitola})` : ''}`);
+    if (p.ladrao) linhas.push(`Ladrão em ${p.ladrao.nivel} ${compL}`);
+    if (p.registro) linhas.push(`Registro: ${p.registro.aberto ? 'aberto' : 'fechado'}`);
+    linhas.push(linhaVazao());
+  } else if (isBomba(peca)) {
+    const p = peca.props;
+    linhas.push(`Vazão nominal: ${p.vazaoNominal} ${vazL}`);
+    if (p.alturaNominal) linhas.push(`Altura nominal: ${p.alturaNominal} ${compL}`);
+    if (emExec) linhas.push(`Estado: ${p.ligada ? 'ligada' : 'desligada'}`);
+    linhas.push(linhaVazao());
+  } else if (isFonte(peca)) {
+    linhas.push(`Vazão fixa: ${peca.props.vazaoFixa} ${vazL}`);
+    linhas.push(linhaVazao());
+  } else if (isConsumo(peca)) {
+    const p = peca.props;
+    linhas.push(`Demanda: ${p.vazaoDemanda} ${vazL}${p.perfil && p.perfil !== 'fixo' ? ` (${p.perfil})` : ''}`);
+    if (p.aberto === false) linhas.push('Fechado');
+    linhas.push(linhaVazao());
+  } else if (isSensor(peca)) {
+    const p = peca.props;
+    linhas.push(`${p.reversa ? 'Reverso — ' : ''}liga/desliga: ${p.nivelMinimo}–${p.nivelMaximo} ${compL}`);
+  } else if (peca.tipo === 'juncao') {
+    const d = (peca.props as { diametro?: number; bitola?: string }).diametro;
+    linhas.push(d && d > 0 ? `Estrangula: Ø ${d} mm${(peca.props as { bitola?: string }).bitola ? ` (${(peca.props as { bitola?: string }).bitola})` : ''}` : 'Junção (sem estrangulamento)');
+    linhas.push(linhaVazao());
+  }
+  return linhas.filter((l): l is string => l !== null);
 }

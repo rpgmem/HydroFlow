@@ -15,11 +15,13 @@ interface Props {
   onImprimir: () => void;
   tema: 'escuro' | 'claro';
   onAlternarTema: () => void;
+  onAlternarLegenda: () => void;
+  legendaAberta: boolean;
 }
 
 const VELOCIDADES: Velocidade[] = [1, 5, 30, 120];
 
-export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAlternarTema }: Props) {
+export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAlternarTema, onAlternarLegenda, legendaAberta }: Props) {
   const inputFile = useRef<HTMLInputElement>(null);
   const [menuAberto, setMenuAberto] = useState(false);
   const emExecucao = estado.modo === 'execucao';
@@ -122,6 +124,17 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
         ⋯
       </button>
       <div className={`acoes-secundarias${menuAberto ? ' aberto' : ''}`}>
+        <button
+          className={legendaAberta ? 'ativo' : ''}
+          aria-pressed={legendaAberta}
+          onClick={() => {
+            setMenuAberto(false);
+            onAlternarLegenda();
+          }}
+          title="Mostrar/ocultar a legenda de formas e cores"
+        >
+          📖 Legenda
+        </button>
         {!emExecucao && (
           <button
             onClick={() => {

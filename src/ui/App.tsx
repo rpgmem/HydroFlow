@@ -10,6 +10,7 @@ import { Toolbar } from './Toolbar';
 import { Palette } from './Palette';
 import { Canvas } from './Canvas';
 import { Inspector } from './Inspector';
+import { Legenda } from './Legenda';
 
 export function App() {
   const [estado, dispatch] = useReducer(reducer, projetoExemplo(), estadoInicial);
@@ -20,6 +21,7 @@ export function App() {
   const [inspetorAberto, setInspetorAberto] = useState(false);
   const [avisoVisivel, setAvisoVisivel] = useState(true);
   const [logAberto, setLogAberto] = useState(false);
+  const [legendaAberta, setLegendaAberta] = useState(false);
   // Tema de exibição: escuro é o padrão; claro é opcional e usado na impressão.
   const [tema, setTema] = useState<'escuro' | 'claro'>('escuro');
   const [imprimindo, setImprimindo] = useState(false);
@@ -72,6 +74,8 @@ export function App() {
         onImprimir={() => setImprimindo(true)}
         tema={tema}
         onAlternarTema={() => setTema((t) => (t === 'claro' ? 'escuro' : 'claro'))}
+        onAlternarLegenda={() => setLegendaAberta((v) => !v)}
+        legendaAberta={legendaAberta}
       />
       <div className="body">
         <Palette dispatch={dispatch} desabilitado={emExecucao} />
@@ -116,6 +120,7 @@ export function App() {
               )}
             </div>
           )}
+          {legendaAberta && <Legenda onFechar={() => setLegendaAberta(false)} />}
           {avisoVisivel && (
             <div className="aviso-desktop" role="note">
               <span>
@@ -153,6 +158,7 @@ export function App() {
           projeto={estado.projeto}
           emExecucao={emExecucao}
           vazao={selecionada ? estado.vazoes[selecionada.id] : undefined}
+          historico={selecionada ? estado.historico[selecionada.id] : undefined}
           dispatch={dispatch}
         />
       </div>

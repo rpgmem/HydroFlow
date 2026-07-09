@@ -40,7 +40,7 @@ body {
 
 .app.tema-claro .canvas-wrap {
   background:
-    radial-gradient(circle at 1px 1px, #cbd5e1 1px, transparent 0) 0 0 / 24px 24px,
+    radial-gradient(circle at 1px 1px, #cbd5e1 1px, transparent 0) 0 0 / 20px 20px,
     #f8fafc;
 }
 
@@ -193,7 +193,7 @@ button.ativo {
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(circle at 1px 1px, #21303e 1px, transparent 0) 0 0 / 24px 24px;
+    radial-gradient(circle at 1px 1px, #21303e 1px, transparent 0) 0 0 / 20px 20px;
 }
 
 .badge {
@@ -295,6 +295,145 @@ button.ativo {
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+
+/* Sparkline no inspetor: série de nível/vazão da peça na execução. */
+.sparkline {
+  margin: 6px 0 4px;
+  padding: 6px 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.spark-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.spark-head strong {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.sparkline svg {
+  display: block;
+  width: 100%;
+  height: 46px;
+}
+
+.spark-faixa {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10.5px;
+  color: var(--muted);
+  margin-top: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Minimapa: visão geral no canto inferior direito (projetos grandes). */
+.minimapa {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 7;
+  background: rgba(15, 22, 32, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+}
+
+.app.tema-claro .minimapa {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+/* Tooltip de peça (hover) — segue o cursor, não intercepta o mouse. */
+.peca-tooltip {
+  position: absolute;
+  z-index: 9;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-width: 200px;
+  padding: 6px 9px;
+  font-size: 12px;
+  line-height: 1.35;
+  background: rgba(15, 22, 32, 0.95);
+  color: #cfe0ee;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+
+.peca-tooltip strong {
+  color: #e6edf3;
+  margin-bottom: 1px;
+}
+
+.app.tema-claro .peca-tooltip {
+  background: rgba(255, 255, 255, 0.97);
+  color: #0d1f2b;
+}
+
+.app.tema-claro .peca-tooltip strong {
+  color: #0a1722;
+}
+
+/* Legenda: cartão no canto superior esquerdo (abaixo do botão de log). */
+.legenda-panel {
+  position: absolute;
+  top: 54px;
+  left: 12px;
+  z-index: 8;
+  width: 236px;
+  max-width: calc(100% - 24px);
+  max-height: calc(100% - 80px);
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+
+.leg-sec {
+  margin: 8px 10px 2px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.leg-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0 10px 6px;
+  font-size: 12.5px;
+}
+
+.leg-lista li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.leg-lista svg {
+  flex: none;
+}
+
+.leg-cor {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.35);
 }
 
 .log-head {
