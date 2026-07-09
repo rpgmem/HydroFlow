@@ -6,6 +6,22 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.24.0] — Ponto de operação da bomba (curva ∩ sistema)
+
+### Adicionado
+
+- **Ponto de operação da bomba** (com o **atrito** ligado): a vazão da bomba deixa
+  de depender só da altura estática e passa a ser o encontro da **curva da bomba**
+  com a **curva do sistema** (altura estática + perda de carga). Assim, um cano de
+  **recalque** (saída) **ou de sucção** (entrada) mais restritivo — mais longo, mais
+  estreito — agora **reduz a vazão** que a bomba entrega, como na realidade. Antes,
+  o atrito dos canos da bomba era ignorado no cálculo da entrega.
+  - Vale tanto para a bomba que descarrega **direto num reservatório** quanto para a
+    que descarrega numa **junção** (resolvida acoplada à rede: a vazão depende da
+    carga do nó, que já embute o atrito a jusante, mais o atrito da sucção).
+  - Com o atrito **desligado**, nada muda (só a altura estática conta).
+  - Resolvido por bisseção em `vazaoBombaOperacao` (`src/engine/hidraulica.ts`).
+
 ## [1.23.1] — Correção: vazão na sucção da bomba
 
 ### Corrigido

@@ -166,6 +166,10 @@ Fórmulas implementadas em `src/engine/simulador.ts`:
   de recalque reduz a vazão automaticamente (entrega a nominal a 0 m, zera na
   altura nominal). Um `curva.k` explícito (`Q = vazaoNominal − k·Δh_lift`) é
   mantido por compatibilidade. Sentido **forçado** pela conexão; `Q ≥ 0`.
+  Com o **atrito** ligado, a vazão é o **ponto de operação** (curva da bomba ∩
+  curva do sistema): resolve `Q = vazaoNominal − k·(Δh_lift + hf_sucção(Q) +
+  hf_recalque(Q))` — os canos de sucção e de recalque mais restritivos reduzem a
+  entrega (vale também quando a bomba descarrega numa junção, acoplada à rede).
   Com **múltiplas saídas**, a vazão nominal é dividida entre elas (por
   `vazaoAlocada` se informada, senão igualmente). A bomba pode empurrar direto
   para um **consumo**: entrega `min(vazão da bomba, demanda do consumo)` — se a
