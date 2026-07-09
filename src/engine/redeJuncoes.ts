@@ -25,6 +25,7 @@ import {
   type Unidades,
 } from '../domain/types';
 import { areaTuboM2, vazaoParaM3 } from './geometria';
+import { vazaoGravidadeM3, COMPRIMENTO_PADRAO_M, HW_C_PADRAO } from './hidraulica';
 import { metrosPorComprimento } from '../domain/unidades';
 import {
   demandaConsumo,
@@ -45,6 +46,12 @@ interface ArestaRede {
    *  é reservatório e há um tubo adjacente. Um reservatório só fornece se o nível
    *  estiver ACIMA dessa tomada. undefined = sem tomada em altura (tap no fundo). */
   tapB?: number;
+  /** Comprimento SOMADO dos tubos do run (m) — para a perda de carga (atrito). */
+  comprimentoM: number;
+  /** Menor diâmetro de tubo do run (mm) — o gargalo, usado na perda de carga. */
+  diamMinMM: number;
+  /** Menor coeficiente C (Hazen-Williams) do run. */
+  coefC: number;
 }
 
 /**
@@ -65,6 +72,7 @@ export function resolverGravidadeComJuncoes(
   driversResolvidos: Set<string>,
   bombasASeco: string[],
   refluxos: string[],
+  atrito: boolean,
 ): void {
   const kL = metrosPorComprimento(u);
   const ehCandidato = (p: Peca | undefined): p is PecaDe<'tubo'> =>
@@ -140,6 +148,9 @@ export function resolverGravidadeComJuncoes(
       const tubos: string[] = [];
       const alinhado: Record<string, boolean> = {};
       let area = Infinity;
+      let comprimentoM = 0;
+      let diamMinMM = Infinity;
+      let coefC = Infinity;
       const local = new Set<string>([de]);
       for (let guard = 0; guard < 1000; guard++) {
         const pe = idx.porId.get(cur);
@@ -154,7 +165,17 @@ export function resolverGravidadeComJuncoes(
             const tuboEntraNoRes = (idx.entrada.get(cur) ?? []).some((c) => c.origem === prev);
             tapB = tuboEntraNoRes ? (ult.props.alturaSaida ?? 0) : (ult.props.alturaEntrada ?? 0);
           }
-          return { a: de, b: cur, area: tubos.length ? area : areaTuboM2(1000), tubos, alinhado, tapB };
+          return {
+            a: de,
+            b: cur,
+            area: tubos.length ? area : areaTuboM2(1000),
+            tubos,
+            alinhado,
+            tapB,
+            comprimentoM,
+            diamMinMM: tubos.length ? diamMinMM : 1000,
+            coefC: tubos.length ? coefC : HW_C_PADRAO,
+          };
         }
         if (!ehCandidato(pe)) return null;
         if (pe.props.boia && !(pe.props.boia.aberta ?? true)) return null; // boia fechada bloqueia o run
@@ -163,6 +184,9 @@ export function resolverGravidadeComJuncoes(
         // (conexão prev→cur), i.e., a travessia segue origem→destino do tubo.
         alinhado[cur] = (idx.entrada.get(cur) ?? []).some((c) => c.origem === prev);
         area = Math.min(area, areaTuboM2(pe.props.diametro));
+        diamMinMM = Math.min(diamMinMM, pe.props.diametro);
+        comprimentoM += (pe.props.comprimento ?? COMPRIMENTO_PADRAO_M) * kL;
+        coefC = Math.min(coefC, pe.props.coefC ?? HW_C_PADRAO);
         local.add(cur);
         const next = vizinhosDe(cur).find((v) => v !== prev && !local.has(v));
         if (next === undefined) return null; // beco (ambiente) → sem aresta
@@ -262,9 +286,14 @@ export function resolverGravidadeComJuncoes(
         .filter((x): x is number => x !== undefined);
       carga.set(j, hs.length ? hs.reduce((s, x) => s + x, 0) / hs.length : repHead);
     }
+    // Magnitude da vazão numa aresta para uma carga |dh| (m): Torricelli puro ou,
+    // com o atrito ligado, Hazen-Williams sobre o comprimento SOMADO do run (com o
+    // diâmetro do gargalo — aproximação da série de tubos).
+    const magVazao = (ar: ArestaRede, absDh: number): number =>
+      vazaoGravidadeM3(atrito, ar.area, ar.diamMinMM, ar.comprimentoM, ar.coefC, absDh, g);
     const fluxoEntra = (ar: ArestaRede, hJ: number, outro: string): number => {
       const dh = cargaDe(outro) - hJ;
-      const q = ar.area * Math.sign(dh) * Math.sqrt(2 * g * Math.abs(dh));
+      const q = Math.sign(dh) * magVazao(ar, Math.abs(dh));
       // `outro` é a ponta oposta à junção; a tomada só existe quando é o reserv. b.
       const tap = outro === ar.b ? (ar.tapB ?? 0) : 0;
       return q > 0 && !podeFornecer(outro, tap) ? 0 : q; // abaixo da tomada não fornece
@@ -306,7 +335,7 @@ export function resolverGravidadeComJuncoes(
     };
     for (const ar of arestas) {
       const dh = cargaDe(ar.a) - cargaDe(ar.b);
-      let q = ar.area * Math.sign(dh) * Math.sqrt(2 * g * Math.abs(dh)); // + = a→b
+      let q = Math.sign(dh) * magVazao(ar, Math.abs(dh)); // + = a→b
       if (q > 0 && !podeFornecer(ar.a, 0)) q = 0; // a (junção) forneceria — n/a
       if (q < 0 && !podeFornecer(ar.b, ar.tapB ?? 0)) q = 0; // b abaixo da tomada não fornece
       if (isReservatorio(idx.porId.get(ar.a)!)) netRes.set(ar.a, (netRes.get(ar.a) ?? 0) + q);

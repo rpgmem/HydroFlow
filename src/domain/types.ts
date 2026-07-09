@@ -32,6 +32,12 @@ export interface ConfiguracaoSimulacao {
   dt: number;
   /** Aceleração da gravidade (padrão 9.81 m/s²). */
   g: number;
+  /**
+   * Liga a perda de carga por atrito (Hazen-Williams) nos escoamentos por
+   * gravidade. Padrão (ausente/false) = Torricelli puro, como antes. Quando
+   * ligado, cada tubo usa seu `comprimento` e `coefC` (C de Hazen-Williams).
+   */
+  atrito?: boolean;
 }
 
 /**
@@ -106,6 +112,16 @@ export interface PropsTubo {
    * reservatório de origem passa de `nivel` (na unidade de comprimento).
    */
   ladrao?: { nivel: number };
+  /**
+   * Comprimento do tubo (unidade de comprimento) — usado só quando o atrito está
+   * ligado (Hazen-Williams). Ausente → assume `COMPRIMENTO_PADRAO_M` (1 m).
+   */
+  comprimento?: number;
+  /**
+   * Coeficiente C de Hazen-Williams (rugosidade). Ausente → `HW_C_PADRAO` (140,
+   * plástico/PVC). Ex.: ~130 cimento, ~100 ferro fundido usado.
+   */
+  coefC?: number;
 }
 
 export interface PropsBomba {

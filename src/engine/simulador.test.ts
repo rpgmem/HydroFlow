@@ -1385,6 +1385,44 @@ describe('alerta de tubo subdimensionado (v > 3 m/s)', () => {
 });
 
 // ===========================================================================
+// Perda de carga por atrito (Hazen-Williams) — opção ligável
+// ===========================================================================
+describe('perda de carga (atrito, Hazen-Williams)', () => {
+  const build = (atrito: boolean, comprimento?: number): ProjetoSimulacao => ({
+    ...projetoVazio(),
+    unidades: { volume: 'm3', comprimento: 'm' },
+    configuracaoSimulacao: { dt: 0.1, g: 9.81, atrito },
+    pecas: [
+      res('A', { cotaBase: 10, nivel: 5 }),
+      res('B', { nivel: 0 }),
+      tubo('t', comprimento !== undefined ? { comprimento } : {}),
+    ],
+    conexoes: [criarConexao('A', 't'), criarConexao('t', 'B')],
+  });
+
+  it('desligado por padrão: mantém o Torricelli puro', () => {
+    const semFlag = tick({ ...build(false) }).vazoes['t'];
+    // sem atrito, a vazão é a de Torricelli (área × √(2gΔh)); Δh = 15 m.
+    const esperado = areaTuboM2(100) * Math.sqrt(2 * 9.81 * 15);
+    expect(semFlag).toBeCloseTo(esperado, 6);
+  });
+
+  it('ligado, reduz a vazão frente ao Torricelli', () => {
+    const sem = tick(build(false)).vazoes['t']!;
+    const com = tick(build(true)).vazoes['t']!;
+    expect(com).toBeGreaterThan(0);
+    expect(com).toBeLessThan(sem); // o atrito só reduz
+  });
+
+  it('tubo mais longo perde mais carga (menos vazão)', () => {
+    const curto = tick(build(true, 1)).vazoes['t']!;
+    const longo = tick(build(true, 200)).vazoes['t']!;
+    expect(longo).toBeLessThan(curto);
+    expect(longo).toBeGreaterThan(0);
+  });
+});
+
+// ===========================================================================
 // Controle de velocidade (N ticks)
 // ===========================================================================
 describe('rodarTicks', () => {
