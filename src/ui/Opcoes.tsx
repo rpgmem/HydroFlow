@@ -19,6 +19,7 @@ export function Opcoes({ estado, dispatch, tema, onAlternarTema }: Props) {
   const emExecucao = estado.modo === 'execucao';
   const u = estado.projeto.unidades;
   const atrito = estado.projeto.configuracaoSimulacao.atrito === true;
+  const velRef = estado.projeto.configuracaoSimulacao.velocidadeRef ?? 3;
 
   return (
     <div className="opcoes">
@@ -84,6 +85,26 @@ export function Opcoes({ estado, dispatch, tema, onAlternarTema }: Props) {
             <p className="telemetry" style={{ margin: '2px 0 0' }}>
               Hazen-Williams: cada tubo usa seu <strong>comprimento</strong> e <strong>C</strong>.
               Desligado = Torricelli puro.
+            </p>
+
+            <div className="field" style={{ marginTop: 8 }}>
+              <label>Velocidade de referência (m/s)</label>
+              <input
+                type="number"
+                step={0.1}
+                min={0.1}
+                disabled={emExecucao}
+                aria-label="Velocidade de referência"
+                value={velRef}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  if (Number.isFinite(v) && v > 0) dispatch({ tipo: 'SET_VELOCIDADE_REF', velocidadeRef: v });
+                }}
+              />
+            </div>
+            <p className="telemetry" style={{ margin: '2px 0 0' }}>
+              Limite de dimensionamento (padrão <strong>3 m/s</strong>): acima dela o tubo é
+              sinalizado e define a vazão máx. recomendada.
             </p>
           </div>
         </>

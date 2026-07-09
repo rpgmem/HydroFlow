@@ -38,6 +38,12 @@ export interface ConfiguracaoSimulacao {
    * ligado, cada tubo usa seu `comprimento` e `coefC` (C de Hazen-Williams).
    */
   atrito?: boolean;
+  /**
+   * Velocidade de referência de escoamento (m/s) — limite de dimensionamento.
+   * Acima dela um tubo é sinalizado como subdimensionado; também define a "vazão
+   * máxima recomendada". Ausente → `VELOCIDADE_MAX_RECOMENDADA_MS` (3 m/s).
+   */
+  velocidadeRef?: number;
 }
 
 /**

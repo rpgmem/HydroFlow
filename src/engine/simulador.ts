@@ -245,6 +245,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   const dt = proj.configuracaoSimulacao.dt;
   const g = proj.configuracaoSimulacao.g;
   const atrito = proj.configuracaoSimulacao.atrito === true; // perda de carga (Hazen-Williams)
+  const velRef = proj.configuracaoSimulacao.velocidadeRef ?? VELOCIDADE_MAX_RECOMENDADA_MS;
   const tempoFim = tempoAtual + dt;
 
   // ---- (1) Sensores avaliam sobre o estado do tick anterior -------------
@@ -408,7 +409,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   for (const p of proj.pecas) {
     if (!isTubo(p)) continue;
     const v = velocidadeTuboMs(vazoesM3[p.id] ?? 0, p.props.diametro);
-    if (v > VELOCIDADE_MAX_RECOMENDADA_MS + 1e-6) tubosVelozes.push(p.id);
+    if (v > velRef + 1e-6) tubosVelozes.push(p.id);
   }
 
   // Boias fechadas neste tick (para a UI colorir) — estado calculado no passo 2b.

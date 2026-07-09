@@ -94,6 +94,7 @@ export type Acao =
   | { tipo: 'SET_NOME'; nome: string }
   | { tipo: 'SET_UNIDADES'; unidades: ProjetoSimulacao['unidades'] }
   | { tipo: 'SET_ATRITO'; atrito: boolean }
+  | { tipo: 'SET_VELOCIDADE_REF'; velocidadeRef: number }
   | { tipo: 'CARREGAR_PROJETO'; projeto: ProjetoSimulacao }
   | { tipo: 'ENTRAR_EXECUCAO' }
   | { tipo: 'SAIR_EXECUCAO' }
@@ -161,6 +162,7 @@ const ACOES_ESTRUTURAIS = new Set<Acao['tipo']>([
   'REMOVER_CONEXAO',
   'SET_UNIDADES',
   'SET_ATRITO',
+  'SET_VELOCIDADE_REF',
   'DUPLICAR_PECA',
 ]);
 
@@ -218,7 +220,8 @@ function derivarEventos(anterior: EstadoApp, r: ResultadoTick): EventoLog[] {
   };
   entraram(r.bombasASeco, anterior.bombasASeco, 'seco', (n) => `${n}: rodando a seco (origem vazia)`);
   entraram(r.ladroesAtivos, anterior.ladroesAtivos, 'ladrao', (n) => `${n}: ladrão em transbordo`);
-  entraram(r.tubosVelozes, anterior.tubosVelozes, 'velocidade', (n) => `${n}: velocidade acima do recomendado (> 3 m/s)`);
+  const velRef = r.projeto.configuracaoSimulacao.velocidadeRef ?? 3;
+  entraram(r.tubosVelozes, anterior.tubosVelozes, 'velocidade', (n) => `${n}: velocidade acima do recomendado (> ${velRef} m/s)`);
   entraram(r.refluxos, anterior.refluxos, 'refluxo', (n) => `${n}: refluxo (fluxo contrário à seta)`);
   entraram(r.consumoInsuficiente, anterior.consumoInsuficiente, 'deficit', (n) => `${n}: déficit (bomba não acompanha)`);
   entraram(r.overflow, anterior.overflow, 'overflow', (n) => `${n}: transbordou`);
@@ -239,6 +242,7 @@ const ACOES_UNDOAVEIS = new Set<Acao['tipo']>([
   'SET_NOME',
   'SET_UNIDADES',
   'SET_ATRITO',
+  'SET_VELOCIDADE_REF',
 ]);
 
 const MAX_UNDO = 60;
@@ -411,6 +415,18 @@ function reducerBase(estado: EstadoApp, acao: Acao): EstadoApp {
         projeto: {
           ...estado.projeto,
           configuracaoSimulacao: { ...estado.projeto.configuracaoSimulacao, atrito: acao.atrito },
+        },
+      };
+
+    case 'SET_VELOCIDADE_REF':
+      return {
+        ...estado,
+        projeto: {
+          ...estado.projeto,
+          configuracaoSimulacao: {
+            ...estado.projeto.configuracaoSimulacao,
+            velocidadeRef: acao.velocidadeRef,
+          },
         },
       };
 

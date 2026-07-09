@@ -87,7 +87,11 @@ export function velocidadeTuboMs(qM3: number, diametroMM: number): number {
   return a > 0 ? Math.abs(qM3) / a : 0;
 }
 
-/** Vazão máxima recomendada (m³/s) de um tubo: área × velocidade recomendada. */
-export function vazaoMaxRecomendadaM3(diametroMM: number): number {
-  return areaTuboM2(diametroMM) * VELOCIDADE_MAX_RECOMENDADA_MS;
+/** Vazão máxima recomendada (m³/s) de um tubo: área × velocidade de referência
+ *  (padrão 3 m/s, ou a `velRef` configurada no projeto). */
+export function vazaoMaxRecomendadaM3(
+  diametroMM: number,
+  velRef: number = VELOCIDADE_MAX_RECOMENDADA_MS,
+): number {
+  return areaTuboM2(diametroMM) * velRef;
 }

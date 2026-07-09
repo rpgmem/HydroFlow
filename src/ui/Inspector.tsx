@@ -143,7 +143,7 @@ export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatc
         {isReservatorio(peca) && (
           <ReservatorioForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />
         )}
-        {isTubo(peca) && <TuboForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} atrito={projeto.configuracaoSimulacao.atrito === true} />}
+        {isTubo(peca) && <TuboForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} atrito={projeto.configuracaoSimulacao.atrito === true} velRef={projeto.configuracaoSimulacao.velocidadeRef ?? VELOCIDADE_MAX_RECOMENDADA_MS} />}
         {isBomba(peca) && <BombaForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
         {isFonte(peca) && <FonteForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
         {isConsumo(peca) && <ConsumoForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
@@ -214,6 +214,7 @@ function TuboForm({
   u,
   unidades,
   atrito,
+  velRef,
 }: {
   props: PropsTubo;
   emExecucao: boolean;
@@ -221,13 +222,14 @@ function TuboForm({
   u: UniLabel;
   unidades: Unidades;
   atrito: boolean;
+  velRef: number;
 }) {
   const temBoia = props.boia !== undefined;
   const temLadrao = props.ladrao !== undefined;
-  // Vazão máxima recomendada = área × velocidade recomendada (3 m/s). Ajuda o
-  // usuário a dimensionar; acima disso o tubo é sinalizado durante a simulação.
+  // Vazão máxima recomendada = área × velocidade de referência (configurável em
+  // ⚙ Opções, padrão 3 m/s). Acima disso o tubo é sinalizado na simulação.
   const vazaoMaxRec =
-    props.diametro > 0 ? vazaoDeM3(vazaoMaxRecomendadaM3(props.diametro), unidades) : 0;
+    props.diametro > 0 ? vazaoDeM3(vazaoMaxRecomendadaM3(props.diametro, velRef), unidades) : 0;
   return (
     <>
       {/* Bitola pré-configurada: seleciona o DN e grava o diâmetro INTERNO
@@ -271,7 +273,7 @@ function TuboForm({
           <strong>
             {vazaoMaxRec.toFixed(2)} {u.vazao}
           </strong>{' '}
-          (a {VELOCIDADE_MAX_RECOMENDADA_MS.toLocaleString('pt-BR')} m/s)
+          (a {velRef.toLocaleString('pt-BR')} m/s)
         </p>
       )}
       {/* Perda de carga (Hazen-Williams): comprimento e C só aparecem com o

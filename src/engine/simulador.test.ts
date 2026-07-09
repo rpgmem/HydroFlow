@@ -1382,6 +1382,22 @@ describe('alerta de tubo subdimensionado (v > 3 m/s)', () => {
     // Ø300 mm: v ≈ 0,7 m/s → dentro do recomendado.
     expect(tick(cenario(300)).tubosVelozes).not.toContain('rec');
   });
+
+  it('respeita a velocidade de referência configurável', () => {
+    // Ø300 a ~0,7 m/s: dentro do padrão (3), mas subdimensionado se o limite cair.
+    const base = projeto(
+      [
+        res('A', { nivel: 5 }),
+        res('B', {}),
+        bomba('P', { ligada: true, vazaoNominal: 0.05 }),
+        tubo('rec', { diametro: 300 }),
+      ],
+      [criarConexao('A', 'P'), criarConexao('P', 'rec'), criarConexao('rec', 'B')],
+    );
+    expect(tick(base).tubosVelozes).not.toContain('rec'); // padrão 3 m/s
+    const restrito = { ...base, configuracaoSimulacao: { ...base.configuracaoSimulacao, velocidadeRef: 0.5 } };
+    expect(tick(restrito).tubosVelozes).toContain('rec'); // limite 0,5 m/s → sinaliza
+  });
 });
 
 // ===========================================================================
