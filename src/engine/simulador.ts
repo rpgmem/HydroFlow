@@ -709,8 +709,13 @@ function resolverGravidadeComJuncoes(
     const repHead = resSet.size ? Math.max(...[...resSet].map(cargaDe)) : 0; // p/ o lift da bomba
 
     // --- Terminais → injeção de vazão (m³/s) no nó em que se ligam. + = entra.
+    // Além de entrar no solve das cargas, cada terminal também vira uma OFERTA ou
+    // DEMANDA REAL de volume (com origem/destino), casada adiante às trocas dos
+    // reservatórios — para o volume aplicado conservar massa mesmo sob limite.
     const injecao = new Map<string, number>();
-    const runsTerminais: { run: ArestaRede; q: number; para: string }[] = []; // telemetria/telemetria
+    const runsTerminais: { run: ArestaRede; q: number; para: string }[] = []; // telemetria
+    const ofertasTerm: { origem: string | null; vol: number }[] = [];
+    const demandasTerm: { destino: string | null; vol: number }[] = [];
     for (const t of terminais) {
       const pe = idx.porId.get(t)!;
       // acha o run do terminal até o nó (junção/reservatório) da rede.
@@ -725,9 +730,12 @@ function resolverGravidadeComJuncoes(
       let q = 0; // m³/s, + = entra no nó
       if (isConsumo(pe)) {
         const dem = pe.props.aberto === false ? 0 : demandaConsumo(pe.props, tempo);
-        q = -vazaoParaM3(Math.max(0, dem), u); // consumo RETIRA
+        const qm = vazaoParaM3(Math.max(0, dem), u);
+        q = -qm; // consumo RETIRA
+        if (qm > 0) demandasTerm.push({ destino: null, vol: qm }); // descarta ao ambiente
       } else if (isFonte(pe)) {
         q = vazaoParaM3(Math.max(0, pe.props.vazaoFixa), u); // fonte injeta
+        if (q > 0) ofertasTerm.push({ origem: null, vol: q }); // vem do ambiente
       } else if (isBomba(pe)) {
         if (pe.props.ligada) {
           const suc = idx.resolverReservatorio(pe.id, 'up', true);
@@ -743,7 +751,7 @@ function resolverGravidadeComJuncoes(
             const liftM = repHead - cargaRes(suc);
             const qUser = Math.max(0, pe.props.vazaoNominal - kEff * liftM);
             q = vazaoParaM3(qUser, u);
-            if (q > 0) fluxos.push({ origem: suc.id, destino: null, vazao: q }); // drena a sucção
+            if (q > 0) ofertasTerm.push({ origem: suc.id, vol: q }); // entrega DA sucção
           }
         }
       }
@@ -821,10 +829,28 @@ function resolverGravidadeComJuncoes(
     }
     // telemetria dos runs de terminais (q é a favor do nó; a→b vai do terminal ao nó).
     for (const { run, q } of runsTerminais) anotar(run, -q);
+
+    // --- Transferência de volume por rota DIRETA origem→destino (bipartite).
+    // Descolar o dreno (reservatório→ambiente) do enchimento (ambiente→destino)
+    // faria o limite de volume (reservatório quase vazio) escalar SÓ o dreno,
+    // criando água no destino (o refluxo fantasma da União com o superior no fim).
+    // Casando cada FONTE real (reservatório que perde, fonte, bomba pela sucção)
+    // com cada SORVEDOURO real (reservatório que ganha, consumo) na proporção de
+    // cada um, o escalonamento propaga aos destinos e a massa conserva.
+    const ofertas: { origem: string | null; vol: number }[] = [...ofertasTerm];
+    const demandas: { destino: string | null; vol: number }[] = [...demandasTerm];
     for (const [rid, net] of netRes) {
-      if (Math.abs(net) < 1e-12) continue;
-      if (net > 0) fluxos.push({ origem: rid, destino: null, vazao: net });
-      else fluxos.push({ origem: null, destino: rid, vazao: -net });
+      if (net > 1e-12) ofertas.push({ origem: rid, vol: net });
+      else if (net < -1e-12) demandas.push({ destino: rid, vol: -net });
+    }
+    const totalO = ofertas.reduce((s, o) => s + o.vol, 0);
+    const totalD = demandas.reduce((s, d) => s + d.vol, 0);
+    const T = Math.max(totalO, totalD, 1e-12); // normaliza (não superaloca se O≠D)
+    for (const o of ofertas) {
+      for (const d of demandas) {
+        const vazao = (o.vol * d.vol) / T;
+        if (vazao > 1e-12) fluxos.push({ origem: o.origem, destino: d.destino, vazao });
+      }
     }
     for (const t of tuboSet) resolvidos.add(t); // todo o componente foi tratado
   }

@@ -6,6 +6,27 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.19.0] — Conservação de massa na rede de junções (fim do refluxo fantasma)
+
+### Corrigido
+
+- **A rede de junções não cria mais água ao aplicar o volume.** As trocas de um
+  reservatório eram lançadas como dois fluxos **desacoplados** — dreno
+  (reservatório → ambiente) e enchimento (ambiente → destino). Quando o dreno de
+  um reservatório **quase vazio** era limitado pelo volume disponível, o
+  enchimento do destino **não** era limitado junto — então o destino ganhava água
+  do nada (o "está indo mais para o meio do que saiu do superior" da União no fim
+  do esvaziamento). Agora cada **fonte real** (reservatório que perde, fonte,
+  bomba pela sucção) é casada diretamente com cada **sorvedouro real**
+  (reservatório que ganha, consumo) na proporção de cada um: o limite de volume
+  propaga aos destinos e a massa **conserva** (verificado no exemplo: o pior
+  desbalanço caiu de ~6,6 L para o nível do resíduo numérico do solver).
+
+### Alterado
+
+- **Projeto de exemplo**: registro de **"Saída meio" fechado**; **"Cavalete Bomba
+  Recalque"** com a inicial maiúscula.
+
 ## [1.18.0] — Reservatório vazio não gera fluxo fantasma; bitola na junção
 
 ### Corrigido
