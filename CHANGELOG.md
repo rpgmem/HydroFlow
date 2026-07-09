@@ -6,6 +6,29 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.21.0] — Melhorias de usabilidade no canvas e inspetor
+
+### Adicionado
+
+- **Snap à grade**: ao arrastar uma peça, o centro encaixa na grade de 20px,
+  facilitando o alinhamento em colunas/linhas.
+- **Legenda**: cartão recolhível com as formas das peças, os indicadores de
+  válvula do tubo e as cores de fluxo/estado. O botão fica nas ações da toolbar —
+  inline no desktop, dentro do menu **⋯** no mobile.
+- **Tooltip** ao passar o mouse numa peça: dados por tipo (diâmetro/bitola, cota,
+  nível, carga, vazão nominal…) e, em execução, os valores correntes (vazão, com
+  aviso de refluxo).
+- **Minimapa** para projetos grandes (maiores que o exemplo): visão geral com um
+  retângulo de viewport que segue zoom/pan; clicar recentraliza a vista.
+- **Sparkline** no inspetor: série temporal de nível (reservatório) ou vazão
+  (condutor) acumulada durante a execução, com valor atual e faixa mín–máx.
+
+### Interno
+
+- **`simulador.ts` dividido**: o solver de rede de junções foi extraído para
+  `src/engine/redeJuncoes.ts` (1138 → 842 linhas), sem mudar a API nem o
+  comportamento.
+
 ## [1.20.0] — Formas distintas para bomba, sensor e junção
 
 ### Alterado

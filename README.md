@@ -71,6 +71,7 @@ src/
 │   ├── geometria.ts       # relação nível↔volume (seção constante)
 │   ├── arbitragem.ts      # sensores/boias e arbitragem de bombas
 │   ├── simulador.ts       # tick(): cálculo de vazão e atualização de estado
+│   ├── redeJuncoes.ts     # solver da rede de junções (divide/soma, conserva massa)
 │   └── validacaoGrafo.ts  # validação de grafo (seção 5)
 ├── state/          # Sprint 4 — reducer central (modos edição/execução)
 │   └── store.ts
@@ -78,6 +79,7 @@ src/
 │   └── arquivo.ts
 └── ui/             # Sprint 3/4/5 — componentes React + konva
     ├── App.tsx, Toolbar.tsx, Palette.tsx, Canvas.tsx, PecaView.tsx, Inspector.tsx
+    ├── Legenda.tsx, Sparkline.tsx   # legenda do canvas e mini-gráfico do inspetor
     └── useSimulationLoop.ts
 ```
 
