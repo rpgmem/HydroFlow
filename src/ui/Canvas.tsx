@@ -12,6 +12,7 @@ import { Stage, Layer, Line, Arrow } from 'react-konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 import type { Stage as KonvaStage } from 'konva/lib/Stage';
 import { PecaView } from './PecaView';
+import { tamanhoPeca } from './pecaGeom';
 import { criarConexao } from '../domain/factory';
 import type { Acao, EstadoApp } from '../state/store';
 
@@ -50,6 +51,24 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
   const centro = (id: string): { x: number; y: number } => {
     const p = pecaPorId.get(id);
     return p ? { x: p.x, y: p.y } : { x: 0, y: 0 };
+  };
+  // Ponto na BORDA da caixa da peça `id`, na direção de `alvo` (com folga). Usado
+  // para encurtar as conexões até a beirada, deixando a ponta da seta à vista
+  // (senão a seta vai de centro a centro e a cabeça fica escondida sob a peça).
+  const bordaPeca = (id: string, alvo: { x: number; y: number }, folga = 0): { x: number; y: number } => {
+    const p = pecaPorId.get(id);
+    if (!p) return { x: 0, y: 0 };
+    const { w, h } = tamanhoPeca(p.tipo);
+    const dx = alvo.x - p.x;
+    const dy = alvo.y - p.y;
+    if (dx === 0 && dy === 0) return { x: p.x, y: p.y };
+    const s = Math.min(
+      dx !== 0 ? w / 2 / Math.abs(dx) : Infinity,
+      dy !== 0 ? h / 2 / Math.abs(dy) : Infinity,
+    );
+    const dist = Math.hypot(dx, dy);
+    const t = s + folga / dist;
+    return { x: p.x + dx * t, y: p.y + dy * t };
   };
 
   const overflowSet = new Set(estado.overflow);
@@ -290,14 +309,20 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
         {/* Conexões desenhadas atrás das peças. */}
         <Layer>
           {estado.projeto.conexoes.map((c) => {
-            const a = centro(c.origem);
-            const b = centro(c.destino);
-            const q = Math.abs(estado.vazoes[c.origem] ?? estado.vazoes[c.destino] ?? 0);
-            const ativa = emExecucao && q > 1e-6;
+            const ca = centro(c.origem);
+            const cb = centro(c.destino);
+            // Encurta até as bordas: sai da origem e a ponta da seta encosta na
+            // beirada do destino (folga pequena), ficando visível.
+            const a = bordaPeca(c.origem, cb);
+            const b = bordaPeca(c.destino, ca, 6);
+            // Vazão COM sinal: + segue o sentido origem→destino, − é refluxo.
+            const qSigned = estado.vazoes[c.origem] ?? estado.vazoes[c.destino] ?? 0;
+            const ativa = emExecucao && Math.abs(qSigned) > 1e-6;
             const sel = estado.conexaoSelecionada === c.id;
-            // "Formigas marchando": o traço desloca com o tempo de simulação,
-            // dando uma indicação de fluxo constante enquanto está rodando.
-            const marcha = -(estado.tempo * 40) % 16;
+            // "Formigas marchando" no SENTIDO REAL do fluxo: quando reflui
+            // (qSigned < 0) a marcha inverte, mostrando a água voltando.
+            const dir = qSigned < 0 ? -1 : 1;
+            const marcha = (-(estado.tempo * 40) * dir) % 16;
             return (
               <Arrow
                 key={c.id}
@@ -308,8 +333,8 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
                 dash={ativa ? [10, 6] : undefined}
                 dashOffset={ativa ? marcha : 0}
                 hitStrokeWidth={14}
-                pointerLength={8}
-                pointerWidth={8}
+                pointerLength={9}
+                pointerWidth={9}
                 onClick={() =>
                   !emExecucao && dispatch({ tipo: 'SELECIONAR_CONEXAO', id: c.id })
                 }
