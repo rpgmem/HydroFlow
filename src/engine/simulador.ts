@@ -337,6 +337,10 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   // registro fechado e descarga ao ambiente/sucção seguem a lógica por tubo.
   const ladroesAtivos: string[] = [];
   const cadeiaResolvida = new Set<string>();
+  // Junções que bifurcam/unem: resolvidas como rede (dividem/somam a vazão,
+  // conservando massa). Marca seus tubos em cadeiaResolvida; o laço abaixo cuida
+  // do resto (cadeias lineares, ladrão, descarga ao ambiente).
+  resolverGravidadeComJuncoes(idx, g, metrosPorComprimento(u), fluxos, vazoesM3, cadeiaResolvida);
   for (const p of proj.pecas) {
     if (!isTubo(p) || vazoesM3[p.id] !== undefined || cadeiaResolvida.has(p.id)) continue;
     const fechado = p.props.registro !== undefined && !p.props.registro.aberto;
@@ -528,6 +532,182 @@ function coletarCadeiaTubos(idx: GrafoIndex, tuboInicial: string): string[] {
     }
   }
   return [...tubos];
+}
+
+/**
+ * Resolve as sub-redes de gravidade que contêm JUNÇÕES como uma pequena REDE DE
+ * VAZÃO, para a junção realmente DIVIDIR (bifurcar) e SOMAR (unir) o fluxo,
+ * conservando massa no nó. Reservatórios são nós de carga FIXA (a superfície);
+ * junções são nós de carga INCÓGNITA, resolvida por iteração (Gauss-Seidel +
+ * bisseção) até o fluxo líquido no nó zerar. Cada "run" de tubos em série entre
+ * dois nós vira uma aresta com área = a do gargalo (menor diâmetro).
+ *
+ * Marca em `resolvidos` os tubos tratados (o laço de gravidade os ignora) e anota
+ * a telemetria. Limitações (v1): não modela checkValve/altura DENTRO de um run
+ * entre nós (uma boia fechada, sim, bloqueia o run). Para esses casos, use um
+ * reservatório no ponto de divisão. Um reservatório vazio pode gerar leve fluxo
+ * fantasma na rede (o clamp de volume evita drená-lo abaixo de zero).
+ */
+interface ArestaRede {
+  a: string;
+  b: string;
+  area: number;
+  tubos: string[];
+}
+function resolverGravidadeComJuncoes(
+  idx: GrafoIndex,
+  g: number,
+  kL: number,
+  fluxos: FluxoResolvido[],
+  vazoes: Record<string, number>,
+  resolvidos: Set<string>,
+): void {
+  const ehCandidato = (p: Peca | undefined): p is PecaDe<'tubo'> =>
+    !!p &&
+    isTubo(p) &&
+    vazoes[p.id] === undefined &&
+    !p.props.ladrao &&
+    !(p.props.registro !== undefined && !p.props.registro.aberto);
+  const juncoes = [...idx.porId.values()].filter((p) => p.tipo === 'juncao');
+  const cargaRes = (r: PecaDe<'reservatorio'>): number => (r.props.cotaBase + (r.props.nivel ?? 0)) * kL;
+  const vizinhosDe = (id: string): string[] => [
+    ...(idx.entrada.get(id) ?? []).map((c) => c.origem),
+    ...(idx.saida.get(id) ?? []).map((c) => c.destino),
+  ];
+
+  const compVisitada = new Set<string>();
+  for (const j0 of juncoes) {
+    if (compVisitada.has(j0.id)) continue;
+
+    // --- Componente: BFS por junções + tubos candidatos; reservatório = fronteira.
+    const juncSet = new Set<string>();
+    const tuboSet = new Set<string>();
+    const resSet = new Set<string>();
+    const fila = [j0.id];
+    const vis = new Set([j0.id]);
+    while (fila.length) {
+      const id = fila.pop()!;
+      const pe = idx.porId.get(id)!;
+      if (pe.tipo === 'juncao') {
+        juncSet.add(id);
+        compVisitada.add(id);
+      } else if (isTubo(pe)) tuboSet.add(id);
+      for (const v of vizinhosDe(id)) {
+        const vp = idx.porId.get(v);
+        if (!vp) continue;
+        if (isReservatorio(vp)) {
+          resSet.add(v);
+          continue;
+        }
+        if ((vp.tipo === 'juncao' || ehCandidato(vp)) && !vis.has(v)) {
+          vis.add(v);
+          fila.push(v);
+        }
+      }
+    }
+    if (resSet.size === 0) continue; // sem reservatório → nada a mover
+
+    // --- Arestas (runs) entre nós: caminha de cada junção pelos tubos em série.
+    const arestas: ArestaRede[] = [];
+    const chaves = new Set<string>();
+    const caminhar = (de: string, primeiro: string): ArestaRede | null => {
+      let prev = de;
+      let cur = primeiro;
+      const tubos: string[] = [];
+      let area = Infinity;
+      const local = new Set<string>([de]);
+      for (let guard = 0; guard < 1000; guard++) {
+        const pe = idx.porId.get(cur);
+        if (!pe) return null;
+        if (isReservatorio(pe) || pe.tipo === 'juncao') {
+          return { a: de, b: cur, area: tubos.length ? area : areaTuboM2(1000), tubos };
+        }
+        if (!ehCandidato(pe)) return null;
+        if (pe.props.boia && !(pe.props.boia.aberta ?? true)) return null; // boia fechada bloqueia o run
+        tubos.push(cur);
+        area = Math.min(area, areaTuboM2(pe.props.diametro));
+        local.add(cur);
+        const next = vizinhosDe(cur).find((v) => v !== prev && !local.has(v));
+        if (next === undefined) return null; // beco (ambiente) → sem aresta
+        prev = cur;
+        cur = next;
+      }
+      return null;
+    };
+    for (const j of juncSet) {
+      for (const viz of vizinhosDe(j)) {
+        const ar = caminhar(j, viz);
+        if (!ar) continue;
+        const chave = ar.tubos.length ? [...ar.tubos].sort().join('|') : `direto:${[ar.a, ar.b].sort().join('-')}`;
+        if (chaves.has(chave)) continue;
+        chaves.add(chave);
+        arestas.push(ar);
+      }
+    }
+    if (arestas.length === 0) continue;
+
+    // --- Carga de cada nó: reservatório fixo, junção incógnita.
+    const carga = new Map<string, number>();
+    for (const rid of resSet) carga.set(rid, cargaRes(idx.porId.get(rid) as PecaDe<'reservatorio'>));
+    const arestasDe = new Map<string, ArestaRede[]>();
+    for (const j of juncSet) arestasDe.set(j, []);
+    for (const ar of arestas) {
+      if (juncSet.has(ar.a)) arestasDe.get(ar.a)!.push(ar);
+      if (juncSet.has(ar.b)) arestasDe.get(ar.b)!.push(ar);
+    }
+    const cargaDe = (n: string): number => carga.get(n) ?? 0;
+    // init junção = média das cargas conhecidas dos vizinhos.
+    for (const j of juncSet) {
+      const hs = arestasDe
+        .get(j)!
+        .map((ar) => carga.get(ar.a === j ? ar.b : ar.a))
+        .filter((x): x is number => x !== undefined);
+      carga.set(j, hs.length ? hs.reduce((s, x) => s + x, 0) / hs.length : 0);
+    }
+    // fluxo (m³/s) ENTRANDO na junção pela aresta, com sinal.
+    const fluxoEntra = (ar: ArestaRede, hJ: number, outro: string): number => {
+      const dh = cargaDe(outro) - hJ;
+      return ar.area * Math.sign(dh) * Math.sqrt(2 * g * Math.abs(dh));
+    };
+    // --- Gauss-Seidel + bisseção para a carga de cada junção.
+    for (let it = 0; it < 200; it++) {
+      let maxD = 0;
+      for (const j of juncSet) {
+        const inc = arestasDe.get(j)!;
+        if (inc.length === 0) continue;
+        const outros = inc.map((ar) => (ar.a === j ? ar.b : ar.a));
+        const hs = outros.map(cargaDe);
+        let lo = Math.min(...hs);
+        let hi = Math.max(...hs);
+        const net = (h: number): number => inc.reduce((s, ar, k) => s + fluxoEntra(ar, h, outros[k]!), 0);
+        for (let bi = 0; bi < 60; bi++) {
+          const mid = (lo + hi) / 2;
+          if (net(mid) > 0) lo = mid;
+          else hi = mid; // net de entrada > 0 → subir a carga da junção
+        }
+        const nh = (lo + hi) / 2;
+        maxD = Math.max(maxD, Math.abs(nh - cargaDe(j)));
+        carga.set(j, nh);
+      }
+      if (maxD < 1e-7) break;
+    }
+
+    // --- Aplica: fluxo por aresta, net por reservatório, telemetria.
+    const netRes = new Map<string, number>(); // + = saída líquida do reservatório
+    for (const ar of arestas) {
+      const dh = cargaDe(ar.a) - cargaDe(ar.b);
+      const q = ar.area * Math.sign(dh) * Math.sqrt(2 * g * Math.abs(dh)); // + = a→b
+      if (isReservatorio(idx.porId.get(ar.a)!)) netRes.set(ar.a, (netRes.get(ar.a) ?? 0) + q);
+      if (isReservatorio(idx.porId.get(ar.b)!)) netRes.set(ar.b, (netRes.get(ar.b) ?? 0) - q);
+      for (const t of ar.tubos) vazoes[t] = Math.abs(q);
+    }
+    for (const [rid, net] of netRes) {
+      if (Math.abs(net) < 1e-12) continue;
+      if (net > 0) fluxos.push({ origem: rid, destino: null, vazao: net });
+      else fluxos.push({ origem: null, destino: rid, vazao: -net });
+    }
+    for (const t of tuboSet) resolvidos.add(t); // todo o componente foi tratado
+  }
 }
 
 function calcularBomba(
