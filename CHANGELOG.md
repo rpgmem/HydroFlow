@@ -6,6 +6,33 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.24.1] — Desempenho do atrito e divisão do motor
+
+### Desempenho
+
+- **Modo atrito ~6× mais rápido.** As leis com perda de carga (sem forma fechada)
+  eram resolvidas por bisseção de 50 iterações, aninhada no Gauss-Seidel da rede e
+  no ponto de operação da bomba — cada `tick` do exemplo custava ~10,8 ms (contra
+  ~0,34 ms sem atrito). Trocadas por **Newton salvaguardado** (Newton quando o passo
+  cai no intervalo; bisseção como rede de segurança), que converge em ~5–8 iterações:
+  o `tick` com atrito cai para ~1,7 ms (razão atrito/sem-atrito de ~32× para ~5×). O
+  resultado é idêntico ao da bisseção (erro relativo ~1e-12). Assim a linha do tempo
+  deixa de "andar devagar" ao ligar o atrito.
+
+### Interno
+
+- **`simulador.ts` dividido** (903 → 385 linhas) numa arquitetura em camadas, sem
+  ciclos de import:
+  - `engine/grafo.ts` — índice de grafo e travessias (`GrafoIndex`, `cargaM`,
+    `reservatorioVazio`, `FluxoResolvido`); camada estrutural, sem física.
+  - `engine/vazaoPecas.ts` — vazão por peça (tubo/bomba/fonte/consumo + helpers).
+  - `engine/simulador.ts` — passa a só orquestrar o `tick` e aplicar volumes.
+- Novos testes de `hidraulica.ts` (resíduo das raízes ~0, propriedades físicas).
+- **README** revisado: interface (⚙ Opções, undo/redo, duplicar, autosave, snap,
+  minimapa, tooltip, legenda, sparkline), árvore de arquivos, schema
+  (`configuracaoSimulacao.atrito`/`velocidadeRef`), props de tubo (`comprimento`/
+  `coefC`) e consumo (`cicloLigado`), e a seção de Física (ponto de operação, rede).
+
 ## [1.24.0] — Ponto de operação da bomba (curva ∩ sistema)
 
 ### Adicionado
