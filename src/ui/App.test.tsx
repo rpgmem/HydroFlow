@@ -228,6 +228,46 @@ describe('unidades e novo projeto', () => {
   });
 });
 
+describe('novos recursos de UI', () => {
+  it('abre a legenda com formas e cores', () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /Legenda/ }));
+    const leg = within(screen.getByRole('dialog', { name: 'Legenda' }));
+    expect(leg.getByText(/Bomba \(círculo\)/)).toBeTruthy();
+    expect(leg.getByText(/Junção \(hexágono\)/)).toBeTruthy();
+    expect(leg.getByText(/Refluxo/)).toBeTruthy();
+  });
+
+  it('ligar o atrito nas ⚙ Opções revela Comprimento e C no tubo', () => {
+    render(<App />);
+    const id = adicionar('Tubo');
+    fireEvent.click(screen.getByTestId(`peca-${id}`));
+    expect(screen.queryByLabelText('Comprimento')).toBeNull(); // atrito desligado
+    fireEvent.click(screen.getByLabelText('Opções'));
+    fireEvent.click(screen.getByLabelText('Perda de carga por atrito'));
+    expect(screen.getByLabelText('Comprimento')).toBeTruthy();
+    expect(screen.getByLabelText('Coeficiente C (Hazen-Williams)')).toBeTruthy();
+  });
+
+  it('duplica a peça selecionada', () => {
+    render(<App />);
+    const id = adicionar('Bomba');
+    const antes = idsPecas().length;
+    fireEvent.click(screen.getByTestId(`peca-${id}`));
+    fireEvent.click(screen.getByText(/Duplicar/));
+    expect(idsPecas().length).toBe(antes + 1);
+  });
+
+  it('desfaz a adição de uma peça pelo botão', () => {
+    render(<App />);
+    const antes = idsPecas().length;
+    adicionar('Bomba');
+    expect(idsPecas().length).toBe(antes + 1);
+    fireEvent.click(screen.getByLabelText('Desfazer'));
+    expect(idsPecas().length).toBe(antes);
+  });
+});
+
 describe('persistência — salvar (Sprint 5)', () => {
   it('dispara o download ao clicar em Salvar', () => {
     // jsdom não implementa URL.createObjectURL/anchor.click totalmente.
