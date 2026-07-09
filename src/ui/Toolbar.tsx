@@ -6,7 +6,8 @@ import { useRef, useState } from 'react';
 import type { Acao, EstadoApp, Velocidade } from '../state/store';
 import { baixarProjeto, carregarArquivo } from '../persistence/arquivo';
 import { projetoVazio } from '../domain/factory';
-import type { Unidades } from '../domain/types';
+import { projetoExemplo } from '../domain/exemplo';
+import { Opcoes } from './Opcoes';
 
 interface Props {
   estado: EstadoApp;
@@ -41,9 +42,27 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
       <span className={`badge ${estado.modo}`}>{estado.modo}</span>
 
       {!emExecucao ? (
-        <button className="primary" onClick={() => dispatch({ tipo: 'ENTRAR_EXECUCAO' })}>
-          ▶ Executar
-        </button>
+        <>
+          <button className="primary" onClick={() => dispatch({ tipo: 'ENTRAR_EXECUCAO' })}>
+            ▶ Executar
+          </button>
+          <button
+            aria-label="Desfazer"
+            title="Desfazer (Ctrl+Z)"
+            disabled={estado.undoStack.length === 0}
+            onClick={() => dispatch({ tipo: 'UNDO' })}
+          >
+            ↶
+          </button>
+          <button
+            aria-label="Refazer"
+            title="Refazer (Ctrl+Shift+Z)"
+            disabled={estado.redoStack.length === 0}
+            onClick={() => dispatch({ tipo: 'REDO' })}
+          >
+            ↷
+          </button>
+        </>
       ) : (
         <>
           {estado.rodando ? (
@@ -80,38 +99,9 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
         </>
       )}
 
-      {!emExecucao && (
-        <span className="unidades-sel" title="Unidades do projeto">
-          <select
-            aria-label="Unidade de volume"
-            value={estado.projeto.unidades.volume}
-            onChange={(e) =>
-              dispatch({
-                tipo: 'SET_UNIDADES',
-                unidades: { ...estado.projeto.unidades, volume: e.target.value as Unidades['volume'] },
-              })
-            }
-          >
-            <option value="litros">litros</option>
-            <option value="m3">m³</option>
-          </select>
-          <select
-            aria-label="Unidade de comprimento"
-            value={estado.projeto.unidades.comprimento}
-            onChange={(e) =>
-              dispatch({
-                tipo: 'SET_UNIDADES',
-                unidades: { ...estado.projeto.unidades, comprimento: e.target.value as Unidades['comprimento'] },
-              })
-            }
-          >
-            <option value="m">m</option>
-            <option value="cm">cm</option>
-          </select>
-        </span>
-      )}
-
       <span className="spacer" />
+
+      <Opcoes estado={estado} dispatch={dispatch} tema={tema} onAlternarTema={onAlternarTema} />
 
       {/* No mobile, as ações secundárias recolhem sob "⋯" (o botão some no
           desktop, onde elas seguem inline via `display: contents`). */}
@@ -147,12 +137,19 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
             ✨ Novo
           </button>
         )}
-        <button
-          onClick={onAlternarTema}
-          title={tema === 'claro' ? 'Mudar para tema escuro' : 'Mudar para tema claro'}
-        >
-          {tema === 'claro' ? '🌙 Escuro' : '☀ Claro'}
-        </button>
+        {!emExecucao && (
+          <button
+            onClick={() => {
+              setMenuAberto(false);
+              if (window.confirm('Restaurar o projeto de exemplo? Descarta o trabalho atual (e o autosave).')) {
+                dispatch({ tipo: 'CARREGAR_PROJETO', projeto: projetoExemplo() });
+              }
+            }}
+            title="Volta ao projeto de exemplo e limpa o autosave"
+          >
+            ♻ Restaurar exemplo
+          </button>
+        )}
         <button
           onClick={() => {
             setMenuAberto(false);

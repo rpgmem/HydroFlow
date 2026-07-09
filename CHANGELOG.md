@@ -6,6 +6,28 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.23.0] — Produtividade de edição e opções
+
+### Adicionado
+
+- **Menu ⚙ Opções** consolidando **unidades** (volume/comprimento), **tema**
+  claro/escuro e a **física opcional** (atrito). Limpa a toolbar.
+- **Velocidade de referência configurável** (⚙ Opções, padrão **3 m/s**): define
+  o alerta de tubo subdimensionado e a "vazão máx. recomendada". Todos os
+  consumidores usam a opção.
+- **Autosave local** (localStorage): o trabalho é preservado entre
+  recarregamentos, mas **só** quando o projeto deixa de ser o exemplo intocado —
+  quem só abre a página e não mexe recarrega no exemplo. **♻ Restaurar exemplo**
+  (menu ⋯) volta ao exemplo e limpa o autosave.
+- **Desfazer/refazer** (Ctrl+Z / Ctrl+Shift+Z e botões ↶/↷ na edição).
+- **Duplicar peça** (Ctrl+D / ⧉ no inspetor): cópia deslocada, solta para religar.
+
+### Interno
+
+- **Inspector dividido**: formulários por tipo em `src/ui/inspector/forms.tsx` e
+  blocos compartilhados em `inspector/campos.tsx` (Inspector.tsx ~670 → ~126
+  linhas). Novos testes de UI (Sparkline, legenda, Opções/atrito, duplicar, undo).
+
 ## [1.22.0] — Correções e opções de física
 
 ### Corrigido

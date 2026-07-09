@@ -80,8 +80,11 @@ src/
 │   └── arquivo.ts
 └── ui/             # Sprint 3/4/5 — componentes React + konva
     ├── App.tsx, Toolbar.tsx, Palette.tsx, Canvas.tsx, PecaView.tsx, Inspector.tsx
-    ├── Legenda.tsx, Sparkline.tsx   # legenda do canvas e mini-gráfico do inspetor
+    ├── Opcoes.tsx, Legenda.tsx, Sparkline.tsx  # menu de opções, legenda, sparkline
+    ├── inspector/  # formulários por tipo (forms.tsx) + campos compartilhados
     └── useSimulationLoop.ts
+
+persistence/ inclui `autosave.ts` (localStorage) além do export/import .json.
 ```
 
 O motor não depende de React nem do DOM: `tick(projeto)` recebe um

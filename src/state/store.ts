@@ -17,7 +17,7 @@ import type { ErroValidacao } from '../domain/schema';
 import { validarGrafo } from '../engine/validacaoGrafo';
 import { rodarTicks, type ResultadoTick } from '../engine/simulador';
 import type { Decisao } from '../engine/arbitragem';
-import { sincronizarContador } from '../domain/factory';
+import { novoId, sincronizarContador } from '../domain/factory';
 import {
   isBomba,
   isReservatorio,
@@ -75,6 +75,9 @@ export interface EstadoApp {
   conexaoSelecionada: string | null;
   /** Snapshot do projeto ao entrar em execução, para RESET. */
   snapshotEdicao: ProjetoSimulacao | null;
+  /** Pilhas de desfazer/refazer (só edição): projetos anteriores/posteriores. */
+  undoStack: ProjetoSimulacao[];
+  redoStack: ProjetoSimulacao[];
 }
 
 export type Acao =
@@ -84,11 +87,14 @@ export type Acao =
   | { tipo: 'ADD_CONEXAO'; conexao: Conexao }
   | { tipo: 'REMOVER_CONEXAO'; id: string }
   | { tipo: 'ATUALIZAR_PROPS'; id: string; props: Partial<PropsPorTipo> }
+  | { tipo: 'DUPLICAR_PECA'; id: string }
   | { tipo: 'RENOMEAR_PECA'; id: string; rotulo: string }
   | { tipo: 'SELECIONAR'; id: string | null }
   | { tipo: 'SELECIONAR_CONEXAO'; id: string | null }
   | { tipo: 'SET_NOME'; nome: string }
   | { tipo: 'SET_UNIDADES'; unidades: ProjetoSimulacao['unidades'] }
+  | { tipo: 'SET_ATRITO'; atrito: boolean }
+  | { tipo: 'SET_VELOCIDADE_REF'; velocidadeRef: number }
   | { tipo: 'CARREGAR_PROJETO'; projeto: ProjetoSimulacao }
   | { tipo: 'ENTRAR_EXECUCAO' }
   | { tipo: 'SAIR_EXECUCAO' }
@@ -96,6 +102,8 @@ export type Acao =
   | { tipo: 'PAUSE' }
   | { tipo: 'RESET' }
   | { tipo: 'SET_VELOCIDADE'; velocidade: Velocidade }
+  | { tipo: 'UNDO' }
+  | { tipo: 'REDO' }
   | { tipo: 'TICK' };
 
 export function estadoInicial(projeto: ProjetoSimulacao): EstadoApp {
@@ -123,6 +131,8 @@ export function estadoInicial(projeto: ProjetoSimulacao): EstadoApp {
     selecionada: null,
     conexaoSelecionada: null,
     snapshotEdicao: null,
+    undoStack: [],
+    redoStack: [],
   };
 }
 
@@ -151,6 +161,9 @@ const ACOES_ESTRUTURAIS = new Set<Acao['tipo']>([
   'ADD_CONEXAO',
   'REMOVER_CONEXAO',
   'SET_UNIDADES',
+  'SET_ATRITO',
+  'SET_VELOCIDADE_REF',
+  'DUPLICAR_PECA',
 ]);
 
 function atualizarPeca(
@@ -207,7 +220,8 @@ function derivarEventos(anterior: EstadoApp, r: ResultadoTick): EventoLog[] {
   };
   entraram(r.bombasASeco, anterior.bombasASeco, 'seco', (n) => `${n}: rodando a seco (origem vazia)`);
   entraram(r.ladroesAtivos, anterior.ladroesAtivos, 'ladrao', (n) => `${n}: ladrão em transbordo`);
-  entraram(r.tubosVelozes, anterior.tubosVelozes, 'velocidade', (n) => `${n}: velocidade acima do recomendado (> 3 m/s)`);
+  const velRef = r.projeto.configuracaoSimulacao.velocidadeRef ?? 3;
+  entraram(r.tubosVelozes, anterior.tubosVelozes, 'velocidade', (n) => `${n}: velocidade acima do recomendado (> ${velRef} m/s)`);
   entraram(r.refluxos, anterior.refluxos, 'refluxo', (n) => `${n}: refluxo (fluxo contrário à seta)`);
   entraram(r.consumoInsuficiente, anterior.consumoInsuficiente, 'deficit', (n) => `${n}: déficit (bomba não acompanha)`);
   entraram(r.overflow, anterior.overflow, 'overflow', (n) => `${n}: transbordou`);
@@ -215,7 +229,71 @@ function derivarEventos(anterior: EstadoApp, r: ResultadoTick): EventoLog[] {
   return ev;
 }
 
+/** Ações de EDIÇÃO que alteram o projeto e devem entrar no histórico (undo). */
+const ACOES_UNDOAVEIS = new Set<Acao['tipo']>([
+  'ADD_PECA',
+  'REMOVER_PECA',
+  'MOVER_PECA',
+  'ADD_CONEXAO',
+  'REMOVER_CONEXAO',
+  'ATUALIZAR_PROPS',
+  'RENOMEAR_PECA',
+  'DUPLICAR_PECA',
+  'SET_NOME',
+  'SET_UNIDADES',
+  'SET_ATRITO',
+  'SET_VELOCIDADE_REF',
+]);
+
+const MAX_UNDO = 60;
+
+/**
+ * Reducer público: envolve o `reducerBase` com o histórico de desfazer/refazer.
+ * Antes de aplicar uma edição undoável (só em edição), empilha o projeto atual e
+ * zera o redo. UNDO/REDO trocam o projeto entre as pilhas.
+ */
 export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
+  if (acao.tipo === 'UNDO') {
+    if (estado.modo !== 'edicao' || estado.undoStack.length === 0) return estado;
+    const anterior = estado.undoStack[estado.undoStack.length - 1]!;
+    return {
+      ...estado,
+      projeto: anterior,
+      undoStack: estado.undoStack.slice(0, -1),
+      redoStack: [...estado.redoStack, estado.projeto],
+      selecionada: null,
+      conexaoSelecionada: null,
+    };
+  }
+  if (acao.tipo === 'REDO') {
+    if (estado.modo !== 'edicao' || estado.redoStack.length === 0) return estado;
+    const proximo = estado.redoStack[estado.redoStack.length - 1]!;
+    return {
+      ...estado,
+      projeto: proximo,
+      redoStack: estado.redoStack.slice(0, -1),
+      undoStack: [...estado.undoStack, estado.projeto],
+      selecionada: null,
+      conexaoSelecionada: null,
+    };
+  }
+  const novo = reducerBase(estado, acao);
+  // Registra no histórico quando uma edição de fato mudou o projeto.
+  if (
+    estado.modo === 'edicao' &&
+    ACOES_UNDOAVEIS.has(acao.tipo) &&
+    novo.projeto !== estado.projeto
+  ) {
+    return {
+      ...novo,
+      undoStack: [...estado.undoStack, estado.projeto].slice(-MAX_UNDO),
+      redoStack: [],
+    };
+  }
+  return novo;
+}
+
+function reducerBase(estado: EstadoApp, acao: Acao): EstadoApp {
   // Guarda de imutabilidade estrutural em execução (seção 6).
   if (estado.modo === 'execucao' && ACOES_ESTRUTURAIS.has(acao.tipo)) {
     return estado; // mutação de grafo bloqueada durante a execução
@@ -287,6 +365,25 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
         })),
       };
 
+    case 'DUPLICAR_PECA': {
+      const orig = estado.projeto.pecas.find((p) => p.id === acao.id);
+      if (!orig) return estado;
+      // Cópia deslocada (2 células da grade), com novo id e rótulo "(cópia)".
+      // As conexões NÃO são duplicadas (a cópia entra solta, para religar).
+      const nova: Peca = {
+        ...structuredClone(orig),
+        id: novoId(orig.tipo.slice(0, 3)),
+        x: orig.x + 40,
+        y: orig.y + 40,
+        rotulo: orig.rotulo ? `${orig.rotulo} (cópia)` : undefined,
+      };
+      return {
+        ...estado,
+        projeto: { ...estado.projeto, pecas: [...estado.projeto.pecas, nova] },
+        selecionada: nova.id,
+      };
+    }
+
     case 'RENOMEAR_PECA':
       return {
         ...estado,
@@ -310,6 +407,27 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
       return {
         ...estado,
         projeto: { ...estado.projeto, unidades: acao.unidades },
+      };
+
+    case 'SET_ATRITO':
+      return {
+        ...estado,
+        projeto: {
+          ...estado.projeto,
+          configuracaoSimulacao: { ...estado.projeto.configuracaoSimulacao, atrito: acao.atrito },
+        },
+      };
+
+    case 'SET_VELOCIDADE_REF':
+      return {
+        ...estado,
+        projeto: {
+          ...estado.projeto,
+          configuracaoSimulacao: {
+            ...estado.projeto.configuracaoSimulacao,
+            velocidadeRef: acao.velocidadeRef,
+          },
+        },
       };
 
     case 'CARREGAR_PROJETO':

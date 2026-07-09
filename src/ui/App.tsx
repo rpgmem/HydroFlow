@@ -5,6 +5,8 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { reducer, estadoInicial } from '../state/store';
 import { projetoExemplo } from '../domain/exemplo';
+import { serializarProjeto } from '../domain/schema';
+import { carregarAutosave, limparAutosave, salvarAutosave } from '../persistence/autosave';
 import { useSimulationLoop } from './useSimulationLoop';
 import { Toolbar } from './Toolbar';
 import { Palette } from './Palette';
@@ -13,7 +15,11 @@ import { Inspector } from './Inspector';
 import { Legenda } from './Legenda';
 
 export function App() {
-  const [estado, dispatch] = useReducer(reducer, projetoExemplo(), estadoInicial);
+  // Restaura o autosave se houver; senão abre no exemplo. `exemploSerial` é a
+  // referência do exemplo INTOCADO — enquanto o projeto for igual a ela, nada é
+  // persistido (quem só abre e não mexe recarrega no exemplo).
+  const exemploSerial = useRef(serializarProjeto(projetoExemplo()));
+  const [estado, dispatch] = useReducer(reducer, carregarAutosave() ?? projetoExemplo(), estadoInicial);
   const [erroImport, setErroImport] = useState<string | null>(null);
   const [tamanho, setTamanho] = useState({ largura: 800, altura: 600 });
   // Mobile: o inspetor é uma gaveta; abre ao selecionar uma peça (no desktop a
@@ -34,6 +40,39 @@ export function App() {
   useEffect(() => {
     if (estado.selecionada) setInspetorAberto(true);
   }, [estado.selecionada]);
+
+  // Atalhos de desfazer/refazer (só em edição). Ignora quando o foco está num
+  // campo de texto (aí o Ctrl+Z é o "desfazer" nativo do input).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (estado.modo !== 'edicao' || !(e.ctrlKey || e.metaKey)) return;
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      const k = e.key.toLowerCase();
+      if (k === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        dispatch({ tipo: 'UNDO' });
+      } else if ((k === 'z' && e.shiftKey) || k === 'y') {
+        e.preventDefault();
+        dispatch({ tipo: 'REDO' });
+      } else if (k === 'd' && estado.selecionada) {
+        e.preventDefault(); // duplica a peça selecionada
+        dispatch({ tipo: 'DUPLICAR_PECA', id: estado.selecionada });
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [estado.modo, estado.selecionada]);
+
+  // Autosave: em EDIÇÃO, persiste quando o projeto deixa de ser o exemplo
+  // intocado; se voltar a ser o exemplo ("Restaurar exemplo"), limpa o storage.
+  // Durante a execução o nível é transitório — não salva.
+  useEffect(() => {
+    if (estado.modo !== 'edicao') return;
+    const atual = serializarProjeto(estado.projeto);
+    if (atual === exemploSerial.current) limparAutosave();
+    else salvarAutosave(estado.projeto);
+  }, [estado.projeto, estado.modo]);
 
   // Mede a área central para dimensionar o Stage do konva.
   useEffect(() => {
