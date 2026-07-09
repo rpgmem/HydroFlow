@@ -18,7 +18,7 @@ import {
   type PropsTubo,
 } from '../domain/types';
 
-import { tamanhoPeca } from './pecaGeom';
+import { tamanhoPeca, GRADE } from './pecaGeom';
 
 interface Props {
   peca: Peca;
@@ -91,7 +91,13 @@ export function PecaView({
   const larguraBorda = selecionada ? 2.5 : 1;
 
   const handleDragEnd = (e: KonvaEventObject<DragEvent>): void => {
-    onMove(e.target.x(), e.target.y());
+    // Snap à grade: encaixa o centro da peça no múltiplo de GRADE mais próximo,
+    // ajudando o alinhamento em colunas/linhas (as colunas do exemplo, múltiplas
+    // de 120, permanecem intactas — 120 é múltiplo da grade).
+    const gx = Math.round(e.target.x() / GRADE) * GRADE;
+    const gy = Math.round(e.target.y() / GRADE) * GRADE;
+    onMove(gx, gy); // o estado atualiza → o Group re-renderiza já encaixado
+
   };
 
   return (

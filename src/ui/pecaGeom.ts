@@ -5,6 +5,10 @@
  */
 import type { Peca } from '../domain/types';
 
+/** Passo da grade de encaixe (snap) ao arrastar peças na edição, em px. As
+ *  colunas do exemplo (múltiplas de 120) continuam alinhadas — 120 = 6×20. */
+export const GRADE = 20;
+
 /** Metade da "pegada" de cada tipo, usada para desenhar e ancorar conexões. */
 export function tamanhoPeca(tipo: Peca['tipo']): { w: number; h: number } {
   switch (tipo) {

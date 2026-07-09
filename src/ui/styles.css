@@ -40,7 +40,7 @@ body {
 
 .app.tema-claro .canvas-wrap {
   background:
-    radial-gradient(circle at 1px 1px, #cbd5e1 1px, transparent 0) 0 0 / 24px 24px,
+    radial-gradient(circle at 1px 1px, #cbd5e1 1px, transparent 0) 0 0 / 20px 20px,
     #f8fafc;
 }
 
@@ -193,7 +193,7 @@ button.ativo {
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(circle at 1px 1px, #21303e 1px, transparent 0) 0 0 / 24px 24px;
+    radial-gradient(circle at 1px 1px, #21303e 1px, transparent 0) 0 0 / 20px 20px;
 }
 
 .badge {
