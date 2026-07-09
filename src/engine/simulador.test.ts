@@ -215,6 +215,98 @@ describe('tubos em série entre reservatórios', () => {
 });
 
 // ===========================================================================
+// Junção divide (bifurca) e soma (une) a vazão, conservando massa
+// ===========================================================================
+describe('junção divide e soma vazão', () => {
+  const juncao = (id: string): Peca => ({ id, tipo: 'juncao', x: 0, y: 0, props: {} });
+  const nivelDe = (r: ReturnType<typeof tick>, id: string): number =>
+    (r.projeto.pecas.find((x) => x.id === id)!.props as PropsReservatorio).nivel ?? 0;
+
+  it('bifurcação: os dois destinos enchem e a massa conserva', () => {
+    const r = tick(
+      projeto(
+        [
+          res('R1', { cotaBase: 10, nivel: 5 }),
+          res('R2', { nivel: 0 }),
+          res('R3', { nivel: 0 }),
+          tubo('tin'),
+          juncao('J'),
+          tubo('t2'),
+          tubo('t3'),
+        ],
+        [
+          criarConexao('R1', 'tin'),
+          criarConexao('tin', 'J'),
+          criarConexao('J', 't2'),
+          criarConexao('t2', 'R2'),
+          criarConexao('J', 't3'),
+          criarConexao('t3', 'R3'),
+        ],
+      ),
+    );
+    const g2 = nivelDe(r, 'R2');
+    const g3 = nivelDe(r, 'R3');
+    expect(g2).toBeGreaterThan(1e-9);
+    expect(g3).toBeGreaterThan(1e-9);
+    expect(5 - nivelDe(r, 'R1')).toBeCloseTo(g2 + g3, 8); // massa conservada
+  });
+
+  it('união: as duas origens esvaziam e somam no destino', () => {
+    const r = tick(
+      projeto(
+        [
+          res('R1', { cotaBase: 10, nivel: 5 }),
+          res('R2', { cotaBase: 10, nivel: 5 }),
+          res('R3', { nivel: 0 }),
+          tubo('t1'),
+          tubo('t2'),
+          juncao('J'),
+          tubo('tout'),
+        ],
+        [
+          criarConexao('R1', 't1'),
+          criarConexao('t1', 'J'),
+          criarConexao('R2', 't2'),
+          criarConexao('t2', 'J'),
+          criarConexao('J', 'tout'),
+          criarConexao('tout', 'R3'),
+        ],
+      ),
+    );
+    const p1 = 5 - nivelDe(r, 'R1');
+    const p2 = 5 - nivelDe(r, 'R2');
+    expect(p1).toBeGreaterThan(1e-9);
+    expect(p2).toBeGreaterThan(1e-9);
+    expect(p1 + p2).toBeCloseTo(nivelDe(r, 'R3'), 8); // massa conservada
+  });
+
+  it('bifurcação com diâmetros diferentes: o ramo mais largo leva mais', () => {
+    const r = tick(
+      projeto(
+        [
+          res('R1', { cotaBase: 10, nivel: 5 }),
+          res('R2', { nivel: 0 }),
+          res('R3', { nivel: 0 }),
+          tubo('tin', { diametro: 200 }),
+          juncao('J'),
+          tubo('t2', { diametro: 100 }),
+          tubo('t3', { diametro: 50 }),
+        ],
+        [
+          criarConexao('R1', 'tin'),
+          criarConexao('tin', 'J'),
+          criarConexao('J', 't2'),
+          criarConexao('t2', 'R2'),
+          criarConexao('J', 't3'),
+          criarConexao('t3', 'R3'),
+        ],
+      ),
+    );
+    expect(nivelDe(r, 'R2')).toBeGreaterThan(nivelDe(r, 'R3')); // 100 mm leva mais que 50 mm
+  });
+});
+
+// ===========================================================================
 // Altura de conexão do tubo (tomada em altura nas pontas)
 // ===========================================================================
 describe('altura de conexão do tubo', () => {

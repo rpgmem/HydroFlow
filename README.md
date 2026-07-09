@@ -138,7 +138,7 @@ interface NivelControle {
 | `fonte` | `vazaoFixa`, `boia?: NivelControle` |
 | `consumo` | `vazaoDemanda`, `aberto?`, `perfil?` (`fixo`\|`senoidal`\|`intermitente`), `vazaoMin?`/`vazaoMax?`/`periodo?` (perfil variável) — ponto de saída/demanda; retira água e descarta |
 | `sensor` | `NivelControle & { bombasAlvo: string[] }` — controla **uma ou mais** bombas; `reversa` inverte a lógica (liga no máximo, desliga no mínimo) |
-| `juncao` | `{}` (só distribui vazão, sem volume próprio) |
+| `juncao` | `{}` (nó sem volume que **divide/soma** a vazão por gravidade, conservando massa) |
 
 `cotaBase` é a elevação física da base do reservatório — permite **empilhamento**
 e entra no cálculo de carga hidráulica.
@@ -168,6 +168,11 @@ Fórmulas implementadas em `src/engine/simulador.ts`:
   estreito no caminho (Torricelli pelo diâmetro/Δh) e pelo volume disponível.
 - **Tubo ladrão** — dreno de transbordo: só escoa o excedente acima de
   `ladrao.nivel` (a coluna acima do lábio é a carga; autolimitante).
+- **Junção** — nó sem volume que **divide/soma** o fluxo por gravidade,
+  conservando massa. Uma sub-rede de gravidade com junções é resolvida como rede
+  de vazão (carga das junções por iteração até o fluxo líquido no nó zerar); cada
+  trecho entre nós é limitado pelo cano mais estreito. Bifurcação enche os dois
+  ramos; união soma as origens no destino.
 
 ### Unidades
 

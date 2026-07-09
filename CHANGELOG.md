@@ -6,6 +6,25 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.15.0] — Junção divide e soma a vazão (rede de gravidade)
+
+### Adicionado
+
+- **Junções agora bifurcam e unem de verdade**, conservando massa no nó. Antes a
+  junção era só passagem: numa bifurcação só um ramo recebia água (o outro ficava
+  seco) e numa união só uma origem esvaziava. Agora uma sub-rede de gravidade com
+  junções é resolvida como uma pequena **rede de vazão**: reservatórios têm carga
+  fixa (a superfície), junções têm carga **incógnita** resolvida por iteração
+  (Gauss-Seidel + bisseção) até o fluxo líquido no nó zerar. Cada trecho de tubos
+  em série entre dois nós vira uma aresta limitada pelo **gargalo** (menor
+  diâmetro). Resultado: numa **bifurcação** os dois ramos enchem (proporcional à
+  área de cada um) e numa **união** as duas origens esvaziam e somam no destino.
+- Cadeias **sem** junção e o fluxo **dirigido** por bomba/fonte seguem no caminho
+  rápido de sempre; o solver entra só quando há junção.
+- Limitações (v1): não modela check valve/altura de conexão **dentro** de um
+  trecho entre junções (uma boia fechada, sim, bloqueia o trecho). Para esses
+  casos, use um **reservatório** no ponto de divisão.
+
 ## [1.14.0] — Setas de conexão com sentido visível
 
 ### Adicionado
