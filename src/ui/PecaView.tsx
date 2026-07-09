@@ -123,14 +123,19 @@ export function PecaView({
           tuboVeloz={tuboVeloz}
         />
       ) : peca.tipo === 'sensor' ? (
-        <Circle
-          radius={w / 2}
+        // Sensor = losango (instrumento/medição) — distinto do círculo da bomba.
+        // Cor: verde liga, vermelho desliga, amarelo espera; padrão sem simulação.
+        <Line
+          closed
+          points={[0, -h / 2, w / 2, 0, 0, h / 2, -w / 2, 0]}
           fill={sensorEstado ? (COR_SENSOR[sensorEstado] ?? COR.sensor) : COR.sensor}
           stroke={borda}
           strokeWidth={larguraBorda}
         />
       ) : peca.tipo === 'juncao' ? (
-        <Circle radius={w / 2} fill={COR.juncao} stroke={borda} strokeWidth={larguraBorda} />
+        // Junção = hexágono (evoca uma luva/porca de tubo — peça de conexão).
+        // Distinto do círculo (bomba) e do losango (sensor).
+        <Line closed points={hexagono(w / 2)} fill={COR.juncao} stroke={borda} strokeWidth={larguraBorda} />
       ) : peca.tipo === 'consumo' ? (
         // Triângulo apontando para baixo (dreno/saída). Laranja quando em déficit
         // (a bomba que o alimenta não acompanha a demanda).
@@ -310,6 +315,13 @@ function BombaView({
       <Text text="2" fontSize={12} fontStyle="bold" fill="#e6edf3" x={0} y={-6} width={r} align="center" />
     </>
   );
+}
+
+/** Vértices de um hexágono regular de "topo plano" com circunraio R (center→lado). */
+function hexagono(R: number): number[] {
+  const hx = R / 2; // meia-largura da aresta de topo/base
+  const hy = (R * Math.sqrt(3)) / 2; // meia-altura
+  return [-hx, -hy, hx, -hy, R, 0, hx, hy, -hx, hy, -R, 0];
 }
 
 function rotulo(peca: Peca, vazao: number | undefined): string {

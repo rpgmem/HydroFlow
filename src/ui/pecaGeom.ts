@@ -19,8 +19,10 @@ export function tamanhoPeca(tipo: Peca['tipo']): { w: number; h: number } {
     case 'consumo':
       return { w: 44, h: 44 };
     case 'sensor':
-      return { w: 30, h: 30 };
+      return { w: 32, h: 32 };
     case 'juncao':
-      return { w: 26, h: 26 };
+      // Peça de conexão compacta (hexágono, como uma luva/porca de tubo): pegada
+      // enxuta para as setas encostarem na peça, e menor que os componentes.
+      return { w: 22, h: 22 };
   }
 }
