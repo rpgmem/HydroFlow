@@ -12,9 +12,9 @@ incremental por funcionalidade.
 
 - **Bomba, sensor e junção deixam de ser todos círculos** (eram ambíguos, só a
   cor mudava). Agora: **bomba = círculo** (símbolo consagrado de bomba), **sensor
-  = losango** (instrumento/medição) e **junção = ponto pequeno** (nó de conexão,
-  sem "corpo" de componente). As cores de estado (verde/vermelho/amarelo) seguem
-  iguais. A pegada da junção encolheu para as setas encostarem no próprio ponto.
+  = losango** (instrumento/medição) e **junção = hexágono** (evoca uma luva/porca
+  de tubo — peça de conexão). As cores de estado (verde/vermelho/amarelo) seguem
+  iguais. A pegada da junção é compacta para as setas encostarem na peça.
 
 ## [1.19.0] — Conservação de massa na rede de junções (fim do refluxo fantasma)
 
