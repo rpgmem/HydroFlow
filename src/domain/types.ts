@@ -179,8 +179,12 @@ export type PropsSensor = NivelControle & {
   ultimaTroca?: number;
 };
 
-// Junção não tem props além das portas — só distribui vazão, sem volume.
-export type PropsJuncao = Record<string, never>;
+// Junção: nó sem volume que divide/soma a vazão. Pode ter um diâmetro interno
+// opcional (mm) que ESTRANGULA o fluxo que passa por ela (como um cano estreito).
+export interface PropsJuncao {
+  /** Diâmetro interno em MILÍMETROS que limita o fluxo pela junção (opcional). */
+  diametro?: number;
+}
 
 export type PropsPorTipo =
   | PropsReservatorio

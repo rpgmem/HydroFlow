@@ -218,9 +218,29 @@ describe('tubos em série entre reservatórios', () => {
 // Junção divide (bifurca) e soma (une) a vazão, conservando massa
 // ===========================================================================
 describe('junção divide e soma vazão', () => {
-  const juncao = (id: string): Peca => ({ id, tipo: 'juncao', x: 0, y: 0, props: {} });
+  const juncao = (id: string, diametro?: number): Peca => ({
+    id,
+    tipo: 'juncao',
+    x: 0,
+    y: 0,
+    props: diametro ? { diametro } : {},
+  });
   const nivelDe = (r: ReturnType<typeof tick>, id: string): number =>
     (r.projeto.pecas.find((x) => x.id === id)!.props as PropsReservatorio).nivel ?? 0;
+
+  it('junção com diâmetro estrangula o fluxo (gargalo no nó)', () => {
+    const cenario = (jdiam?: number) =>
+      tick(
+        projeto(
+          [res('R1', { cotaBase: 5, nivel: 3 }), res('R2', {}), tubo('t1', { diametro: 100 }), juncao('J', jdiam), tubo('t2', { diametro: 100 })],
+          [criarConexao('R1', 't1'), criarConexao('t1', 'J'), criarConexao('J', 't2'), criarConexao('t2', 'R2')],
+        ),
+      );
+    const semDiam = 3 - nivelDe(cenario(undefined), 'R1');
+    const estreita = 3 - nivelDe(cenario(20), 'R1'); // junção DN20 vira o gargalo
+    expect(estreita).toBeGreaterThan(0);
+    expect(estreita).toBeLessThan(semDiam * 0.2); // (20/100)² ≈ 4% da área
+  });
 
   it('bifurcação: os dois destinos enchem e a massa conserva', () => {
     const r = tick(

@@ -138,7 +138,7 @@ interface NivelControle {
 | `fonte` | `vazaoFixa`, `boia?: NivelControle` |
 | `consumo` | `vazaoDemanda`, `aberto?`, `perfil?` (`fixo`\|`senoidal`\|`intermitente`), `vazaoMin?`/`vazaoMax?`/`periodo?` (perfil variável) — ponto de saída/demanda; retira água e descarta |
 | `sensor` | `NivelControle & { bombasAlvo: string[] }` — controla **uma ou mais** bombas; `reversa` inverte a lógica (liga no máximo, desliga no mínimo) |
-| `juncao` | `{}` (nó sem volume que **divide/soma** a vazão por gravidade, conservando massa) |
+| `juncao` | `diametro?` (mm; **estrangula** o fluxo pela junção). Nó sem volume que **divide/soma** a vazão por gravidade, conservando massa |
 
 `cotaBase` é a elevação física da base do reservatório — permite **empilhamento**
 e entra no cálculo de carga hidráulica.

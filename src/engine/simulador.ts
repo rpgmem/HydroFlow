@@ -35,6 +35,7 @@ import {
   type Peca,
   type PecaDe,
   type ProjetoSimulacao,
+  type PropsJuncao,
 } from '../domain/types';
 import {
   areaTuboM2,
@@ -634,6 +635,13 @@ function resolverGravidadeComJuncoes(
       }
       return null;
     };
+    // Uma junção pode ter um diâmetro que ESTRANGULA o fluxo por ela (como um
+    // cano estreito no nó): a área da aresta é limitada também por esse diâmetro.
+    const areaJuncao = (id: string): number => {
+      const pe = idx.porId.get(id);
+      const d = pe && pe.tipo === 'juncao' ? (pe.props as PropsJuncao).diametro : undefined;
+      return d && d > 0 ? areaTuboM2(d) : Infinity;
+    };
     for (const j of juncSet) {
       for (const viz of vizinhosDe(j)) {
         const ar = caminhar(j, viz);
@@ -641,6 +649,7 @@ function resolverGravidadeComJuncoes(
         const chave = ar.tubos.length ? [...ar.tubos].sort().join('|') : `direto:${[ar.a, ar.b].sort().join('-')}`;
         if (chaves.has(chave)) continue;
         chaves.add(chave);
+        ar.area = Math.min(ar.area, areaJuncao(ar.a), areaJuncao(ar.b));
         arestas.push(ar);
       }
     }
