@@ -297,6 +297,23 @@ button.ativo {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
 }
 
+/* Minimapa: visão geral no canto inferior direito (projetos grandes). */
+.minimapa {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 7;
+  background: rgba(15, 22, 32, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+}
+
+.app.tema-claro .minimapa {
+  background: rgba(255, 255, 255, 0.92);
+}
+
 /* Tooltip de peça (hover) — segue o cursor, não intercepta o mouse. */
 .peca-tooltip {
   position: absolute;

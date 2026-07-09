@@ -46,6 +46,9 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
   const [ponteiro, setPonteiro] = useState<{ x: number; y: number } | null>(null);
   // Peça sob o cursor (para o tooltip). Guarda a posição na tela (px do container).
   const [hover, setHover] = useState<{ id: string; x: number; y: number } | null>(null);
+  // Transform corrente do Stage (escala/posição) espelhado em estado para o
+  // minimapa redesenhar o retângulo de viewport ao dar zoom/pan.
+  const [vista, setVista] = useState({ scale: 1, x: 0, y: 0 });
   const conectandoRef = useRef<string | null>(null);
   conectandoRef.current = conectando;
 
@@ -165,12 +168,25 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
     }
   };
 
+  const onStageDragMove = (e: KonvaEventObject<DragEvent>): void => {
+    if (e.target === stageRef.current) sincronizarVista(); // minimapa segue o pan
+  };
+
   const onStageDragEnd = (e: KonvaEventObject<DragEvent>): void => {
     // Pan do fundo (o próprio Stage) conta como interação → cessa o auto-fit.
-    if (e.target === stageRef.current) usuarioMexeu.current = true;
+    if (e.target === stageRef.current) {
+      usuarioMexeu.current = true;
+      sincronizarVista();
+    }
   };
 
   // ---- Zoom (imperativo sobre o Stage) ---------------------------------
+  // Espelha o transform do Stage no estado `vista` (para o minimapa acompanhar).
+  const sincronizarVista = (): void => {
+    const stage = stageRef.current;
+    if (stage) setVista({ scale: stage.scaleX(), x: stage.x(), y: stage.y() });
+  };
+
   const aplicarEscala = (novaEscala: number, centroTela: { x: number; y: number }): void => {
     const stage = stageRef.current;
     if (!stage) return;
@@ -184,6 +200,7 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
     stage.scale({ x: s, y: s });
     stage.position({ x: centroTela.x - ponto.x * s, y: centroTela.y - ponto.y * s });
     stage.batchDraw();
+    sincronizarVista();
   };
 
   const onWheel = (e: KonvaEventObject<WheelEvent>): void => {
@@ -201,6 +218,17 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
     if (!stage) return;
     usuarioMexeu.current = true;
     aplicarEscala(stage.scaleX() * fator, { x: largura / 2, y: altura / 2 });
+  };
+
+  // Centraliza a vista num ponto do CONTEÚDO (usado ao clicar no minimapa).
+  const centralizarEm = (cx: number, cy: number): void => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    usuarioMexeu.current = true;
+    const s = stage.scaleX();
+    stage.position({ x: largura / 2 - cx * s, y: altura / 2 - cy * s });
+    stage.batchDraw();
+    sincronizarVista();
   };
 
   const ajustarView = (): void => {
@@ -222,6 +250,7 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
       y: (altura - b.h * s) / 2 - b.minY * s,
     });
     stage.batchDraw();
+    sincronizarVista();
   };
 
   // Impressão: enquadra todo o diagrama (para nada ficar cortado) e restaura a
@@ -313,6 +342,7 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
         onTouchEnd={onTouchEnd}
         onWheel={onWheel}
         onDragStart={onStageDragStart}
+        onDragMove={onStageDragMove}
         onDragEnd={onStageDragEnd}
         onClick={onStageClick}
         onTap={onStageClick}
@@ -423,6 +453,58 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
               <span key={i}>{l}</span>
             ))}
           </div>
+        );
+      })()}
+
+      {/* Minimapa: visão geral + retângulo da viewport. Só quando o diagrama é
+          maior que o exemplo (senão é ruído — tudo já cabe na tela). Clicar
+          recentraliza a vista no ponto correspondente. */}
+      {(() => {
+        const pcs = estado.projeto.pecas;
+        if (pcs.length === 0) return null;
+        const b = limitesPecas(pcs);
+        if (b.rawW <= 800 && b.rawH <= 700) return null; // projeto pequeno → sem minimapa
+        const escala = Math.min(168 / b.w, 132 / b.h);
+        const mmW = b.w * escala;
+        const mmH = b.h * escala;
+        // Retângulo da viewport (conteúdo visível) mapeado no minimapa.
+        const vx = (-vista.x / vista.scale - b.minX) * escala;
+        const vy = (-vista.y / vista.scale - b.minY) * escala;
+        const vw = (largura / vista.scale) * escala;
+        const vh = (altura / vista.scale) * escala;
+        const rx = Math.max(0, Math.min(vx, mmW));
+        const ry = Math.max(0, Math.min(vy, mmH));
+        return (
+          <svg
+            className="minimapa"
+            width={mmW}
+            height={mmH}
+            onClick={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              const mx = e.clientX - r.left;
+              const my = e.clientY - r.top;
+              centralizarEm(mx / escala + b.minX, my / escala + b.minY);
+            }}
+          >
+            {pcs.map((p) => {
+              const cx = (p.x - b.minX) * escala;
+              const cy = (p.y - b.minY) * escala;
+              return p.tipo === 'reservatorio' ? (
+                <rect key={p.id} x={cx - 2.5} y={cy - 3} width={5} height={6} rx={1} fill="#2b8fe0" />
+              ) : (
+                <circle key={p.id} cx={cx} cy={cy} r={2} fill="#7d93a6" />
+              );
+            })}
+            <rect
+              x={rx}
+              y={ry}
+              width={Math.min(vw, mmW - rx)}
+              height={Math.min(vh, mmH - ry)}
+              fill="rgba(56,189,248,0.15)"
+              stroke="#38bdf8"
+              strokeWidth={1}
+            />
+          </svg>
         );
       })()}
     </div>
