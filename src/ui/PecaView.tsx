@@ -123,13 +123,17 @@ export function PecaView({
           tuboVeloz={tuboVeloz}
         />
       ) : peca.tipo === 'sensor' ? (
-        <Circle
-          radius={w / 2}
+        // Sensor = losango (instrumento/medição) — distinto do círculo da bomba.
+        // Cor: verde liga, vermelho desliga, amarelo espera; padrão sem simulação.
+        <Line
+          closed
+          points={[0, -h / 2, w / 2, 0, 0, h / 2, -w / 2, 0]}
           fill={sensorEstado ? (COR_SENSOR[sensorEstado] ?? COR.sensor) : COR.sensor}
           stroke={borda}
           strokeWidth={larguraBorda}
         />
       ) : peca.tipo === 'juncao' ? (
+        // Junção = ponto pequeno (nó de conexão), sem "corpo" de componente.
         <Circle radius={w / 2} fill={COR.juncao} stroke={borda} strokeWidth={larguraBorda} />
       ) : peca.tipo === 'consumo' ? (
         // Triângulo apontando para baixo (dreno/saída). Laranja quando em déficit
