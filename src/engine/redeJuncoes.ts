@@ -41,6 +41,10 @@ interface ArestaRede {
   tubos: string[];
   /** Por tubo: traversal a→b coincide com o sentido origem→destino do tubo? */
   alinhado: Record<string, boolean>;
+  /** Altura da tomada (relativa à base) no lado do reservatório `b`, quando `b`
+   *  é reservatório e há um tubo adjacente. Um reservatório só fornece se o nível
+   *  estiver ACIMA dessa tomada. undefined = sem tomada em altura (tap no fundo). */
+  tapB?: number;
 }
 
 /**
@@ -77,15 +81,18 @@ export function resolverGravidadeComJuncoes(
     ...(idx.entrada.get(id) ?? []).map((c) => c.origem),
     ...(idx.saida.get(id) ?? []).map((c) => c.destino),
   ];
-  // Um reservatório VAZIO não FORNECE água (só recebe): sem coluna acima do fundo
-  // não há o que escoar, ainda que a carga (cotaBase + nível) seja alta pela
-  // elevação. Sem isso, o solver usaria a cota de fundo como carga fixa e criaria
-  // fluxo FANTASMA saindo do tanque vazio — ex.: o "superior" já esvaziado ainda
-  // empurrando água pela União para o "meio". O clamp de volume não bastava: a
-  // vazão calculada (e a seta de refluxo) continuavam acesas.
-  const resVazio = (n: string): boolean => {
+  // Um reservatório só FORNECE água acima da TOMADA por onde a aresta o toca (e,
+  // no mínimo, acima do fundo — tomada 0). Sem coluna acima do bocal não há o que
+  // escoar, ainda que a carga (cotaBase + nível) seja alta pela elevação. Sem
+  // isso, o solver usaria a cota de fundo como carga fixa e criaria fluxo
+  // FANTASMA saindo do tanque (ex.: o "superior" já esvaziado empurrando água pela
+  // União para o "meio", ou fornecendo por uma tomada acima do próprio nível). O
+  // clamp de volume não bastava: a vazão calculada (e a seta de refluxo) ficavam
+  // acesas. `tap` é a altura da tomada relativa à base (0 = fundo).
+  const podeFornecer = (n: string, tap: number): boolean => {
     const pe = idx.porId.get(n);
-    return !!pe && isReservatorio(pe) && reservatorioVazio(pe);
+    if (!pe || !isReservatorio(pe)) return true; // junção sempre "fornece"
+    return (pe.props.nivel ?? 0) > tap + 1e-9;
   };
 
   const compVisitada = new Set<string>();
@@ -138,7 +145,16 @@ export function resolverGravidadeComJuncoes(
         const pe = idx.porId.get(cur);
         if (!pe) return null;
         if (isReservatorio(pe) || pe.tipo === 'juncao') {
-          return { a: de, b: cur, area: tubos.length ? area : areaTuboM2(1000), tubos, alinhado };
+          // Tomada no lado do reservatório: altura do bocal do último tubo (o
+          // adjacente, = prev) na porta que toca o reservatório. Conexão
+          // tubo→reservatório usa alturaSaida; reservatório→tubo usa alturaEntrada.
+          let tapB: number | undefined;
+          if (isReservatorio(pe) && tubos.length) {
+            const ult = idx.porId.get(prev) as PecaDe<'tubo'>;
+            const tuboEntraNoRes = (idx.entrada.get(cur) ?? []).some((c) => c.origem === prev);
+            tapB = tuboEntraNoRes ? (ult.props.alturaSaida ?? 0) : (ult.props.alturaEntrada ?? 0);
+          }
+          return { a: de, b: cur, area: tubos.length ? area : areaTuboM2(1000), tubos, alinhado, tapB };
         }
         if (!ehCandidato(pe)) return null;
         if (pe.props.boia && !(pe.props.boia.aberta ?? true)) return null; // boia fechada bloqueia o run
@@ -249,7 +265,9 @@ export function resolverGravidadeComJuncoes(
     const fluxoEntra = (ar: ArestaRede, hJ: number, outro: string): number => {
       const dh = cargaDe(outro) - hJ;
       const q = ar.area * Math.sign(dh) * Math.sqrt(2 * g * Math.abs(dh));
-      return q > 0 && resVazio(outro) ? 0 : q; // vazio não fornece; só recebe
+      // `outro` é a ponta oposta à junção; a tomada só existe quando é o reserv. b.
+      const tap = outro === ar.b ? (ar.tapB ?? 0) : 0;
+      return q > 0 && !podeFornecer(outro, tap) ? 0 : q; // abaixo da tomada não fornece
     };
     // --- Gauss-Seidel + bisseção (com bordas adaptativas p/ as injeções).
     for (let it = 0; it < 300; it++) {
@@ -289,8 +307,8 @@ export function resolverGravidadeComJuncoes(
     for (const ar of arestas) {
       const dh = cargaDe(ar.a) - cargaDe(ar.b);
       let q = ar.area * Math.sign(dh) * Math.sqrt(2 * g * Math.abs(dh)); // + = a→b
-      if (q > 0 && resVazio(ar.a)) q = 0; // a forneceria, mas está vazio
-      if (q < 0 && resVazio(ar.b)) q = 0; // b forneceria, mas está vazio
+      if (q > 0 && !podeFornecer(ar.a, 0)) q = 0; // a (junção) forneceria — n/a
+      if (q < 0 && !podeFornecer(ar.b, ar.tapB ?? 0)) q = 0; // b abaixo da tomada não fornece
       if (isReservatorio(idx.porId.get(ar.a)!)) netRes.set(ar.a, (netRes.get(ar.a) ?? 0) + q);
       if (isReservatorio(idx.porId.get(ar.b)!)) netRes.set(ar.b, (netRes.get(ar.b) ?? 0) - q);
       anotar(ar, q);

@@ -451,6 +451,35 @@ describe('terminal na rede de junções', () => {
     expect(Math.abs(r.vazoes['t_sup'] ?? 0)).toBe(0); // aresta do superior vazio: sem vazão
   });
 
+  it('reservatório não fornece por uma tomada acima do seu nível (rede)', () => {
+    // R_sup tem carga alta (cota 10 + nível 2), mas a saída para a rede é uma
+    // tomada em 4 — acima do nível 2. Sem água acima do bocal, não pode fornecer:
+    // a aresta fica em 0 (nada de fluxo/refluxo fantasma para o meio).
+    const r = tick(
+      projeto(
+        [
+          res('R_sup', { cotaBase: 10, nivel: 2 }),
+          res('R_meio', { cotaBase: 0, nivel: 3 }),
+          juncao('J'),
+          tubo('t_sup', { alturaEntrada: 4 }), // tomada alta no lado do R_sup
+          tubo('t_meio'),
+          { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: 0.02, aberto: true } },
+        ],
+        [
+          criarConexao('R_sup', 't_sup'),
+          criarConexao('t_sup', 'J'),
+          criarConexao('R_meio', 't_meio'),
+          criarConexao('t_meio', 'J'),
+          criarConexao('J', 'C'),
+        ],
+      ),
+    );
+    expect(Math.abs(r.vazoes['t_sup'] ?? 0)).toBeLessThan(1e-6); // abaixo da tomada: não fornece
+    expect(nivelDe(r, 'R_sup')).toBe(2); // intocado
+    expect(nivelDe(r, 'R_meio')).toBeLessThan(3); // o meio alimenta o consumo
+    expect(r.refluxos).toHaveLength(0);
+  });
+
   it('conserva massa ao longo do tempo mesmo com o ramo alto esvaziando', () => {
     // Regressão do fluxo fantasma: o superior (pequeno) esvazia refluindo pela
     // União para o meio enquanto alimenta o consumo. Ao esvaziar, o dreno do
