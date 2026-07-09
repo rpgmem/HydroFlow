@@ -6,6 +6,27 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.13.2] — Correção: tubos em série drenavam em dobro
+
+### Corrigido
+
+- **Tubos em série por gravidade eram tratados como paralelos**: cada tubo de uma
+  cadeia resolvia os mesmos reservatórios de origem/destino e empurrava o próprio
+  fluxo, então a origem drenava **N×** (N = nº de tubos na cadeia). Agora uma
+  cadeia de tubos entre dois reservatórios carrega **um único fluxo, limitado
+  pelo cano mais estreito** (o gargalo), independente da ordem; todos os tubos da
+  cadeia mostram essa vazão. Descarga ao ambiente, sucção de bomba, ladrão e
+  registro fechado seguem inalterados (um registro fechado no meio quebra a
+  cadeia). O fluxo **dirigido** por bomba/fonte já resolvia a série corretamente.
+
+### Verificado (sem mudança)
+
+- Um tubo entre reservatórios drena a origem e enche o destino corretamente
+  (volume conservado).
+- A **gravidade atua como barreira ao recalque**: com altura nominal/curva, a
+  altura reduz a vazão da bomba e a zera acima da altura de shutoff; um tubo
+  passivo nunca empurra água morro acima.
+
 ## [1.13.1] — Menu recolhido no mobile
 
 ### Alterado
