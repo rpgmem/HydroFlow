@@ -6,6 +6,7 @@ import { useRef, useState } from 'react';
 import type { Acao, EstadoApp, Velocidade } from '../state/store';
 import { baixarProjeto, carregarArquivo } from '../persistence/arquivo';
 import { projetoVazio } from '../domain/factory';
+import { projetoExemplo } from '../domain/exemplo';
 import { Opcoes } from './Opcoes';
 
 interface Props {
@@ -116,6 +117,19 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
             }}
           >
             ✨ Novo
+          </button>
+        )}
+        {!emExecucao && (
+          <button
+            onClick={() => {
+              setMenuAberto(false);
+              if (window.confirm('Restaurar o projeto de exemplo? Descarta o trabalho atual (e o autosave).')) {
+                dispatch({ tipo: 'CARREGAR_PROJETO', projeto: projetoExemplo() });
+              }
+            }}
+            title="Volta ao projeto de exemplo e limpa o autosave"
+          >
+            ♻ Restaurar exemplo
           </button>
         )}
         <button

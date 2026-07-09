@@ -8,7 +8,10 @@ vi.mock('react-konva', () => import('./reactKonvaMock'));
 import { App } from './App';
 import { _resetContadorIds } from '../domain/factory';
 
-beforeEach(() => _resetContadorIds());
+beforeEach(() => {
+  _resetContadorIds();
+  localStorage.clear(); // isola o autosave entre os testes (cada App abre no exemplo)
+});
 
 /** Ids das peças atualmente no canvas (extraídos dos data-testid `peca-<id>`). */
 function idsPecas(): string[] {
