@@ -25,14 +25,27 @@ import {
   type Unidades,
 } from '../domain/types';
 import { areaTuboM2, vazaoParaM3 } from './geometria';
-import { vazaoGravidadeM3, COMPRIMENTO_PADRAO_M, HW_C_PADRAO } from './hidraulica';
+import { vazaoBombaOperacao, vazaoGravidadeM3, COMPRIMENTO_PADRAO_M, HW_C_PADRAO } from './hidraulica';
 import { metrosPorComprimento } from '../domain/unidades';
 import {
   demandaConsumo,
+  hfTubosM,
   reservatorioVazio,
   type FluxoResolvido,
   type GrafoIndex,
 } from './simulador';
+
+/** Bomba acoplada à rede (com atrito): a vazão depende da carga do nó. */
+interface ContribBomba {
+  no: string;
+  sucId: string;
+  sucHeadM: number;
+  baseM3: number;
+  kEffM3: number;
+  tubosSuc: string[];
+  peId: string;
+  run: ArestaRede;
+}
 
 /** Uma aresta da rede: um "run" de tubos em série entre dois nós (junção/reserv.). */
 interface ArestaRede {
@@ -224,6 +237,7 @@ export function resolverGravidadeComJuncoes(
     const runsTerminais: { run: ArestaRede; q: number; para: string }[] = []; // telemetria
     const ofertasTerm: { origem: string | null; vol: number }[] = [];
     const demandasTerm: { destino: string | null; vol: number }[] = [];
+    const contribBombas: ContribBomba[] = []; // bombas acopladas (atrito)
     for (const t of terminais) {
       const pe = idx.porId.get(t)!;
       // acha o run do terminal até o nó (junção/reservatório) da rede.
@@ -250,16 +264,42 @@ export function resolverGravidadeComJuncoes(
           if (suc && reservatorioVazio(suc)) {
             bombasASeco.push(pe.id);
           } else if (suc) {
-            const kEff =
+            const kEffUser =
               pe.props.alturaNominal && pe.props.alturaNominal > 0
                 ? pe.props.vazaoNominal / pe.props.alturaNominal
                 : pe.props.curva
                   ? pe.props.curva.k
                   : 0;
-            const liftM = repHead - cargaRes(suc);
-            const qUser = Math.max(0, pe.props.vazaoNominal - kEff * liftM);
-            q = vazaoParaM3(qUser, u);
-            if (q > 0) ofertasTerm.push({ origem: suc.id, vol: q }); // entrega DA sucção
+            const sucHeadM = cargaRes(suc);
+            const tubosSuc = idx.resolverFluxo(pe.id, 'up').tubos;
+            if (atrito) {
+              // Ponto de operação ACOPLADO à rede: a vazão da bomba depende da
+              // carga do nó (que já inclui o atrito a jusante) + o atrito da
+              // sucção. Resolvida no Gauss-Seidel; finalizada após o solve.
+              contribBombas.push({
+                no: noAtar,
+                sucId: suc.id,
+                sucHeadM,
+                baseM3: vazaoParaM3(pe.props.vazaoNominal, u),
+                kEffM3: vazaoParaM3(kEffUser, u),
+                tubosSuc,
+                peId: pe.id,
+                run,
+              });
+              driversResolvidos.add(pe.id);
+              continue; // injeção/oferta/telemetria da bomba são feitas após o solve
+            }
+            // Sem atrito: vazão forçada pela altura estática (comportamento de sempre).
+            const liftM = repHead - sucHeadM;
+            q = vazaoParaM3(Math.max(0, pe.props.vazaoNominal - kEffUser * liftM), u);
+            if (q > 0) {
+              ofertasTerm.push({ origem: suc.id, vol: q }); // entrega DA sucção
+              // Telemetria dos canos de SUCÇÃO (fora da rede): carregam a vazão.
+              for (const tb of tubosSuc) {
+                vazoes[tb] = q;
+                resolvidos.add(tb);
+              }
+            }
           }
         }
       }
@@ -269,8 +309,20 @@ export function resolverGravidadeComJuncoes(
       driversResolvidos.add(pe.id);
     }
 
-    if (resSet.size === 0 && injecao.size === 0) continue; // nada a mover
+    if (resSet.size === 0 && injecao.size === 0 && contribBombas.length === 0) continue; // nada a mover
     if (arestas.length === 0) continue;
+
+    // Bombas acopladas por nó + a vazão da bomba dada a carga do nó `hJ`: ponto de
+    // operação (curva ∩ sistema) com a estática = hJ − carga da sucção e o atrito
+    // da sucção. A jusante já está embutido em hJ (as arestas têm atrito).
+    const bombasPorNo = new Map<string, ContribBomba[]>();
+    for (const b of contribBombas) {
+      const arr = bombasPorNo.get(b.no);
+      if (arr) arr.push(b);
+      else bombasPorNo.set(b.no, [b]);
+    }
+    const qBomba = (b: ContribBomba, hJ: number): number =>
+      Math.max(0, vazaoBombaOperacao(b.baseM3, b.kEffM3, hJ - b.sucHeadM, (x) => hfTubosM(idx, b.tubosSuc, x, u)));
 
     const arestasDe = new Map<string, ArestaRede[]>();
     for (const j of juncSet) arestasDe.set(j, []);
@@ -306,7 +358,11 @@ export function resolverGravidadeComJuncoes(
         if (inc.length === 0) continue;
         const outros = inc.map((ar) => (ar.a === j ? ar.b : ar.a));
         const inj = injecao.get(j) ?? 0;
-        const net = (h: number): number => inc.reduce((s, ar, k) => s + fluxoEntra(ar, h, outros[k]!), 0) + inj;
+        const bombas = bombasPorNo.get(j) ?? [];
+        const net = (h: number): number =>
+          inc.reduce((s, ar, k) => s + fluxoEntra(ar, h, outros[k]!), 0) +
+          inj +
+          bombas.reduce((s, b) => s + qBomba(b, h), 0); // bomba injeta no nó
         const hs = outros.map(cargaDe);
         let lo = Math.min(...hs);
         let hi = Math.max(...hs);
@@ -345,6 +401,23 @@ export function resolverGravidadeComJuncoes(
     // telemetria dos runs de terminais (q é a favor do nó; a→b vai do terminal ao nó).
     for (const { run, q } of runsTerminais) anotar(run, -q);
 
+    // --- Finaliza as bombas ACOPLADAS (atrito): a vazão é o ponto de operação na
+    // carga JÁ resolvida do nó. Anota o cano de sucção (fora da rede), o run até o
+    // nó e vira uma OFERTA de volume com origem na sucção.
+    const ofertasBomba: { origem: string | null; vol: number }[] = [];
+    for (const b of contribBombas) {
+      const q = qBomba(b, cargaDe(b.no));
+      vazoes[b.peId] = q;
+      if (q > 0) {
+        ofertasBomba.push({ origem: b.sucId, vol: q });
+        for (const tb of b.tubosSuc) {
+          vazoes[tb] = q;
+          resolvidos.add(tb);
+        }
+        anotar(b.run, -q); // run bomba→nó: q entra no nó, contra a→b (terminal→nó)
+      }
+    }
+
     // --- Transferência de volume por rota DIRETA origem→destino (bipartite).
     // Descolar o dreno (reservatório→ambiente) do enchimento (ambiente→destino)
     // faria o limite de volume (reservatório quase vazio) escalar SÓ o dreno,
@@ -352,7 +425,7 @@ export function resolverGravidadeComJuncoes(
     // Casando cada FONTE real (reservatório que perde, fonte, bomba pela sucção)
     // com cada SORVEDOURO real (reservatório que ganha, consumo) na proporção de
     // cada um, o escalonamento propaga aos destinos e a massa conserva.
-    const ofertas: { origem: string | null; vol: number }[] = [...ofertasTerm];
+    const ofertas: { origem: string | null; vol: number }[] = [...ofertasTerm, ...ofertasBomba];
     const demandas: { destino: string | null; vol: number }[] = [...demandasTerm];
     for (const [rid, net] of netRes) {
       if (net > 1e-12) ofertas.push({ origem: rid, vol: net });

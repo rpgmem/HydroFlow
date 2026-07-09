@@ -549,6 +549,79 @@ describe('terminal na rede de junções', () => {
     const entrou = nivelDe(r, 'R') * 100;
     expect(entrou).toBeCloseTo(3 * r.projeto.configuracaoSimulacao.dt, 6); // vazão da fonte
   });
+
+  it('anota a vazão no cano de sucção da bomba na rede (não fica zerado)', () => {
+    // Bomba que descarrega numa JUNÇÃO (como no exemplo): os canos de sucção
+    // ficam fora da rede da junção — antes apareciam zerados mesmo com a bomba
+    // ligada. Agora carregam a vazão entregue.
+    const r = tick(
+      projeto(
+        [
+          res('inf', { nivel: 5 }),
+          res('sup', { cotaBase: 5, nivel: 0 }),
+          tubo('succao'),
+          bomba('P', { ligada: true, vazaoNominal: 10 }),
+          juncao('J'),
+          tubo('rec'),
+        ],
+        [
+          criarConexao('inf', 'succao'),
+          criarConexao('succao', 'P'),
+          criarConexao('P', 'J'),
+          criarConexao('J', 'rec'),
+          criarConexao('rec', 'sup'),
+        ],
+      ),
+    );
+    expect(r.vazoes['P']).toBeGreaterThan(0); // a bomba entrega
+    expect(r.vazoes['succao']).toBeGreaterThan(0); // a sucção NÃO fica zerada
+    expect(r.vazoes['succao']).toBeCloseTo(r.vazoes['P']!, 6); // = vazão entregue
+  });
+
+  it('ponto de operação: cano restritivo (recalque/sucção) reduz a vazão da bomba', () => {
+    // Bomba (curva inclinada) sucção `inf`→ descarrega na junção J → recalque
+    // `rec` → `sup`. Com o atrito ligado, um cano de RECALQUE ou de SUCÇÃO mais
+    // restritivo (longo) sobe a perda de carga do sistema e a bomba encontra o
+    // ponto de operação numa vazão MENOR — a curva da bomba ∩ a curva do sistema.
+    const cenario = (atrito: boolean, compRec: number, compSuc: number) =>
+      tick({
+        ...projeto(
+          [
+            res('inf', { nivel: 5 }),
+            res('sup', { cotaBase: 8, nivel: 0 }),
+            tubo('succao', { diametro: 100, comprimento: compSuc }),
+            // curva inclinada: kEff = vazaoNominal/alturaNominal = 30/20 = 1,5.
+            bomba('P', { ligada: true, vazaoNominal: 30, alturaNominal: 20 }),
+            juncao('J'),
+            tubo('rec', { diametro: 100, comprimento: compRec }),
+          ],
+          [
+            criarConexao('inf', 'succao'),
+            criarConexao('succao', 'P'),
+            criarConexao('P', 'J'),
+            criarConexao('J', 'rec'),
+            criarConexao('rec', 'sup'),
+          ],
+        ),
+        configuracaoSimulacao: { dt: 0.1, g: 9.81, atrito },
+      });
+
+    const curto = cenario(true, 1, 1); // recalque/sucção curtos → pouca perda
+    const recLongo = cenario(true, 200, 1); // recalque longo → mais perda
+    const sucLongo = cenario(true, 1, 200); // sucção longa → mais perda
+    expect(curto.vazoes['P']).toBeGreaterThan(0);
+    // Recalque restritivo reduz a vazão entregue pela bomba.
+    expect(recLongo.vazoes['P']).toBeLessThan(curto.vazoes['P']!);
+    // Sucção restritiva também (o atrito da sucção entra no ponto de operação).
+    expect(sucLongo.vazoes['P']).toBeLessThan(curto.vazoes['P']!);
+    // A sucção sempre carrega a mesma vazão que a bomba entrega.
+    expect(recLongo.vazoes['succao']).toBeCloseTo(recLongo.vazoes['P']!, 6);
+
+    // Sem atrito, o comprimento é ignorado: a vazão não muda com o recalque longo.
+    const semCurto = cenario(false, 1, 1);
+    const semLongo = cenario(false, 200, 1);
+    expect(semLongo.vazoes['P']).toBeCloseTo(semCurto.vazoes['P']!, 6);
+  });
 });
 
 // ===========================================================================
@@ -654,6 +727,39 @@ describe('bomba', () => {
     );
     // Usa a alturaNominal (Q=7,5), não o curva.k=5 (que daria 10−25 → 0).
     expect(r.vazoes['P']).toBeCloseTo(7.5, 6);
+  });
+
+  it('ponto de operação: com atrito, sucção e recalque restritivos reduzem a vazão', () => {
+    // Bomba direta A→P→B (sem junção). Com o atrito ligado, um cano de SUCÇÃO ou
+    // de RECALQUE mais restritivo (longo) sobe a perda de carga e a bomba opera
+    // numa vazão MENOR que a puramente estática (curva ∩ sistema).
+    const cenario = (atrito: boolean, compSuc: number, compRec: number) =>
+      tick({
+        ...projeto(
+          [
+            res('A', { cotaBase: 0, nivel: 5 }), // carga 5
+            res('B', { cotaBase: 10, nivel: 0 }), // carga 10 → lift 5
+            tubo('suc', { diametro: 100, comprimento: compSuc }),
+            bomba('P', { ligada: true, vazaoNominal: 30, alturaNominal: 20 }), // k=1,5
+            tubo('rec', { diametro: 100, comprimento: compRec }),
+          ],
+          [criarConexao('A', 'suc'), criarConexao('suc', 'P'), criarConexao('P', 'rec'), criarConexao('rec', 'B')],
+        ),
+        configuracaoSimulacao: { dt: 0.1, g: 9.81, atrito },
+      });
+
+    // Sem atrito: só a altura estática (lift 5) → Q = 30·(1 − 5/20) = 22,5.
+    expect(cenario(false, 1, 1).vazoes['P']).toBeCloseTo(22.5, 6);
+    // Sem atrito o comprimento é irrelevante.
+    expect(cenario(false, 500, 500).vazoes['P']).toBeCloseTo(22.5, 6);
+
+    const curto = cenario(true, 1, 1).vazoes['P']!;
+    expect(curto).toBeGreaterThan(0);
+    expect(curto).toBeLessThan(22.5); // até o cano curto tem alguma perda
+    // Recalque restritivo reduz a entrega (pergunta: cano de saída limita a bomba).
+    expect(cenario(true, 1, 300).vazoes['P']).toBeLessThan(curto);
+    // Sucção restritiva também (pergunta: cano de entrada limita a bomba).
+    expect(cenario(true, 300, 1).vazoes['P']).toBeLessThan(curto);
   });
 
   it('nunca gera vazão negativa (curva satura em 0)', () => {

@@ -46,7 +46,13 @@ import {
   volumeMaximoM3,
   VELOCIDADE_MAX_RECOMENDADA_MS,
 } from './geometria';
-import { vazaoGravidadeM3, COMPRIMENTO_PADRAO_M, HW_C_PADRAO } from './hidraulica';
+import {
+  hfHazenWilliamsM,
+  vazaoBombaOperacao,
+  vazaoGravidadeM3,
+  COMPRIMENTO_PADRAO_M,
+  HW_C_PADRAO,
+} from './hidraulica';
 import { metrosPorComprimento } from '../domain/unidades';
 import { arbitrarBomba, avaliarSensor, boiaAberta, type Decisao } from './arbitragem';
 import { resolverGravidadeComJuncoes } from './redeJuncoes';
@@ -354,7 +360,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   // passa por esses canos). Os já resolvidos pela rede de junções são pulados.
   for (const p of proj.pecas) {
     if (driversResolvidos.has(p.id)) continue;
-    if (isBomba(p)) vazoesM3[p.id] = calcularBomba(idx, p, g, u, tempoAtual, fluxos, vazoesM3, consumoInsuficiente, bombasASeco);
+    if (isBomba(p)) vazoesM3[p.id] = calcularBomba(idx, p, g, u, tempoAtual, fluxos, vazoesM3, consumoInsuficiente, bombasASeco, atrito);
     else if (isFonte(p)) vazoesM3[p.id] = calcularFonte(idx, p, u, fluxos, vazoesM3);
     else if (isConsumo(p)) vazoesM3[p.id] = calcularConsumo(idx, p, g, u, tempoAtual, fluxos, vazoesM3, atrito);
   }
@@ -577,6 +583,28 @@ function coletarCadeiaTubos(idx: GrafoIndex, tuboInicial: string): string[] {
   return [...tubos];
 }
 
+/**
+ * Perda de carga total (m) de Hazen-Williams ao longo de uma lista de tubos em
+ * série, para a vazão `qM3` (m³/s). Usada no ponto de operação da bomba (sucção +
+ * recalque) — canos em série somam suas perdas (mesma vazão).
+ */
+export function hfTubosM(idx: GrafoIndex, tubos: string[], qM3: number, u: Unidades): number {
+  const kL = metrosPorComprimento(u);
+  let hf = 0;
+  for (const tid of tubos) {
+    const t = idx.porId.get(tid);
+    if (t && isTubo(t)) {
+      hf += hfHazenWilliamsM(
+        qM3,
+        (t.props.comprimento ?? COMPRIMENTO_PADRAO_M) * kL,
+        t.props.diametro / 1000,
+        t.props.coefC ?? HW_C_PADRAO,
+      );
+    }
+  }
+  return hf;
+}
+
 function calcularBomba(
   idx: GrafoIndex,
   bomba: PecaDe<'bomba'>,
@@ -587,6 +615,7 @@ function calcularBomba(
   vazoes: Record<string, number>,
   consumoInsuficiente: string[],
   bombasASeco: string[],
+  atrito: boolean,
 ): number {
   if (!bomba.props.ligada) return 0;
 
@@ -631,7 +660,7 @@ function calcularBomba(
     let qUser: number;
     let destino: string | null;
     if (dp.res) {
-      const liftM = cargaM(dp.res, kL) - hUp; // carga (m) a vencer nesta saída
+      const liftM = cargaM(dp.res, kL) - hUp; // carga estática (m) a vencer nesta saída
       // Curva: `alturaNominal` (plaquinha) deriva o k automaticamente e tem
       // precedência; senão usa o `curva.k` explícito; senão bomba ideal (k=0).
       const kEff =
@@ -640,7 +669,12 @@ function calcularBomba(
           : bomba.props.curva
             ? bomba.props.curva.k
             : 0;
-      qUser = base - kEff * liftM;
+      // Com o atrito ligado, a vazão é o PONTO DE OPERAÇÃO (curva da bomba ∩ curva
+      // do sistema): a perda de carga de sucção + recalque reduz a entrega. Sem
+      // atrito, só a altura estática conta (comportamento de sempre).
+      qUser = atrito
+        ? vazaoBombaOperacao(base, kEff, liftM, (x) => hfTubosM(idx, [...upPath.tubos, ...dp.tubos], vazaoParaM3(x, u), u))
+        : base - kEff * liftM;
       destino = dp.res.id;
     } else {
       // Saída para consumo: a bomba entrega a MENOR entre a sua vazão (parcela) e
