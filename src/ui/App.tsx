@@ -55,11 +55,14 @@ export function App() {
       } else if ((k === 'z' && e.shiftKey) || k === 'y') {
         e.preventDefault();
         dispatch({ tipo: 'REDO' });
+      } else if (k === 'd' && estado.selecionada) {
+        e.preventDefault(); // duplica a peça selecionada
+        dispatch({ tipo: 'DUPLICAR_PECA', id: estado.selecionada });
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [estado.modo]);
+  }, [estado.modo, estado.selecionada]);
 
   // Autosave: em EDIÇÃO, persiste quando o projeto deixa de ser o exemplo
   // intocado; se voltar a ser o exemplo ("Restaurar exemplo"), limpa o storage.

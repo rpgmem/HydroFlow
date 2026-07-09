@@ -152,13 +152,14 @@ export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatc
       </fieldset>
 
       {!emExecucao && (
-        <button
-          className="danger"
-          style={{ marginTop: 12 }}
-          onClick={() => dispatch({ tipo: 'REMOVER_PECA', id: peca.id })}
-        >
-          Remover peça
-        </button>
+        <div className="inspetor-acoes">
+          <button onClick={() => dispatch({ tipo: 'DUPLICAR_PECA', id: peca.id })}>
+            ⧉ Duplicar
+          </button>
+          <button className="danger" onClick={() => dispatch({ tipo: 'REMOVER_PECA', id: peca.id })}>
+            Remover peça
+          </button>
+        </div>
       )}
     </div>
   );

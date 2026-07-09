@@ -17,7 +17,7 @@ import type { ErroValidacao } from '../domain/schema';
 import { validarGrafo } from '../engine/validacaoGrafo';
 import { rodarTicks, type ResultadoTick } from '../engine/simulador';
 import type { Decisao } from '../engine/arbitragem';
-import { sincronizarContador } from '../domain/factory';
+import { novoId, sincronizarContador } from '../domain/factory';
 import {
   isBomba,
   isReservatorio,
@@ -87,6 +87,7 @@ export type Acao =
   | { tipo: 'ADD_CONEXAO'; conexao: Conexao }
   | { tipo: 'REMOVER_CONEXAO'; id: string }
   | { tipo: 'ATUALIZAR_PROPS'; id: string; props: Partial<PropsPorTipo> }
+  | { tipo: 'DUPLICAR_PECA'; id: string }
   | { tipo: 'RENOMEAR_PECA'; id: string; rotulo: string }
   | { tipo: 'SELECIONAR'; id: string | null }
   | { tipo: 'SELECIONAR_CONEXAO'; id: string | null }
@@ -160,6 +161,7 @@ const ACOES_ESTRUTURAIS = new Set<Acao['tipo']>([
   'REMOVER_CONEXAO',
   'SET_UNIDADES',
   'SET_ATRITO',
+  'DUPLICAR_PECA',
 ]);
 
 function atualizarPeca(
@@ -233,6 +235,7 @@ const ACOES_UNDOAVEIS = new Set<Acao['tipo']>([
   'REMOVER_CONEXAO',
   'ATUALIZAR_PROPS',
   'RENOMEAR_PECA',
+  'DUPLICAR_PECA',
   'SET_NOME',
   'SET_UNIDADES',
   'SET_ATRITO',
@@ -357,6 +360,25 @@ function reducerBase(estado: EstadoApp, acao: Acao): EstadoApp {
           props: { ...p.props, ...acao.props } as PropsPorTipo,
         })),
       };
+
+    case 'DUPLICAR_PECA': {
+      const orig = estado.projeto.pecas.find((p) => p.id === acao.id);
+      if (!orig) return estado;
+      // Cópia deslocada (2 células da grade), com novo id e rótulo "(cópia)".
+      // As conexões NÃO são duplicadas (a cópia entra solta, para religar).
+      const nova: Peca = {
+        ...structuredClone(orig),
+        id: novoId(orig.tipo.slice(0, 3)),
+        x: orig.x + 40,
+        y: orig.y + 40,
+        rotulo: orig.rotulo ? `${orig.rotulo} (cópia)` : undefined,
+      };
+      return {
+        ...estado,
+        projeto: { ...estado.projeto, pecas: [...estado.projeto.pecas, nova] },
+        selecionada: nova.id,
+      };
+    }
 
     case 'RENOMEAR_PECA':
       return {

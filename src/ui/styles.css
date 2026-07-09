@@ -98,6 +98,16 @@ body {
   display: none;
 }
 
+/* Ações da peça no inspetor (Duplicar / Remover). */
+.inspetor-acoes {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.inspetor-acoes button {
+  flex: 1;
+}
+
 /* Menu ⚙ Opções: botão na barra + dropdown ancorado abaixo. */
 .opcoes {
   position: relative;
