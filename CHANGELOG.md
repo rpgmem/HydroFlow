@@ -6,6 +6,18 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.14.0] — Setas de conexão com sentido visível
+
+### Adicionado
+
+- **Ponta da seta visível**: as conexões passam a parar na **borda** das peças,
+  deixando a cabeça da seta à vista — dá para ver de onde a linha **parte**
+  (saída/origem) e onde **chega** (entrada/destino). Antes a seta ia de centro a
+  centro e a ponta ficava escondida sob a peça de destino.
+- **Formigas no sentido real do fluxo**: a animação de fluxo (traço marchando)
+  segue o **sinal da vazão** — quando há **refluxo**, a marcha inverte, mostrando
+  a água voltando (ex.: um tubo sem válvula de retenção com o destino mais alto).
+
 ## [1.13.2] — Correção: tubos em série drenavam em dobro
 
 ### Corrigido
