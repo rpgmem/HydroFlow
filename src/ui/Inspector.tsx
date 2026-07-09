@@ -143,7 +143,7 @@ export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatc
         {isReservatorio(peca) && (
           <ReservatorioForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />
         )}
-        {isTubo(peca) && <TuboForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} />}
+        {isTubo(peca) && <TuboForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} atrito={projeto.configuracaoSimulacao.atrito === true} />}
         {isBomba(peca) && <BombaForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
         {isFonte(peca) && <FonteForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
         {isConsumo(peca) && <ConsumoForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
@@ -212,12 +212,14 @@ function TuboForm({
   upd,
   u,
   unidades,
+  atrito,
 }: {
   props: PropsTubo;
   emExecucao: boolean;
   upd: Upd;
   u: UniLabel;
   unidades: Unidades;
+  atrito: boolean;
 }) {
   const temBoia = props.boia !== undefined;
   const temLadrao = props.ladrao !== undefined;
@@ -270,6 +272,26 @@ function TuboForm({
           </strong>{' '}
           (a {VELOCIDADE_MAX_RECOMENDADA_MS.toLocaleString('pt-BR')} m/s)
         </p>
+      )}
+      {/* Perda de carga (Hazen-Williams): comprimento e C só aparecem com o
+          atrito ligado (ver ⚙ Opções). Defaults: 1 m e C=140 quando em branco. */}
+      {atrito && (
+        <>
+          <Num
+            label="Comprimento"
+            unidade={u.comp}
+            value={props.comprimento ?? 0}
+            disabled={emExecucao}
+            onChange={(v) => upd({ comprimento: v })}
+          />
+          <Num
+            label="Coeficiente C (Hazen-Williams)"
+            value={props.coefC ?? 140}
+            disabled={emExecucao}
+            step={1}
+            onChange={(v) => upd({ coefC: v })}
+          />
+        </>
       )}
       {/* Altura de conexão em cada ponta (relativa à base do reservatório).
           0 = fundo; acima disso, só escoa a água acima do bocal. */}

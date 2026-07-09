@@ -89,6 +89,7 @@ export type Acao =
   | { tipo: 'SELECIONAR_CONEXAO'; id: string | null }
   | { tipo: 'SET_NOME'; nome: string }
   | { tipo: 'SET_UNIDADES'; unidades: ProjetoSimulacao['unidades'] }
+  | { tipo: 'SET_ATRITO'; atrito: boolean }
   | { tipo: 'CARREGAR_PROJETO'; projeto: ProjetoSimulacao }
   | { tipo: 'ENTRAR_EXECUCAO' }
   | { tipo: 'SAIR_EXECUCAO' }
@@ -151,6 +152,7 @@ const ACOES_ESTRUTURAIS = new Set<Acao['tipo']>([
   'ADD_CONEXAO',
   'REMOVER_CONEXAO',
   'SET_UNIDADES',
+  'SET_ATRITO',
 ]);
 
 function atualizarPeca(
@@ -310,6 +312,15 @@ export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
       return {
         ...estado,
         projeto: { ...estado.projeto, unidades: acao.unidades },
+      };
+
+    case 'SET_ATRITO':
+      return {
+        ...estado,
+        projeto: {
+          ...estado.projeto,
+          configuracaoSimulacao: { ...estado.projeto.configuracaoSimulacao, atrito: acao.atrito },
+        },
       };
 
     case 'CARREGAR_PROJETO':

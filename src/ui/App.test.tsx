@@ -192,6 +192,7 @@ describe('unidades e novo projeto', () => {
     render(<App />);
     const id = adicionar('Reservatório');
     fireEvent.click(screen.getByTestId(`peca-${id}`));
+    fireEvent.click(screen.getByLabelText('Opções')); // as unidades ficam no menu ⚙ Opções
     fireEvent.change(screen.getByLabelText('Unidade de comprimento'), { target: { value: 'cm' } });
     const label = screen.getByText('Altura máxima').closest('label')!;
     expect(label.textContent).toContain('(cm)');

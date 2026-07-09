@@ -97,6 +97,44 @@ body {
 .menu-toggle {
   display: none;
 }
+
+/* Menu ⚙ Opções: botão na barra + dropdown ancorado abaixo. */
+.opcoes {
+  position: relative;
+  display: inline-flex;
+}
+.opcoes-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+}
+.opcoes-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 21;
+  width: 240px;
+  max-width: calc(100vw - 24px);
+  padding: 8px 10px 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.opcoes-sec {
+  margin: 8px 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.opcoes-sec:first-child {
+  margin-top: 0;
+}
+.opcoes-menu .field {
+  margin: 4px 0;
+}
 .acoes-secundarias {
   display: contents;
 }
