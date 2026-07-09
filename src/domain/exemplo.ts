@@ -1,11 +1,13 @@
 /**
  * Projeto de exemplo carregado ao abrir a aplicação (cenário montado pelo
  * usuário). Três reservatórios cilíndricos EMPILHados: a fonte enche o inferior
- * por uma boia; a bomba puxa do inferior e recalca para o superior; do superior
- * a água desce ao consumo e, por um bypass, ao meio. Cada tanque tem um tubo
- * ladrão de transbordo. Um sensor no superior controla a bomba. Há ainda um
- * sistema secundário de incêndio (bomba + hidrantes) alimentado pelo meio.
- * Diâmetros em milímetros; tomadas de tubo com altura de conexão quando aplicável.
+ * por uma boia; a bomba puxa do inferior e recalca — por uma junção DIVISORA —
+ * para o superior (e, com o registro fechado, poderia também para o meio); do
+ * superior e do meio a água desce, por uma junção de UNIÃO, ao consumo, e do
+ * superior por um bypass ao meio. Cada tanque tem um tubo ladrão de transbordo.
+ * Um sensor no superior controla a bomba. Há ainda um sistema secundário de
+ * incêndio (bomba + hidrantes) alimentado pelo meio. Diâmetros em milímetros;
+ * tomadas de tubo com altura de conexão quando aplicável.
  *
  * NOTA: o estado transitório dos sensores (`ultimaTroca`/`pedindoLigar`) NÃO é
  * incluído aqui — é bookkeeping de execução, não configuração.
@@ -31,6 +33,10 @@ function tubo(id: string, rotulo: string, x: number, y: number, props: PropsTubo
   return { id, tipo: 'tubo', x, y, portas: ['entrada', 'saida'], props, rotulo };
 }
 
+function juncao(id: string, rotulo: string, x: number, y: number): Peca {
+  return { id, tipo: 'juncao', x, y, portas: ['a', 'b', 'c'], props: {}, rotulo };
+}
+
 export function projetoExemplo(): ProjetoSimulacao {
   return {
     nome: 'Reservatórios empilhados',
@@ -38,9 +44,10 @@ export function projetoExemplo(): ProjetoSimulacao {
     unidades: { volume: 'litros', comprimento: 'm' },
     configuracaoSimulacao: { dt: 0.1, g: 9.81 },
     // Layout em 6 colunas com espaçamento uniforme (passo 120) no eixo x:
-    //   240 (bomba/fonte/boia inferior) · 360 (sucção/recalque/ladrões/boia
-    //   manual) · 480 (reservatórios) · 600 (saídas, bypass, sensores e canos do
-    //   incêndio) · 720 (bomba de incêndio) · 840 (consumos).
+    //   240 (bomba/fonte/boia inferior/junção divisora) · 360 (sucção/recalque/
+    //   ladrões/boia manual) · 480 (reservatórios) · 600 (saídas, bypass,
+    //   sensores e canos do incêndio) · 720 (bomba de incêndio/junção união) ·
+    //   840 (consumos).
     pecas: [
       reservatorio('inferior', 'Inferior (75.000 L)', 480, 554, {
         formato: 'cilindro',
@@ -76,7 +83,7 @@ export function projetoExemplo(): ProjetoSimulacao {
         id: 'bomba',
         tipo: 'bomba',
         x: 240,
-        y: 297.51239669421494,
+        y: 339.8592309268492,
         portas: ['entrada', 'saida'],
         props: {
           vazaoNominal: 50,
@@ -91,9 +98,9 @@ export function projetoExemplo(): ProjetoSimulacao {
         } as PropsBomba,
         rotulo: 'Bomba',
       },
-      tubo('succao', 'Cano de sucção', 360, 427.6859504132231, { bitola: 'DN110', diametro: 97.8, registro: { aberto: true }, checkValve: true }),
-      tubo('recalque_meio', 'Recalque → meio', 360, 339.56198347107454, { bitola: 'DN60', diametro: 53.4, registro: { aberto: false }, checkValve: true, alturaSaida: 5.5 }),
-      tubo('recalque_sup', 'Recalque → superior', 360, 216.08264462809922, { bitola: 'DN60', diametro: 53.4, registro: { aberto: true }, checkValve: true, alturaSaida: 5.5 }),
+      tubo('succao', 'Cano de sucção', 360, 435.1990984222388, { bitola: 'DN110', diametro: 97.8, registro: { aberto: true }, checkValve: true }),
+      tubo('recalque_meio', 'Recalque → meio', 360, 341.61102383716974, { bitola: 'DN60', diametro: 53.4, registro: { aberto: false }, checkValve: true, alturaSaida: 5.5 }),
+      tubo('recalque_sup', 'Recalque → superior', 360, 205.15442934225808, { bitola: 'DN60', diametro: 53.4, registro: { aberto: true }, checkValve: true, alturaSaida: 5.5 }),
       {
         id: 'consumo',
         tipo: 'consumo',
@@ -110,8 +117,8 @@ export function projetoExemplo(): ProjetoSimulacao {
         } as PropsConsumo,
         rotulo: 'Consumo',
       },
-      tubo('saida_sup', 'Saída superior', 600, 201, { bitola: 'DN160', diametro: 147.0, registro: { aberto: true } }),
-      tubo('saida_meio', 'Saída meio', 600, 301.38692712246433, { bitola: 'DN160', diametro: 147.0, registro: { aberto: false }, alturaEntrada: 2.5 }),
+      tubo('saida_sup', 'Saída superior', 600, 191.43781162488904, { bitola: 'DN160', diametro: 147.0, registro: { aberto: true } }),
+      tubo('saida_meio', 'Saída meio', 600, 301.38692712246433, { bitola: 'DN160', diametro: 147.0, registro: { aberto: true }, alturaEntrada: 2.5 }),
       {
         id: 'sensor_sup',
         tipo: 'sensor',
@@ -135,7 +142,7 @@ export function projetoExemplo(): ProjetoSimulacao {
       tubo('boia_manual', 'Boia Manual', 360, 578, { bitola: 'DN110', diametro: 97.8, registro: { aberto: true }, boia: { nivelMinimo: 6, nivelMaximo: 8.5 }, alturaSaida: 8.5 }),
       tubo('bypass', 'bypass Boia Manual', 600, 248.44477836213346, { bitola: 'DN32', diametro: 27.8, registro: { aberto: true }, boia: { nivelMinimo: 4, nivelMaximo: 5.5 }, alturaEntrada: 2, alturaSaida: 6 }),
       tubo('ladrao_sup', 'Ladrão (superior)', 360, 134, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true }, ladrao: { nivel: 6.5 } }),
-      tubo('ladrao_meio', 'Ladrão (meio)', 360, 278.77685950413223, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true }, ladrao: { nivel: 6.5 } }),
+      tubo('ladrao_meio', 'Ladrão (meio)', 360, 265.7996038521959, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true }, ladrao: { nivel: 6.5 } }),
       tubo('ladrao_inf', 'Ladrão (inferior)', 360, 522, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true }, ladrao: { nivel: 9 } }),
       {
         id: 'bom_19',
@@ -171,18 +178,27 @@ export function projetoExemplo(): ProjetoSimulacao {
       // (registro fechado) → cavalete de recalque → volta ao inferior.
       tubo('tub_29', 'Interligação de Limpeza', 600, 490.3981968444768, { bitola: 'DN50', diametro: 44.0, registro: { aberto: false }, checkValve: false }),
       tubo('tub_34', 'Cavalete bomba recalque', 600, 555.7625845229148, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true } }),
+      // Divisor: a bomba recalca por aqui, dividindo para o superior e o meio (o
+      // recalque do meio está com o registro fechado). União: as saídas do
+      // superior e do meio se juntam antes do consumo.
+      juncao('jun_37', 'Divisor', 240, 253.18762379618877),
+      juncao('jun_41', 'União', 720, 272.99501400177576),
     ],
     conexoes: [
       { id: 'c_2', origem: 'inferior', destino: 'succao' },
       { id: 'c_3', origem: 'succao', destino: 'bomba' },
-      { id: 'c_4', origem: 'bomba', destino: 'recalque_meio' },
+      // Recalque pela junção DIVISORA: bomba → divisor → superior / meio.
+      { id: 'c_38', origem: 'bomba', destino: 'jun_37' },
+      { id: 'c_39', origem: 'jun_37', destino: 'recalque_sup' },
+      { id: 'c_40', origem: 'jun_37', destino: 'recalque_meio' },
       { id: 'c_5', origem: 'recalque_meio', destino: 'meio' },
-      { id: 'c_6', origem: 'bomba', destino: 'recalque_sup' },
       { id: 'c_7', origem: 'recalque_sup', destino: 'superior' },
+      // Saídas pela junção de UNIÃO: superior / meio → união → consumo.
       { id: 'c_8', origem: 'superior', destino: 'saida_sup' },
-      { id: 'c_9', origem: 'saida_sup', destino: 'consumo' },
       { id: 'c_10', origem: 'meio', destino: 'saida_meio' },
-      { id: 'c_11', origem: 'saida_meio', destino: 'consumo' },
+      { id: 'c_42', origem: 'saida_sup', destino: 'jun_41' },
+      { id: 'c_43', origem: 'saida_meio', destino: 'jun_41' },
+      { id: 'c_44', origem: 'jun_41', destino: 'consumo' },
       { id: 'c_12', origem: 'sensor_sup', destino: 'superior' },
       { id: 'c_13', origem: 'superior', destino: 'bypass' },
       { id: 'c_14', origem: 'bypass', destino: 'meio' },

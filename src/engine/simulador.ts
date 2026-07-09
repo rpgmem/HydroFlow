@@ -609,6 +609,16 @@ function resolverGravidadeComJuncoes(
     ...(idx.entrada.get(id) ?? []).map((c) => c.origem),
     ...(idx.saida.get(id) ?? []).map((c) => c.destino),
   ];
+  // Um reservatório VAZIO não FORNECE água (só recebe): sem coluna acima do fundo
+  // não há o que escoar, ainda que a carga (cotaBase + nível) seja alta pela
+  // elevação. Sem isso, o solver usaria a cota de fundo como carga fixa e criaria
+  // fluxo FANTASMA saindo do tanque vazio — ex.: o "superior" já esvaziado ainda
+  // empurrando água pela União para o "meio". O clamp de volume não bastava: a
+  // vazão calculada (e a seta de refluxo) continuavam acesas.
+  const resVazio = (n: string): boolean => {
+    const pe = idx.porId.get(n);
+    return !!pe && isReservatorio(pe) && reservatorioVazio(pe);
+  };
 
   const compVisitada = new Set<string>();
   for (const j0 of juncoes) {
@@ -762,7 +772,8 @@ function resolverGravidadeComJuncoes(
     }
     const fluxoEntra = (ar: ArestaRede, hJ: number, outro: string): number => {
       const dh = cargaDe(outro) - hJ;
-      return ar.area * Math.sign(dh) * Math.sqrt(2 * g * Math.abs(dh));
+      const q = ar.area * Math.sign(dh) * Math.sqrt(2 * g * Math.abs(dh));
+      return q > 0 && resVazio(outro) ? 0 : q; // vazio não fornece; só recebe
     };
     // --- Gauss-Seidel + bisseção (com bordas adaptativas p/ as injeções).
     for (let it = 0; it < 300; it++) {
@@ -801,7 +812,9 @@ function resolverGravidadeComJuncoes(
     };
     for (const ar of arestas) {
       const dh = cargaDe(ar.a) - cargaDe(ar.b);
-      const q = ar.area * Math.sign(dh) * Math.sqrt(2 * g * Math.abs(dh)); // + = a→b
+      let q = ar.area * Math.sign(dh) * Math.sqrt(2 * g * Math.abs(dh)); // + = a→b
+      if (q > 0 && resVazio(ar.a)) q = 0; // a forneceria, mas está vazio
+      if (q < 0 && resVazio(ar.b)) q = 0; // b forneceria, mas está vazio
       if (isReservatorio(idx.porId.get(ar.a)!)) netRes.set(ar.a, (netRes.get(ar.a) ?? 0) + q);
       if (isReservatorio(idx.porId.get(ar.b)!)) netRes.set(ar.b, (netRes.get(ar.b) ?? 0) - q);
       anotar(ar, q);
