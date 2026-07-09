@@ -451,6 +451,55 @@ describe('terminal na rede de junções', () => {
     expect(Math.abs(r.vazoes['t_sup'] ?? 0)).toBe(0); // aresta do superior vazio: sem vazão
   });
 
+  it('conserva massa ao longo do tempo mesmo com o ramo alto esvaziando', () => {
+    // Regressão do fluxo fantasma: o superior (pequeno) esvazia refluindo pela
+    // União para o meio enquanto alimenta o consumo. Ao esvaziar, o dreno do
+    // superior é limitado pelo volume — o que ENTRA no meio precisa cair junto,
+    // senão surge água do nada. Somando tudo: o ganho líquido dos reservatórios
+    // deve igualar −(consumido), sem fonte no cenário.
+    let proj: ProjetoSimulacao = {
+      ...projetoVazio(),
+      unidades: { volume: 'm3', comprimento: 'm' },
+      pecas: [
+        res('R_sup', { cotaBase: 10, nivel: 2, largura: 1, comprimento: 1 }), // pequeno, alto
+        res('R_meio', { cotaBase: 0, nivel: 1 }),
+        juncao('J'),
+        tubo('t_sup'),
+        tubo('t_meio'),
+        { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: 0.03, aberto: true } },
+      ],
+      conexoes: [
+        criarConexao('R_sup', 't_sup'),
+        criarConexao('t_sup', 'J'),
+        criarConexao('R_meio', 't_meio'),
+        criarConexao('t_meio', 'J'),
+        criarConexao('J', 'C'),
+      ],
+    };
+    const volDe = (p: ProjetoSimulacao): number => {
+      const rsup = p.pecas.find((x) => x.id === 'R_sup')!.props as PropsReservatorio;
+      const rmeio = p.pecas.find((x) => x.id === 'R_meio')!.props as PropsReservatorio;
+      return 1 * (rsup.nivel ?? 0) + 100 * (rmeio.nivel ?? 0); // áreas 1 e 100
+    };
+    const dt = proj.configuracaoSimulacao.dt;
+    const volInicial = volDe(proj);
+    let consumido = 0;
+    let t = 0;
+    for (let i = 0; i < 400; i++) {
+      const r = tick(proj, t);
+      consumido += (r.vazoes['C'] ?? 0) * dt;
+      proj = r.projeto;
+      t = r.tempo;
+    }
+    // Sem fonte: a variação de volume dos reservatórios = −(consumido de fato).
+    // O consumido "de fato" pode ser menor que a demanda quando o superior seca,
+    // então checamos a conservação com o volume que realmente saiu do sistema.
+    const perdaReservatorios = volInicial - volDe(proj);
+    expect(perdaReservatorios).toBeGreaterThan(0);
+    expect(perdaReservatorios).toBeLessThanOrEqual(consumido + 1e-6); // nunca perde MAIS que o consumido (sem sumiço)
+    expect(perdaReservatorios).toBeGreaterThan(consumido - 0.05); // e não some água a granel
+  });
+
   it('fonte ligada a uma junção abastece o reservatório da rede', () => {
     const r = tick(
       projeto(

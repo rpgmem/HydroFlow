@@ -33,8 +33,15 @@ function tubo(id: string, rotulo: string, x: number, y: number, props: PropsTubo
   return { id, tipo: 'tubo', x, y, portas: ['entrada', 'saida'], props, rotulo };
 }
 
-function juncao(id: string, rotulo: string, x: number, y: number): Peca {
-  return { id, tipo: 'juncao', x, y, portas: ['a', 'b', 'c'], props: {}, rotulo };
+function juncao(
+  id: string,
+  rotulo: string,
+  x: number,
+  y: number,
+  estrangula?: { bitola: string; diametro: number },
+): Peca {
+  const props = estrangula ? { bitola: estrangula.bitola, diametro: estrangula.diametro } : {};
+  return { id, tipo: 'juncao', x, y, portas: ['a', 'b', 'c'], props, rotulo };
 }
 
 export function projetoExemplo(): ProjetoSimulacao {
@@ -118,7 +125,7 @@ export function projetoExemplo(): ProjetoSimulacao {
         rotulo: 'Consumo',
       },
       tubo('saida_sup', 'Saída superior', 600, 191.43781162488904, { bitola: 'DN160', diametro: 147.0, registro: { aberto: true } }),
-      tubo('saida_meio', 'Saída meio', 600, 301.38692712246433, { bitola: 'DN160', diametro: 147.0, registro: { aberto: true }, alturaEntrada: 2.5 }),
+      tubo('saida_meio', 'Saída meio', 600, 301.38692712246433, { bitola: 'DN160', diametro: 147.0, registro: { aberto: false }, alturaEntrada: 2.5 }),
       {
         id: 'sensor_sup',
         tipo: 'sensor',
@@ -177,12 +184,12 @@ export function projetoExemplo(): ProjetoSimulacao {
       // Linha de limpeza/interligação: cavalete de incêndio → interligação
       // (registro fechado) → cavalete de recalque → volta ao inferior.
       tubo('tub_29', 'Interligação de Limpeza', 600, 490.3981968444768, { bitola: 'DN50', diametro: 44.0, registro: { aberto: false }, checkValve: false }),
-      tubo('tub_34', 'Cavalete bomba recalque', 600, 555.7625845229148, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true } }),
+      tubo('tub_34', 'Cavalete Bomba Recalque', 600, 555.7625845229148, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true } }),
       // Divisor: a bomba recalca por aqui, dividindo para o superior e o meio (o
       // recalque do meio está com o registro fechado). União: as saídas do
       // superior e do meio se juntam antes do consumo.
-      juncao('jun_37', 'Divisor', 240, 253.18762379618877),
-      juncao('jun_41', 'União', 720, 272.99501400177576),
+      juncao('jun_37', 'Divisor', 240, 253.18762379618877, { bitola: 'DN60', diametro: 53.4 }),
+      juncao('jun_41', 'União', 720, 272.99501400177576, { bitola: 'DN160', diametro: 147.0 }),
     ],
     conexoes: [
       { id: 'c_2', origem: 'inferior', destino: 'succao' },
