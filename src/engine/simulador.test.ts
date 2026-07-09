@@ -549,6 +549,34 @@ describe('terminal na rede de junções', () => {
     const entrou = nivelDe(r, 'R') * 100;
     expect(entrou).toBeCloseTo(3 * r.projeto.configuracaoSimulacao.dt, 6); // vazão da fonte
   });
+
+  it('anota a vazão no cano de sucção da bomba na rede (não fica zerado)', () => {
+    // Bomba que descarrega numa JUNÇÃO (como no exemplo): os canos de sucção
+    // ficam fora da rede da junção — antes apareciam zerados mesmo com a bomba
+    // ligada. Agora carregam a vazão entregue.
+    const r = tick(
+      projeto(
+        [
+          res('inf', { nivel: 5 }),
+          res('sup', { cotaBase: 5, nivel: 0 }),
+          tubo('succao'),
+          bomba('P', { ligada: true, vazaoNominal: 10 }),
+          juncao('J'),
+          tubo('rec'),
+        ],
+        [
+          criarConexao('inf', 'succao'),
+          criarConexao('succao', 'P'),
+          criarConexao('P', 'J'),
+          criarConexao('J', 'rec'),
+          criarConexao('rec', 'sup'),
+        ],
+      ),
+    );
+    expect(r.vazoes['P']).toBeGreaterThan(0); // a bomba entrega
+    expect(r.vazoes['succao']).toBeGreaterThan(0); // a sucção NÃO fica zerada
+    expect(r.vazoes['succao']).toBeCloseTo(r.vazoes['P']!, 6); // = vazão entregue
+  });
 });
 
 // ===========================================================================

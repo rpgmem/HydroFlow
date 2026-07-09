@@ -6,6 +6,16 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.23.1] — Correção: vazão na sucção da bomba
+
+### Corrigido
+
+- **Cano de sucção zerado com a bomba ligada** (projeto exemplo). Quando a bomba
+  descarrega numa **junção** (o Divisor), ela é resolvida como terminal da rede;
+  os canos de **sucção** ficam fora da rede e não recebiam telemetria. Agora o
+  solver anota neles a vazão entregue pela bomba (a sucção deixa de aparecer
+  zerada). Só afeta a exibição/animação — a física de volume já estava correta.
+
 ## [1.23.0] — Produtividade de edição e opções
 
 ### Adicionado

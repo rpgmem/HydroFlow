@@ -259,7 +259,16 @@ export function resolverGravidadeComJuncoes(
             const liftM = repHead - cargaRes(suc);
             const qUser = Math.max(0, pe.props.vazaoNominal - kEff * liftM);
             q = vazaoParaM3(qUser, u);
-            if (q > 0) ofertasTerm.push({ origem: suc.id, vol: q }); // entrega DA sucção
+            if (q > 0) {
+              ofertasTerm.push({ origem: suc.id, vol: q }); // entrega DA sucção
+              // Telemetria dos canos de SUCÇÃO (ficam fora da rede da junção): eles
+              // carregam a vazão entregue pela bomba. Sem isto o cano de sucção
+              // aparecia sempre zerado mesmo com a bomba ligada.
+              for (const tb of idx.resolverFluxo(pe.id, 'up').tubos) {
+                vazoes[tb] = q;
+                resolvidos.add(tb);
+              }
+            }
           }
         }
       }
