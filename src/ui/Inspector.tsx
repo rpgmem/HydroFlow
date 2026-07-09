@@ -8,6 +8,7 @@ import {
   isBomba,
   isConsumo,
   isFonte,
+  isJuncao,
   isReservatorio,
   isSensor,
   isTubo,
@@ -17,6 +18,7 @@ import {
   type PropsBomba,
   type PropsConsumo,
   type PropsFonte,
+  type PropsJuncao,
   type PropsReservatorio,
   type PropsSensor,
   type PropsTubo,
@@ -135,6 +137,7 @@ export function Inspector({ peca, projeto, emExecucao, vazao, dispatch }: Props)
         {isFonte(peca) && <FonteForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
         {isConsumo(peca) && <ConsumoForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
         {isSensor(peca) && <SensorForm props={peca.props} projeto={projeto} upd={upd} u={u} />}
+        {isJuncao(peca) && <JuncaoForm props={peca.props} emExecucao={emExecucao} upd={upd} />}
       </fieldset>
 
       {!emExecucao && (
@@ -423,6 +426,34 @@ function BombaForm({ props, emExecucao, upd, u }: { props: PropsBomba; emExecuca
         />
         Dupla em revezamento (alterna a cada acionamento)
       </label>
+    </>
+  );
+}
+
+function JuncaoForm({ props, emExecucao, upd }: { props: PropsJuncao; emExecucao: boolean; upd: Upd }) {
+  const temDiam = props.diametro !== undefined && props.diametro > 0;
+  return (
+    <>
+      <label className="checkbox">
+        <input
+          type="checkbox"
+          checked={temDiam}
+          disabled={emExecucao}
+          aria-label="Estrangular a junção (diâmetro)"
+          onChange={(e) => upd({ diametro: e.target.checked ? 100 : undefined })}
+        />
+        Estrangular (limitar o fluxo pela junção)
+      </label>
+      {temDiam && (
+        <Num
+          label="Diâmetro interno da junção"
+          unidade="mm"
+          value={props.diametro}
+          disabled={emExecucao}
+          step={0.1}
+          onChange={(v) => upd({ diametro: v })}
+        />
+      )}
     </>
   );
 }

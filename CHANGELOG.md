@@ -6,6 +6,21 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.16.0] — Diâmetro na junção e setas de sensor
+
+### Adicionado
+
+- **Junção com diâmetro** (opcional): a junção pode **estrangular** o fluxo que
+  passa por ela, como um cano estreito no nó. Cada trecho ligado à junção é
+  limitado também pela área desse diâmetro (o gargalo passa a considerar o nó).
+  Configurável no inspetor.
+
+### Alterado
+
+- **Conexões de sensor sem ponta de seta**: o sensor só monitora (não conduz),
+  então a linha até o reservatório sai como **linha simples**, sem seta — o
+  sentido não faz sentido ali. As conexões de fluxo seguem com a ponta visível.
+
 ## [1.15.0] — Junção divide e soma a vazão (rede de gravidade)
 
 ### Adicionado

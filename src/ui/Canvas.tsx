@@ -315,6 +315,10 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
             // beirada do destino (folga pequena), ficando visível.
             const a = bordaPeca(c.origem, cb);
             const b = bordaPeca(c.destino, ca, 6);
+            // Sensor só monitora (não conduz) — a conexão não tem sentido de
+            // fluxo, então sai SEM ponta de seta (linha simples).
+            const ehSensor =
+              pecaPorId.get(c.origem)?.tipo === 'sensor' || pecaPorId.get(c.destino)?.tipo === 'sensor';
             // Vazão COM sinal: + segue o sentido origem→destino, − é refluxo.
             const qSigned = estado.vazoes[c.origem] ?? estado.vazoes[c.destino] ?? 0;
             const ativa = emExecucao && Math.abs(qSigned) > 1e-6;
@@ -333,8 +337,8 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
                 dash={ativa ? [10, 6] : undefined}
                 dashOffset={ativa ? marcha : 0}
                 hitStrokeWidth={14}
-                pointerLength={9}
-                pointerWidth={9}
+                pointerLength={ehSensor ? 0 : 9}
+                pointerWidth={ehSensor ? 0 : 9}
                 onClick={() =>
                   !emExecucao && dispatch({ tipo: 'SELECIONAR_CONEXAO', id: c.id })
                 }
