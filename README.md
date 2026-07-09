@@ -17,7 +17,7 @@ hidráulico estilo Lego (drag-and-drop) e simula o comportamento físico
 | Motor de simulação | TypeScript puro, desacoplado de React (testável isolado) |
 | Testes | [Vitest](https://vitest.dev) + React Testing Library |
 | Qualidade | ESLint + TypeScript `strict` |
-| Persistência | export/import manual de `.json` (sem backend) |
+| Persistência | export/import manual de `.json` + autosave local (sem backend) |
 
 ## Como rodar
 
@@ -50,6 +50,17 @@ selecioná-la e apague com **Delete** (ou no botão flutuante). O canvas tem
 
 - **Log de eventos** (📋) — histórico com acionamento de bomba, disparos de
   sensores e alertas (ladrão/transbordo, déficit, rodando a seco).
+- **⚙ Opções** — menu com **unidades** (volume/comprimento), **tema** claro/escuro,
+  a **física opcional** (perda de carga por atrito) e a **velocidade de referência**
+  do alerta de dimensionamento (padrão 3 m/s).
+- **Desfazer/refazer** (`Ctrl+Z` / `Ctrl+Shift+Z` e botões ↶/↷) e **duplicar peça**
+  (`Ctrl+D` / ⧉ no inspetor).
+- **Autosave local** (localStorage) — preserva o trabalho entre recarregamentos;
+  **♻ Restaurar exemplo** volta ao projeto de demonstração e limpa o autosave.
+- **Ajudas de edição** — **snap à grade** ao arrastar, **tooltip** ao passar o
+  cursor sobre uma peça e **minimapa** (aparece só em diagramas grandes).
+- **Legenda** (formas/cores das peças) e **sparkline** de histórico do nível no
+  inspetor do reservatório.
 - **Tema** — escuro (padrão) ou claro, alternável na barra (`☀ Claro`/`🌙 Escuro`).
 - **Imprimir** (🖨) — enquadra todo o diagrama, aplica fundo branco com rótulos
   escuros e envia para impressão, restaurando a vista ao terminar.
@@ -66,25 +77,29 @@ src/
 │   ├── types.ts        # todas as interfaces (ProjetoSimulacao, Peca, Conexao…)
 │   ├── schema.ts       # validação e versionamento de .json (robusto a lixo)
 │   ├── factory.ts      # fábricas de peças/projeto com defaults
+│   ├── unidades.ts     # conversões de unidade (m³/L, m/cm…)
+│   ├── tubosCatalogo.ts # catálogo de bitolas comerciais (DN → diâmetro)
 │   └── exemplo.ts      # projeto de demonstração
 ├── engine/         # Sprint 2 — motor de simulação (puro, sem UI)
 │   ├── geometria.ts       # relação nível↔volume (seção constante)
-│   ├── hidraulica.ts      # leis de vazão (Torricelli / Hazen-Williams)
+│   ├── hidraulica.ts      # leis de vazão (Torricelli / Hazen-Williams / bomba)
+│   ├── grafo.ts           # índice de grafo e travessias (camada estrutural)
+│   ├── vazaoPecas.ts      # vazão por peça (tubo/bomba/fonte/consumo)
 │   ├── arbitragem.ts      # sensores/boias e arbitragem de bombas
-│   ├── simulador.ts       # tick(): cálculo de vazão e atualização de estado
+│   ├── simulador.ts       # tick(): orquestra o passo e atualiza o estado
 │   ├── redeJuncoes.ts     # solver da rede de junções (divide/soma, conserva massa)
 │   └── validacaoGrafo.ts  # validação de grafo (seção 5)
 ├── state/          # Sprint 4 — reducer central (modos edição/execução)
 │   └── store.ts
-├── persistence/    # Sprint 5 — export/import .json
-│   └── arquivo.ts
+├── persistence/    # Sprint 5 — export/import .json + autosave
+│   ├── arquivo.ts      # export/import manual .json
+│   └── autosave.ts     # persistência automática em localStorage
 └── ui/             # Sprint 3/4/5 — componentes React + konva
     ├── App.tsx, Toolbar.tsx, Palette.tsx, Canvas.tsx, PecaView.tsx, Inspector.tsx
     ├── Opcoes.tsx, Legenda.tsx, Sparkline.tsx  # menu de opções, legenda, sparkline
+    ├── pecaGeom.ts # geometria das peças + snap à grade (GRADE)
     ├── inspector/  # formulários por tipo (forms.tsx) + campos compartilhados
     └── useSimulationLoop.ts
-
-persistence/ inclui `autosave.ts` (localStorage) além do export/import .json.
 ```
 
 O motor não depende de React nem do DOM: `tick(projeto)` recebe um
@@ -102,7 +117,11 @@ interface ProjetoSimulacao {
   nome: string;
   versao: string;                       // versionamento de schema
   unidades: { volume: 'litros' | 'm3'; comprimento: 'cm' | 'm' };
-  configuracaoSimulacao: { dt: number; g: number };  // passo (s) e gravidade
+  configuracaoSimulacao: {              // passo (s), gravidade e física opcional
+    dt: number; g: number;
+    atrito?: boolean;                   // liga a perda de carga (Hazen-Williams)
+    velocidadeRef?: number;             // m/s do alerta de dimensionamento (padrão 3)
+  };
   pecas: Peca[];
   conexoes: Conexao[];
 }
@@ -139,10 +158,10 @@ interface NivelControle {
 | Tipo | Campos |
 | --- | --- |
 | `reservatorio` | `formato` (`cilindro`\|`retangular`), `raio?`/`largura?`/`comprimento?`, `alturaMaxima`, `cotaBase`, `nivel?` |
-| `tubo` | `diametro` (**mm**, interno — usado no cálculo de vazão), `bitola?` (DN pré-configurado do catálogo; grava o diâmetro interno tabelado), `checkValve?`, `registro?: {aberto}`, `boia?: NivelControle`, `ladrao?: {nivel}` (dreno de transbordo), `alturaEntrada?`/`alturaSaida?` (altura da conexão em cada ponta, relativa à base; default 0) |
+| `tubo` | `diametro` (**mm**, interno — usado no cálculo de vazão), `bitola?` (DN pré-configurado do catálogo; grava o diâmetro interno tabelado), `checkValve?`, `registro?: {aberto}`, `boia?: NivelControle`, `ladrao?: {nivel}` (dreno de transbordo), `alturaEntrada?`/`alturaSaida?` (altura da conexão em cada ponta, relativa à base; default 0), `comprimento?` (m; usado só com atrito, default 1), `coefC?` (coeficiente C de Hazen-Williams; default 140) |
 | `bomba` | `vazaoNominal`, `alturaNominal?` (altura de recalque; deriva a curva — a altura reduz a vazão), `curva?: {k}` (curva explícita; legado), `sensores: string[]`, `modoControle?` (`auto`\|`ligado`\|`desligado`), `ligada?`, `revezamento?` (dupla alternada: metades "1"/"2" que se revezam a cada acionamento) |
 | `fonte` | `vazaoFixa`, `boia?: NivelControle` |
-| `consumo` | `vazaoDemanda`, `aberto?`, `perfil?` (`fixo`\|`senoidal`\|`intermitente`), `vazaoMin?`/`vazaoMax?`/`periodo?` (perfil variável) — ponto de saída/demanda; retira água e descarta |
+| `consumo` | `vazaoDemanda`, `aberto?`, `perfil?` (`fixo`\|`senoidal`\|`intermitente`), `vazaoMin?`/`vazaoMax?`/`periodo?`/`cicloLigado?` (perfil variável; `cicloLigado` = fração do período ligado no perfil intermitente) — ponto de saída/demanda; retira água e descarta |
 | `sensor` | `NivelControle & { bombasAlvo: string[] }` — controla **uma ou mais** bombas; `reversa` inverte a lógica (liga no máximo, desliga no mínimo) |
 | `juncao` | `diametro?`/`bitola?` (mm; **estrangula** o fluxo pela junção — reusa o catálogo de bitolas dos tubos). Nó sem volume que **divide/soma** a vazão por gravidade, conservando massa |
 
@@ -151,14 +170,17 @@ e entra no cálculo de carga hidráulica.
 
 ## Física (motor de simulação)
 
-Fórmulas implementadas em `src/engine/simulador.ts`:
+As leis de vazão ficam em `src/engine/hidraulica.ts`; a rede que bifurca/une em
+junções em `redeJuncoes.ts`; a vazão por peça em `vazaoPecas.ts`; e o `simulador.ts`
+orquestra o passo. As raízes das leis com atrito (sem forma fechada) usam Newton
+salvaguardado (converge em ~5–8 iterações — o caminho quente do modo atrito).
 
 - **Vazão por gravidade (tubo)** — Torricelli:
   `v = √(2·g·Δh)`, `A = π·(diametro/2)²`, `Q = A·v`.
 - **Perda de carga por atrito** (opcional, `configuracaoSimulacao.atrito`) —
   Hazen-Williams: resolve `Δh = v²/2g + hf(Q)` com
   `hf = 10,67·L·Q^1,85 / (C^1,85·D^4,87)` (usa o `comprimento` e o `coefC` do
-  tubo). Desligado por padrão (Torricelli puro). As leis ficam em `hidraulica.ts`.
+  tubo). Desligado por padrão (Torricelli puro).
 - **Carga hidráulica** — `Δh = (cotaBase + nivel)origem − (cotaBase + nivel)destino`
   (sempre a carga total; **nunca** só o nível bruto).
 - **Bomba** — `Q = vazaoNominal` (ideal) ou, com **altura nominal**,
@@ -204,7 +226,8 @@ realistas (vazões em L/s enchendo tanques de milhares de litros) em segundos.
   nível baixo é feita por um **sensor reverso** monitorando a sucção.
 - **Controle da bomba** — modo `auto` (segue o sensor), `ligado` ou `desligado`.
 - **Alerta de dimensionamento** — cada tubo tem uma **vazão máxima recomendada**
-  (área × 3 m/s, velocidade clássica de projeto). Quando a velocidade real
+  (área × velocidade de referência, configurável em ⚙ Opções; padrão 3 m/s, a
+  velocidade clássica de projeto). Quando a velocidade real
   (v = Q/área) passa desse limite, o cano é sinalizado (rosa) e registrado no log
   — só um aviso; não altera a física.
 - **Bomba dupla em revezamento** — uma bomba marcada como `revezamento` alterna
@@ -225,7 +248,7 @@ realistas (vazões em L/s enchendo tanques de milhares de litros) em segundos.
 
 1. Sensores e boias avaliam com base no **estado do tick anterior**.
 2. Arbitragem de bombas (**desligar > ligar**; entre "ligar" basta um — OR lógico).
-3. Cálculo de vazão de cada aresta (tubo, bomba, fonte).
+3. Cálculo de vazão de cada aresta (rede de junções, bomba, fonte, consumo, tubo).
 4. Atualização de volume/nível de cada reservatório.
 5. Aplicação de overflow (clipping na `alturaMaxima`).
 
@@ -251,12 +274,16 @@ sensor regendo várias bombas.
 
 Export/import manual via `.json`: **Salvar** baixa `{nome}.json`; **Carregar**
 valida a versão do schema e reconstrói o grafo. Um `.json` malformado ou
-incompatível nunca quebra a aplicação — é recusado com mensagens de erro.
+incompatível nunca quebra a aplicação — é recusado com mensagens de erro. Além
+disso, um **autosave** automático em `localStorage` preserva o trabalho entre
+recarregamentos (restaurado ao reabrir; só ativo depois que o projeto deixa de
+ser o exemplo intocado — **♻ Restaurar exemplo** volta ao demo e limpa o autosave).
 
 ## Fora de escopo
 
-CFD real (Navier-Stokes) · perda de carga por atrito (Darcy-Weisbach) ·
-evaporação/temperatura · reservatórios de seção variável (cone, esfera) ·
-prioridade manual entre sensores · backend/nuvem · app mobile/desktop nativo.
+CFD real (Navier-Stokes) · perda de carga por atrito de **Darcy-Weisbach** (há um
+modelo **opcional** de Hazen-Williams; ver a seção de Física) · evaporação/
+temperatura · reservatórios de seção variável (cone, esfera) · prioridade manual
+entre sensores · backend/nuvem · app mobile/desktop nativo.
 
 Ver [`CHANGELOG.md`](./CHANGELOG.md) para a evolução por sprint.

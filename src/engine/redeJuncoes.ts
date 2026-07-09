@@ -27,13 +27,8 @@ import {
 import { areaTuboM2, vazaoParaM3 } from './geometria';
 import { vazaoBombaOperacao, vazaoGravidadeM3, COMPRIMENTO_PADRAO_M, HW_C_PADRAO } from './hidraulica';
 import { metrosPorComprimento } from '../domain/unidades';
-import {
-  demandaConsumo,
-  hfTubosM,
-  reservatorioVazio,
-  type FluxoResolvido,
-  type GrafoIndex,
-} from './simulador';
+import { reservatorioVazio, type FluxoResolvido, type GrafoIndex } from './grafo';
+import { demandaConsumo, hfTubosM } from './vazaoPecas';
 
 /** Bomba acoplada à rede (com atrito): a vazão depende da carga do nó. */
 interface ContribBomba {
