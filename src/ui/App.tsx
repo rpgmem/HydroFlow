@@ -41,6 +41,26 @@ export function App() {
     if (estado.selecionada) setInspetorAberto(true);
   }, [estado.selecionada]);
 
+  // Atalhos de desfazer/refazer (só em edição). Ignora quando o foco está num
+  // campo de texto (aí o Ctrl+Z é o "desfazer" nativo do input).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (estado.modo !== 'edicao' || !(e.ctrlKey || e.metaKey)) return;
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      const k = e.key.toLowerCase();
+      if (k === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        dispatch({ tipo: 'UNDO' });
+      } else if ((k === 'z' && e.shiftKey) || k === 'y') {
+        e.preventDefault();
+        dispatch({ tipo: 'REDO' });
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [estado.modo]);
+
   // Autosave: em EDIÇÃO, persiste quando o projeto deixa de ser o exemplo
   // intocado; se voltar a ser o exemplo ("Restaurar exemplo"), limpa o storage.
   // Durante a execução o nível é transitório — não salva.

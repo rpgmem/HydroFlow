@@ -58,6 +58,38 @@ describe('mutação de grafo por modo', () => {
   });
 });
 
+describe('desfazer / refazer (undo/redo)', () => {
+  it('desfaz e refaz uma edição', () => {
+    let e = comEstado(projetoVazio());
+    e = reducer(e, { tipo: 'ADD_PECA', peca: criarPeca('reservatorio', 0, 0, 'X') });
+    expect(e.projeto.pecas).toHaveLength(1);
+    e = reducer(e, { tipo: 'UNDO' });
+    expect(e.projeto.pecas).toHaveLength(0); // voltou ao estado anterior
+    e = reducer(e, { tipo: 'REDO' });
+    expect(e.projeto.pecas).toHaveLength(1); // refez
+  });
+
+  it('uma nova edição limpa a pilha de refazer', () => {
+    let e = comEstado(projetoVazio());
+    e = reducer(e, { tipo: 'ADD_PECA', peca: criarPeca('reservatorio', 0, 0, 'A') });
+    e = reducer(e, { tipo: 'UNDO' });
+    expect(e.redoStack).toHaveLength(1);
+    e = reducer(e, { tipo: 'ADD_PECA', peca: criarPeca('bomba', 0, 0, 'B') });
+    expect(e.redoStack).toHaveLength(0); // nova edição descarta o redo
+  });
+
+  it('UNDO sem histórico não faz nada', () => {
+    const e = comEstado(projetoVazio());
+    expect(reducer(e, { tipo: 'UNDO' })).toBe(e);
+  });
+
+  it('não registra histórico durante a execução', () => {
+    let e = reducer(comEstado(projetoValido()), { tipo: 'ENTRAR_EXECUCAO' });
+    e = reducer(e, { tipo: 'ATUALIZAR_PROPS', id: 'R', props: { alturaMaxima: 42 } });
+    expect(e.undoStack).toHaveLength(0); // execução não empilha
+  });
+});
+
 describe('renomear e selecionar conexão', () => {
   it('RENOMEAR_PECA altera o rótulo mantendo o id estável', () => {
     let e = comEstado(projetoVazio());

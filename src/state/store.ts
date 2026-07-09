@@ -75,6 +75,9 @@ export interface EstadoApp {
   conexaoSelecionada: string | null;
   /** Snapshot do projeto ao entrar em execução, para RESET. */
   snapshotEdicao: ProjetoSimulacao | null;
+  /** Pilhas de desfazer/refazer (só edição): projetos anteriores/posteriores. */
+  undoStack: ProjetoSimulacao[];
+  redoStack: ProjetoSimulacao[];
 }
 
 export type Acao =
@@ -97,6 +100,8 @@ export type Acao =
   | { tipo: 'PAUSE' }
   | { tipo: 'RESET' }
   | { tipo: 'SET_VELOCIDADE'; velocidade: Velocidade }
+  | { tipo: 'UNDO' }
+  | { tipo: 'REDO' }
   | { tipo: 'TICK' };
 
 export function estadoInicial(projeto: ProjetoSimulacao): EstadoApp {
@@ -124,6 +129,8 @@ export function estadoInicial(projeto: ProjetoSimulacao): EstadoApp {
     selecionada: null,
     conexaoSelecionada: null,
     snapshotEdicao: null,
+    undoStack: [],
+    redoStack: [],
   };
 }
 
@@ -217,7 +224,69 @@ function derivarEventos(anterior: EstadoApp, r: ResultadoTick): EventoLog[] {
   return ev;
 }
 
+/** Ações de EDIÇÃO que alteram o projeto e devem entrar no histórico (undo). */
+const ACOES_UNDOAVEIS = new Set<Acao['tipo']>([
+  'ADD_PECA',
+  'REMOVER_PECA',
+  'MOVER_PECA',
+  'ADD_CONEXAO',
+  'REMOVER_CONEXAO',
+  'ATUALIZAR_PROPS',
+  'RENOMEAR_PECA',
+  'SET_NOME',
+  'SET_UNIDADES',
+  'SET_ATRITO',
+]);
+
+const MAX_UNDO = 60;
+
+/**
+ * Reducer público: envolve o `reducerBase` com o histórico de desfazer/refazer.
+ * Antes de aplicar uma edição undoável (só em edição), empilha o projeto atual e
+ * zera o redo. UNDO/REDO trocam o projeto entre as pilhas.
+ */
 export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
+  if (acao.tipo === 'UNDO') {
+    if (estado.modo !== 'edicao' || estado.undoStack.length === 0) return estado;
+    const anterior = estado.undoStack[estado.undoStack.length - 1]!;
+    return {
+      ...estado,
+      projeto: anterior,
+      undoStack: estado.undoStack.slice(0, -1),
+      redoStack: [...estado.redoStack, estado.projeto],
+      selecionada: null,
+      conexaoSelecionada: null,
+    };
+  }
+  if (acao.tipo === 'REDO') {
+    if (estado.modo !== 'edicao' || estado.redoStack.length === 0) return estado;
+    const proximo = estado.redoStack[estado.redoStack.length - 1]!;
+    return {
+      ...estado,
+      projeto: proximo,
+      redoStack: estado.redoStack.slice(0, -1),
+      undoStack: [...estado.undoStack, estado.projeto],
+      selecionada: null,
+      conexaoSelecionada: null,
+    };
+  }
+  const novo = reducerBase(estado, acao);
+  // Registra no histórico quando uma edição de fato mudou o projeto.
+  if (
+    estado.modo === 'edicao' &&
+    ACOES_UNDOAVEIS.has(acao.tipo) &&
+    novo.projeto !== estado.projeto
+  ) {
+    return {
+      ...novo,
+      undoStack: [...estado.undoStack, estado.projeto].slice(-MAX_UNDO),
+      redoStack: [],
+    };
+  }
+  return novo;
+}
+
+function reducerBase(estado: EstadoApp, acao: Acao): EstadoApp {
   // Guarda de imutabilidade estrutural em execução (seção 6).
   if (estado.modo === 'execucao' && ACOES_ESTRUTURAIS.has(acao.tipo)) {
     return estado; // mutação de grafo bloqueada durante a execução

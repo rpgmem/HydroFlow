@@ -42,9 +42,27 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
       <span className={`badge ${estado.modo}`}>{estado.modo}</span>
 
       {!emExecucao ? (
-        <button className="primary" onClick={() => dispatch({ tipo: 'ENTRAR_EXECUCAO' })}>
-          ▶ Executar
-        </button>
+        <>
+          <button className="primary" onClick={() => dispatch({ tipo: 'ENTRAR_EXECUCAO' })}>
+            ▶ Executar
+          </button>
+          <button
+            aria-label="Desfazer"
+            title="Desfazer (Ctrl+Z)"
+            disabled={estado.undoStack.length === 0}
+            onClick={() => dispatch({ tipo: 'UNDO' })}
+          >
+            ↶
+          </button>
+          <button
+            aria-label="Refazer"
+            title="Refazer (Ctrl+Shift+Z)"
+            disabled={estado.redoStack.length === 0}
+            onClick={() => dispatch({ tipo: 'REDO' })}
+          >
+            ↷
+          </button>
+        </>
       ) : (
         <>
           {estado.rodando ? (
