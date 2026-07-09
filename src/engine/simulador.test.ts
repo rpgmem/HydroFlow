@@ -451,6 +451,35 @@ describe('terminal na rede de junções', () => {
     expect(Math.abs(r.vazoes['t_sup'] ?? 0)).toBe(0); // aresta do superior vazio: sem vazão
   });
 
+  it('reservatório não fornece por uma tomada acima do seu nível (rede)', () => {
+    // R_sup tem carga alta (cota 10 + nível 2), mas a saída para a rede é uma
+    // tomada em 4 — acima do nível 2. Sem água acima do bocal, não pode fornecer:
+    // a aresta fica em 0 (nada de fluxo/refluxo fantasma para o meio).
+    const r = tick(
+      projeto(
+        [
+          res('R_sup', { cotaBase: 10, nivel: 2 }),
+          res('R_meio', { cotaBase: 0, nivel: 3 }),
+          juncao('J'),
+          tubo('t_sup', { alturaEntrada: 4 }), // tomada alta no lado do R_sup
+          tubo('t_meio'),
+          { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: 0.02, aberto: true } },
+        ],
+        [
+          criarConexao('R_sup', 't_sup'),
+          criarConexao('t_sup', 'J'),
+          criarConexao('R_meio', 't_meio'),
+          criarConexao('t_meio', 'J'),
+          criarConexao('J', 'C'),
+        ],
+      ),
+    );
+    expect(Math.abs(r.vazoes['t_sup'] ?? 0)).toBeLessThan(1e-6); // abaixo da tomada: não fornece
+    expect(nivelDe(r, 'R_sup')).toBe(2); // intocado
+    expect(nivelDe(r, 'R_meio')).toBeLessThan(3); // o meio alimenta o consumo
+    expect(r.refluxos).toHaveLength(0);
+  });
+
   it('conserva massa ao longo do tempo mesmo com o ramo alto esvaziando', () => {
     // Regressão do fluxo fantasma: o superior (pequeno) esvazia refluindo pela
     // União para o meio enquanto alimenta o consumo. Ao esvaziar, o dreno do
@@ -1352,6 +1381,44 @@ describe('alerta de tubo subdimensionado (v > 3 m/s)', () => {
     expect(tick(cenario(60)).tubosVelozes).toContain('rec');
     // Ø300 mm: v ≈ 0,7 m/s → dentro do recomendado.
     expect(tick(cenario(300)).tubosVelozes).not.toContain('rec');
+  });
+});
+
+// ===========================================================================
+// Perda de carga por atrito (Hazen-Williams) — opção ligável
+// ===========================================================================
+describe('perda de carga (atrito, Hazen-Williams)', () => {
+  const build = (atrito: boolean, comprimento?: number): ProjetoSimulacao => ({
+    ...projetoVazio(),
+    unidades: { volume: 'm3', comprimento: 'm' },
+    configuracaoSimulacao: { dt: 0.1, g: 9.81, atrito },
+    pecas: [
+      res('A', { cotaBase: 10, nivel: 5 }),
+      res('B', { nivel: 0 }),
+      tubo('t', comprimento !== undefined ? { comprimento } : {}),
+    ],
+    conexoes: [criarConexao('A', 't'), criarConexao('t', 'B')],
+  });
+
+  it('desligado por padrão: mantém o Torricelli puro', () => {
+    const semFlag = tick({ ...build(false) }).vazoes['t'];
+    // sem atrito, a vazão é a de Torricelli (área × √(2gΔh)); Δh = 15 m.
+    const esperado = areaTuboM2(100) * Math.sqrt(2 * 9.81 * 15);
+    expect(semFlag).toBeCloseTo(esperado, 6);
+  });
+
+  it('ligado, reduz a vazão frente ao Torricelli', () => {
+    const sem = tick(build(false)).vazoes['t']!;
+    const com = tick(build(true)).vazoes['t']!;
+    expect(com).toBeGreaterThan(0);
+    expect(com).toBeLessThan(sem); // o atrito só reduz
+  });
+
+  it('tubo mais longo perde mais carga (menos vazão)', () => {
+    const curto = tick(build(true, 1)).vazoes['t']!;
+    const longo = tick(build(true, 200)).vazoes['t']!;
+    expect(longo).toBeLessThan(curto);
+    expect(longo).toBeGreaterThan(0);
   });
 });
 

@@ -46,6 +46,7 @@ import {
   volumeMaximoM3,
   VELOCIDADE_MAX_RECOMENDADA_MS,
 } from './geometria';
+import { vazaoGravidadeM3, COMPRIMENTO_PADRAO_M, HW_C_PADRAO } from './hidraulica';
 import { metrosPorComprimento } from '../domain/unidades';
 import { arbitrarBomba, avaliarSensor, boiaAberta, type Decisao } from './arbitragem';
 import { resolverGravidadeComJuncoes } from './redeJuncoes';
@@ -243,6 +244,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   const idx = new GrafoIndex(proj);
   const dt = proj.configuracaoSimulacao.dt;
   const g = proj.configuracaoSimulacao.g;
+  const atrito = proj.configuracaoSimulacao.atrito === true; // perda de carga (Hazen-Williams)
   const tempoFim = tempoAtual + dt;
 
   // ---- (1) Sensores avaliam sobre o estado do tick anterior -------------
@@ -343,6 +345,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     driversResolvidos,
     bombasASeco,
     refluxos,
+    atrito,
   );
 
   // Elementos ATIVOS: além da própria vazão, anotam a vazão nos tubos em série
@@ -352,7 +355,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     if (driversResolvidos.has(p.id)) continue;
     if (isBomba(p)) vazoesM3[p.id] = calcularBomba(idx, p, g, u, tempoAtual, fluxos, vazoesM3, consumoInsuficiente, bombasASeco);
     else if (isFonte(p)) vazoesM3[p.id] = calcularFonte(idx, p, u, fluxos, vazoesM3);
-    else if (isConsumo(p)) vazoesM3[p.id] = calcularConsumo(idx, p, g, u, tempoAtual, fluxos, vazoesM3);
+    else if (isConsumo(p)) vazoesM3[p.id] = calcularConsumo(idx, p, g, u, tempoAtual, fluxos, vazoesM3, atrito);
   }
   // Tubos por gravidade / ladrão: só os que ainda não foram atribuídos por um
   // elemento ativo (um cano alimentado por fonte/bomba tem sua vazão dada pelo
@@ -371,7 +374,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     if (!up || !down) {
       // Registro fechado, ladrão, descarga ao ambiente ou sucção de bomba
       // (sem reservatório nas duas pontas) → lógica por tubo, como antes.
-      const q = calcularTubo(idx, p, g, u, fluxos, ladroesAtivos);
+      const q = calcularTubo(idx, p, g, u, fluxos, ladroesAtivos, atrito);
       vazoesM3[p.id] = q;
       if (q < -1e-9) refluxos.push(p.id); // fluxo contrário à seta
       continue;
@@ -386,9 +389,15 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
       const b = (idx.porId.get(id) as PecaDe<'tubo'>).props.boia;
       return b !== undefined && !(b.aberta ?? true);
     });
+    // Atrito na cadeia: usa o comprimento SOMADO dos tubos em série (com o
+    // diâmetro do gargalo) — perda de carga do trecho inteiro, não só do gargalo.
+    const kLc = metrosPorComprimento(u);
+    const compTotalM = atrito
+      ? cadeia.reduce((s, id) => s + ((idx.porId.get(id) as PecaDe<'tubo'>).props.comprimento ?? COMPRIMENTO_PADRAO_M) * kLc, 0)
+      : undefined;
     const q = boiaFechada
       ? 0
-      : calcularTubo(idx, idx.porId.get(gargalo) as PecaDe<'tubo'>, g, u, fluxos, ladroesAtivos);
+      : calcularTubo(idx, idx.porId.get(gargalo) as PecaDe<'tubo'>, g, u, fluxos, ladroesAtivos, atrito, compTotalM);
     for (const id of cadeia) vazoesM3[id] = q; // toda a cadeia carrega a mesma vazão
     if (q < -1e-9) cadeia.forEach((id) => refluxos.push(id)); // fluxo contrário à seta
   }
@@ -443,6 +452,8 @@ function calcularTubo(
   u: Unidades,
   fluxos: FluxoResolvido[],
   ladroesAtivos: string[],
+  atrito: boolean,
+  comprimentoOverrideM?: number,
 ): number {
   const { registro, boia, checkValve, diametro, ladrao } = tubo.props;
   if (registro && !registro.aberto) return 0; // registro fechado
@@ -456,14 +467,19 @@ function calcularTubo(
 
   const kL = metrosPorComprimento(u);
   const areaM2 = areaTuboM2(diametro);
+  // Vazão a partir de uma carga `dh` (m) pela lei de vazão (Torricelli/atrito).
+  // `comprimentoOverrideM` (m) permite à cadeia usar o comprimento SOMADO dos
+  // tubos em série; senão usa o comprimento do próprio tubo.
+  const lengthM = comprimentoOverrideM ?? (tubo.props.comprimento ?? COMPRIMENTO_PADRAO_M) * kL;
+  const vazaoDe = (dh: number): number =>
+    vazaoGravidadeM3(atrito, areaM2, diametro, lengthM, tubo.props.coefC ?? HW_C_PADRAO, dh, g);
 
   // Tubo ladrão: só escoa o EXCEDENTE acima do nível de acionamento (a coluna
   // acima do lábio é a carga que empurra o transbordo — autolimitante).
   if (ladrao && Number.isFinite(ladrao.nivel)) {
     const excesso = (up.props.nivel ?? 0) - ladrao.nivel;
     if (excesso <= 1e-9) return 0; // abaixo do lábio → sem transbordo
-    const v = Math.sqrt(2 * g * excesso * kL);
-    const q = areaM2 * v;
+    const q = vazaoDe(excesso * kL);
     fluxos.push({ origem: up.id, destino: down?.id ?? null, vazao: q });
     ladroesAtivos.push(tubo.id);
     return q;
@@ -499,7 +515,7 @@ function calcularTubo(
     const recebe = down ? Math.max(supDown, tapDown) : 0; // ambiente = solo (0)
     const deltaH = supUp - recebe;
     if (deltaH > 1e-12) {
-      const q = areaM2 * Math.sqrt(2 * g * deltaH);
+      const q = vazaoDe(deltaH);
       fluxos.push({ origem: up.id, destino: down?.id ?? null, vazao: q });
       return q;
     }
@@ -509,7 +525,7 @@ function calcularTubo(
   if (!checkValve && down && nivelDown > alturaSai + 1e-9) {
     const deltaH = supDown - Math.max(supUp, tapUp);
     if (deltaH > 1e-12) {
-      const q = areaM2 * Math.sqrt(2 * g * deltaH);
+      const q = vazaoDe(deltaH);
       fluxos.push({ origem: down.id, destino: up.id, vazao: q });
       return -q; // sinal indica sentido reverso na telemetria
     }
@@ -714,6 +730,7 @@ function calcularConsumo(
   tempo: number,
   fluxos: FluxoResolvido[],
   vazoes: Record<string, number>,
+  atrito: boolean,
 ): number {
   const cp = idx.resolverFluxo(consumo.id, 'up');
   // REIVINDICA os canos do caminho do consumo (mesmo com demanda 0, consumo
@@ -742,7 +759,16 @@ function calcularConsumo(
     for (const tid of cp.tubos) {
       const t = idx.porId.get(tid);
       if (t && isTubo(t)) {
-        capMin = Math.min(capMin, areaTuboM2(t.props.diametro) * Math.sqrt(2 * g * Math.max(0, headM)));
+        const cap = vazaoGravidadeM3(
+          atrito,
+          areaTuboM2(t.props.diametro),
+          t.props.diametro,
+          (t.props.comprimento ?? COMPRIMENTO_PADRAO_M) * kL,
+          t.props.coefC ?? HW_C_PADRAO,
+          Math.max(0, headM),
+          g,
+        );
+        capMin = Math.min(capMin, cap);
       }
     }
     q = Math.min(q, capMin);

@@ -6,6 +6,25 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.22.0] — Correções e opções de física
+
+### Corrigido
+
+- **Tomada em altura na rede de junções**: um reservatório só fornece água **acima
+  da tomada** por onde o trecho o conecta (antes podia "fornecer" por um bocal
+  alto mesmo com o nível abaixo dele). Generaliza o clamp de "reservatório vazio
+  não fornece" — fecha a última ponta solta de correção física da rede.
+
+### Adicionado
+
+- **Perda de carga por atrito (Hazen-Williams)** como **opção ligável**
+  (`configuracaoSimulacao.atrito`, padrão **desligado** → Torricelli puro, como
+  antes). Cada tubo ganha **comprimento** e **coefC** (coeficiente C), com padrões
+  (1 m, C=140) quando ausentes. A lei de vazão fica num módulo próprio
+  (`src/engine/hidraulica.ts`) e é aplicada em tubos, cadeias (comprimento
+  somado), consumo e na rede de junções. O atrito só **reduz** a vazão e a massa
+  segue conservada.
+
 ## [1.21.0] — Melhorias de usabilidade no canvas e inspetor
 
 ### Adicionado
