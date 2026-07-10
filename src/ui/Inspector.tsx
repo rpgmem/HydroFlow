@@ -113,7 +113,7 @@ export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatc
         {isConsumo(peca) && <ConsumoForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
         {isSensor(peca) && <SensorForm props={peca.props} projeto={projeto} upd={upd} u={u} pecaId={peca.id} dispatch={dispatch} />}
         {isJuncao(peca) && <JuncaoForm props={peca.props} emExecucao={emExecucao} upd={upd} />}
-        {isQuadro(peca) && <QuadroForm props={peca.props} emExecucao={emExecucao} upd={upd} projeto={projeto} />}
+        {isQuadro(peca) && <QuadroForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} projeto={projeto} dispatch={dispatch} />}
       </fieldset>
 
       {!emExecucao && (

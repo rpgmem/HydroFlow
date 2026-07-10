@@ -130,8 +130,14 @@ export function validarGrafo(
     if (conectados.has(p.id)) continue;
     // Sensor eletrônico se liga à(s) bomba(s) via props, não via conexão.
     if (isSensor(p) && p.props.bombasAlvo.some((id) => pecasPorId.has(id))) continue;
-    // Quadro de comandos liga por props (ids de bomba nos canais), sem conexão.
-    if (isQuadro(p) && p.props.canais.some((c) => pecasPorId.has(c.bomba))) continue;
+    // Quadro de comandos liga por props (bombas nos canais e/ou sensores-membro),
+    // sem conexão física — não é órfão se referencia alguma peça existente.
+    if (
+      isQuadro(p) &&
+      (p.props.canais.some((c) => pecasPorId.has(c.bomba)) ||
+        (p.props.sensores ?? []).some((id) => pecasPorId.has(id)))
+    )
+      continue;
     erros.push({
       caminho: `pecas[${p.id}]`,
       mensagem: `peça "${p.id}" (${p.tipo}) está órfã — sem nenhuma conexão`,

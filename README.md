@@ -169,7 +169,7 @@ interface NivelControle {
 | `consumo` | `vazaoDemanda`, `aberto?`, `perfil?` (`fixo`\|`senoidal`\|`intermitente`), `vazaoMin?`/`vazaoMax?`/`periodo?`/`cicloLigado?` (perfil variável; `cicloLigado` = fração do período ligado no perfil intermitente) — ponto de saída/demanda; retira água e descarta |
 | `sensor` | `NivelControle & { bombasAlvo: string[] }` — controla **uma ou mais** bombas; `reversa` inverte a lógica (liga no máximo, desliga no mínimo) |
 | `juncao` | `diametro?`/`bitola?` (mm; **estrangula** o fluxo pela junção — reusa o catálogo de bitolas dos tubos). Nó sem volume que **divide/soma** a vazão por gravidade, conservando massa |
-| `quadro` | `canais: {bomba, modo, sensor?}[]` — quadro de comandos (MCC): por bomba, `modo` (`auto`\|`manual`\|`desligado`) e, no `auto`, qual `sensor`/boia respeitar. Liga por id (sem conexão física). Uma bomba/sensor regidos por um quadro perdem o controle direto |
+| `quadro` | `canais: {bomba, modo, sensores?, revezamento?, unidade?}[]`, `sensores?: string[]` (boias-membro), `logica?` (`E`\|`OU`) — quadro de comandos (MCC): por bomba, `modo` (`auto`\|`manual`\|`desligado`); no `auto`, quais `sensores` seguir (combinados pela `logica`) e o `revezamento`/`unidade` da bomba dupla. Liga por id (sem conexão física). Uma bomba/sensor regidos por um quadro perdem o controle direto |
 
 `cotaBase` é a elevação física da base do reservatório — permite **empilhamento**
 e entra no cálculo de carga hidráulica.
@@ -232,10 +232,19 @@ realistas (vazões em L/s enchendo tanques de milhares de litros) em segundos.
   nível baixo é feita por um **sensor reverso** monitorando a sucção.
 - **Controle da bomba** — modo `auto` (segue o sensor), `ligado` ou `desligado`.
 - **Quadro de comandos (MCC)** — a peça `quadro` centraliza o controle: por bomba,
-  modo Automático (seguindo uma boia escolhida) / Manual / Desligado. A associação
-  é escolhida no inspetor da bomba (seletor "Quadro"); uma bomba pertence a no
-  máximo um quadro e, enquanto regida, seu controle direto (e o `bombasAlvo` do
-  sensor usado) fica inativo.
+  modo Automático / Manual / Desligado. A associação de **bombas** e de
+  **boias/sensores** é escolhida no inspetor de cada peça (seletor "Quadro");
+  cada uma pertence a no máximo um quadro e, enquanto regida, seu controle direto
+  (o `modoControle` da bomba, o `bombasAlvo` do sensor) fica inativo. Liga por id,
+  sem conexão física — o quadro **não usa setas**. Recursos do automático:
+  - **Vários sensores por bomba** (multi-seleção), combinados pela **lógica** do
+    quadro: **OU** (basta um pedir) ou **E** (todos precisam pedir).
+  - Os **ajustes do sensor** (níveis, reverso, histerese, delay) são editados **no
+    quadro** enquanto ele for membro.
+  - **Revezamento** de bomba dupla delegado ao quadro: alterna a cada acionamento
+    ou força só a **unidade 1** ou só a **unidade 2**.
+  - **Sem sensor**, o automático vira acionamento por **demanda**: liga só quando
+    há consumo (demanda > 0) à jusante na linha.
 - **Alerta de dimensionamento** — cada tubo tem uma **vazão máxima recomendada**
   (área × velocidade de referência, configurável em ⚙ Opções; padrão 3 m/s, a
   velocidade clássica de projeto). Quando a velocidade real
