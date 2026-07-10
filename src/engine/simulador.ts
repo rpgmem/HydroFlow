@@ -32,6 +32,7 @@ import {
   isReservatorio,
   isSensor,
   isTubo,
+  sensoresDoCanal,
   type CanalQuadro,
   type PecaDe,
   type ProjetoSimulacao,
@@ -46,7 +47,7 @@ import {
 } from './geometria';
 import { COMPRIMENTO_PADRAO_M } from './hidraulica';
 import { metrosPorComprimento } from '../domain/unidades';
-import { arbitrarBomba, avaliarSensor, boiaAberta, type Decisao } from './arbitragem';
+import { arbitrarBomba, avaliarSensor, boiaAberta, combinarSensores, type Decisao } from './arbitragem';
 import { resolverGravidadeComJuncoes } from './redeJuncoes';
 import { GrafoIndex, type FluxoResolvido } from './grafo';
 import {
@@ -55,6 +56,7 @@ import {
   calcularFonte,
   calcularTubo,
   coletarCadeiaTubos,
+  demandaConsumo,
 } from './vazaoPecas';
 import type { Unidades } from '../domain/types';
 
@@ -95,6 +97,32 @@ function reservatorioMonitorado(
   );
 }
 
+/**
+ * Demanda instantânea total (na unidade do usuário) dos CONSUMOS alcançáveis à
+ * jusante de `bombaId` seguindo as conexões de saída (por tubos/junções/
+ * reservatórios). Usada pelo quadro no 'auto' sem sensor: a bomba só liga se
+ * houver consumo pedindo água na linha.
+ */
+function demandaJusante(idx: GrafoIndex, bombaId: string, tempo: number): number {
+  const visto = new Set<string>([bombaId]);
+  const fila = [bombaId];
+  let soma = 0;
+  while (fila.length > 0) {
+    const id = fila.pop()!;
+    for (const c of idx.saida.get(id) ?? []) {
+      if (visto.has(c.destino)) continue;
+      visto.add(c.destino);
+      const d = idx.porId.get(c.destino);
+      if (!d) continue;
+      if (isConsumo(d)) {
+        soma += d.props.aberto === false ? 0 : demandaConsumo(d.props, tempo);
+      }
+      fila.push(c.destino);
+    }
+  }
+  return soma;
+}
+
 /** Executa um passo de simulação. Não muta a entrada (retorna novo projeto). */
 export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   const proj: ProjetoSimulacao = structuredClone(projeto);
@@ -110,12 +138,13 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   // `modoControle` dela é ignorado). O sensor escolhido num canal 'auto' age só
   // pelo quadro (seu `bombasAlvo` direto não roteia). Peças não referenciadas por
   // nenhum quadro mantêm o controle direto. Primeira referência a uma bomba vence.
-  const regidaPorQuadro = new Map<string, CanalQuadro>();
+  const regidaPorQuadro = new Map<string, { canal: CanalQuadro; logica: 'E' | 'OU' }>();
   const sensoresEmQuadro = new Set<string>();
   for (const p of proj.pecas) {
     if (!isQuadro(p)) continue;
+    const logica = p.props.logica ?? 'OU';
     for (const c of p.props.canais) {
-      if (c.bomba && !regidaPorQuadro.has(c.bomba)) regidaPorQuadro.set(c.bomba, c);
+      if (c.bomba && !regidaPorQuadro.has(c.bomba)) regidaPorQuadro.set(c.bomba, { canal: c, logica });
     }
     for (const s of p.props.sensores ?? []) sensoresEmQuadro.add(s); // boias-membro
   }
@@ -125,6 +154,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   const sensores: Record<string, Decisao> = {};
   for (const p of proj.pecas) {
     if (!isSensor(p)) continue;
+    if (p.props.ativo === false) continue; // sensor desabilitado no painel → sem decisão
     const resMon = reservatorioMonitorado(idx, p.id);
     const nivel = resMon?.props.nivel ?? 0;
     const decisao = avaliarSensor(p.props, nivel, tempoAtual);
@@ -168,16 +198,24 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   for (const p of proj.pecas) {
     if (!isBomba(p)) continue;
     const antes = p.props.ligada ?? false;
-    const canal = regidaPorQuadro.get(p.id);
+    const regida = regidaPorQuadro.get(p.id);
     let agora: boolean;
-    if (canal) {
+    if (regida) {
       // Regida por um quadro: o canal manda (o modoControle da bomba é ignorado).
-      // 'auto' segue o sensor escolhido (só ele); sem sensor → mantém o estado.
+      const { canal, logica } = regida;
       if (canal.modo === 'desligado') agora = false;
       else if (canal.modo === 'manual') agora = true;
       else {
-        const dec = canal.sensor ? sensores[canal.sensor] : undefined;
-        agora = arbitrarBomba(dec ? [dec] : [], antes);
+        // 'auto': segue os sensores-membro marcados no canal, combinados pela
+        // lógica E/OU do quadro. Sem sensores, é acionada pela DEMANDA — liga só
+        // se houver consumo (> 0) à jusante na linha.
+        const ids = sensoresDoCanal(canal);
+        if (ids.length === 0) {
+          agora = demandaJusante(idx, p.id, tempoAtual) > 1e-9;
+        } else {
+          const decisoes = ids.map((id) => sensores[id]).filter((d): d is Decisao => d !== undefined);
+          agora = combinarSensores(decisoes, logica, antes);
+        }
       }
     } else {
       const modo = p.props.modoControle ?? 'auto';
@@ -186,10 +224,16 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
       else agora = arbitrarBomba(decisoesPorBomba.get(p.id) ?? [], antes);
     }
     p.props.ligada = agora;
-    // Revezamento: a cada ACIONAMENTO (borda de subida) a metade ativa alterna —
-    // undefined→1, 1→2, 2→1. Quem assumiu por último descansa no ciclo seguinte.
-    if (p.props.revezamento && agora && !antes) {
-      p.props.unidadeAtiva = p.props.unidadeAtiva === 1 ? 2 : 1;
+    // Revezamento: quando regida, o QUADRO decide (canal.revezamento + unidade);
+    // senão, a própria bomba (props.revezamento). Com uma unidade forçada (1/2) a
+    // metade fica fixa; sem ela, alterna a cada ACIONAMENTO (borda de subida).
+    const revezar = regida ? (regida.canal.revezamento ?? false) : (p.props.revezamento ?? false);
+    const unidadeForcada = regida?.canal.unidade;
+    if (revezar) {
+      if (unidadeForcada === 1 || unidadeForcada === 2) p.props.unidadeAtiva = unidadeForcada;
+      else if (agora && !antes) p.props.unidadeAtiva = p.props.unidadeAtiva === 1 ? 2 : 1;
+    } else if (regida) {
+      p.props.unidadeAtiva = undefined; // quadro sem revezamento → bomba única
     }
   }
 

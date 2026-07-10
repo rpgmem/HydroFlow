@@ -6,6 +6,61 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.29.0] — Comandos de operação durante a simulação
+
+### Adicionado
+
+- **Operar a simulação em tempo real**: em execução, os **comandos de operação**
+  ficam ativos enquanto o resto (estrutura e dimensionamento) permanece travado:
+  - **Registro** de tubo — abrir/fechar;
+  - **Bomba** — modo Automático/Ligada/Desligada;
+  - **Quadro** — modo de cada bomba (Automático/Manual/Desligado);
+  - **Consumo** — saída aberta/fechada;
+  - **Sensor** — habilitar/desabilitar (um sensor desabilitado não emite decisão).
+- **Comandos no log**: cada comando feito **durante a simulação** entra no log de
+  eventos (marcado com 🎛️). Comandos **não** geram histórico de desfazer/refazer.
+- **Persistência dos comandos**: os comandos viram o novo estado-base — persistem
+  ao voltar para a edição e sobrevivem ao **RESET** (que zera só os níveis/tempo).
+
+### Técnico
+
+- `PropsSensor` ganhou `ativo?` (habilitado; ausente = true). O motor ignora um
+  sensor inativo.
+- O inspetor deixou de desabilitar o `fieldset` inteiro em execução — cada campo
+  decide (`disabled={emExecucao}`); os comandos ficam ativos.
+- Reducer: `ATUALIZAR_PROPS` em execução também atualiza o `snapshotEdicao` e
+  emite um `EventoLog` de `tipo: 'comando'` (via `eventoDeComando`).
+
+## [1.28.0] — Quadro de comandos: lógica, revezamento e demanda
+
+### Adicionado
+
+- **Lógica E/OU entre sensores** (por quadro): no automático, cada bomba segue
+  **vários** sensores-membro (multi-seleção) combinados pela lógica escolhida —
+  **OU** (basta um pedir) ou **E** (todos precisam pedir).
+- **Revezamento pelo quadro**: uma bomba dupla regida delega o **revezamento** ao
+  quadro, que pode **alternar** a cada acionamento ou **forçar** só a unidade 1 ou
+  só a unidade 2.
+- **Acionamento por demanda**: um canal em **automático sem sensor** liga a bomba
+  apenas quando há **consumo (demanda > 0) à jusante** na linha.
+
+### Alterado
+
+- **Ajustes do sensor migram para o quadro**: quando um sensor é membro de um
+  quadro, todos os seus parâmetros (níveis, reverso, histerese, delay) passam a
+  ser editados **no inspetor do quadro** — o inspetor do sensor mostra só o
+  vínculo. Fonte única da verdade continua nas props do sensor.
+- **Quadro liga só por associação**: o quadro **não usa setas** — não tem alça de
+  conexão e soltar uma seta sobre ele não cria aresta.
+
+### Técnico
+
+- `CanalQuadro` ganhou `sensores?: string[]` (multi, substitui o `sensor?`
+  único, que segue lido dos saves antigos), `revezamento?` e `unidade?`.
+  `PropsQuadro` ganhou `logica?: 'E' | 'OU'`.
+- Motor: `combinarSensores` (E/OU) e demanda à jusante (`demandaJusante`) para o
+  automático sem sensor; o revezamento passa a respeitar o canal do quadro.
+
 ## [1.27.1] — Quadro: seleção pelo lado da boia/sensor
 
 ### Alterado

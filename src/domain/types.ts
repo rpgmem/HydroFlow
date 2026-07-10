@@ -196,6 +196,11 @@ export interface PropsConsumo {
 export type PropsSensor = NivelControle & {
   /** IDs das bombas controladas por este sensor (um sensor pode reger várias). */
   bombasAlvo: string[];
+  /**
+   * Habilitado? Ausente/true = ativo. `false` = desabilitado no painel (comando
+   * de operação): não emite decisão neste tick (nem direto, nem via quadro).
+   */
+  ativo?: boolean;
   /** Estado interno do sensor (pedido de liga/desliga do tick anterior). */
   pedindoLigar?: boolean;
   /** Instante (s de simulação) da última troca de estado — usado pelo delay. */
@@ -217,31 +222,55 @@ export interface PropsJuncao {
 }
 
 /**
- * Um canal do QUADRO DE COMANDOS: rege UMA bomba. `modo` = 'auto' (segue o
- * `sensor` escolhido), 'manual' (forçada ligada) ou 'desligado'. `sensor` só é
- * usado no 'auto' — é a boia/sensor que esta bomba passa a respeitar.
+ * Um canal do QUADRO DE COMANDOS: rege UMA bomba. `modo` = 'auto' (segue os
+ * `sensores` escolhidos), 'manual' (forçada ligada) ou 'desligado'. No 'auto' a
+ * bomba segue os sensores-membro marcados em `sensores` (multi-seleção),
+ * combinados pela lógica E/OU do quadro; sem sensores, liga só se houver consumo
+ * (demanda > 0) à jusante. `revezamento`/`unidade` controlam uma bomba dupla —
+ * o quadro assume o revezamento (o toggle direto da bomba fica inativo).
  */
 export interface CanalQuadro {
   bomba: string;
   modo: 'auto' | 'manual' | 'desligado';
+  /**
+   * Boias/sensores-membro que esta bomba segue no 'auto' (multi-seleção),
+   * combinados pela `logica` do quadro. Vazio = sem sensor (liga por demanda).
+   */
+  sensores?: string[];
+  /** @deprecated Boia única de saves antigos (1.27.x). Lido como `sensores: [sensor]`. */
   sensor?: string;
+  /** Bomba dupla: o quadro liga/desliga o revezamento desta bomba. */
+  revezamento?: boolean;
+  /** Força a unidade ativa (1 ou 2) da bomba dupla; ausente = alterna a cada acionamento. */
+  unidade?: 1 | 2;
 }
 
 /**
  * Quadro de comandos (MCC): centraliza o controle de bombas e boias/sensores.
  * Tanto a BOMBA (via `canais`) quanto o SENSOR (via `sensores`) são MEMBROS do
  * quadro — a associação é escolhida no inspetor de CADA peça (seletor "Quadro").
- * Cada bomba-membro tem um `modo`; no 'auto' ela segue uma das boias MEMBROS do
- * quadro (`canal.sensor`). Uma bomba/sensor membro de um quadro OBEDECE o quadro
- * e perde as opções diretas (o `modoControle` da bomba e o `bombasAlvo` do
- * sensor ficam inativos). Peças fora de qualquer quadro mantêm o controle direto.
- * Liga por `props` (por id), sem conexão física.
+ * Cada bomba-membro tem um `modo`; no 'auto' ela segue os sensores-membro
+ * marcados no seu canal, combinados pela `logica`. Uma bomba/sensor membro de um
+ * quadro OBEDECE o quadro e perde as opções diretas (o `modoControle` da bomba, o
+ * `bombasAlvo` e os ajustes do sensor passam a ser feitos no quadro). Peças fora
+ * de qualquer quadro mantêm o controle direto. Liga por `props` (por id), sem
+ * conexão física.
  */
 export interface PropsQuadro {
-  /** Bombas-membro e seu controle (modo + boia no automático). */
+  /** Bombas-membro e seu controle (modo + sensores + revezamento no automático). */
   canais: CanalQuadro[];
   /** IDs das boias/sensores-membro do quadro (disponíveis para os canais 'auto'). */
   sensores?: string[];
+  /**
+   * Combinação dos sensores no 'auto': 'E' (todos precisam pedir ligar) ou 'OU'
+   * (basta um). Ausente = 'OU' (comportamento de sempre).
+   */
+  logica?: 'E' | 'OU';
+}
+
+/** Sensores-membro que um canal segue no 'auto' (normaliza o legado `sensor`). */
+export function sensoresDoCanal(c: CanalQuadro): string[] {
+  return c.sensores ?? (c.sensor ? [c.sensor] : []);
 }
 
 export type PropsPorTipo =

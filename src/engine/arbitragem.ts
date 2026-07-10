@@ -71,6 +71,25 @@ export function arbitrarBomba(
 }
 
 /**
+ * Combinação de sensores de um canal do quadro pela lógica escolhida:
+ *  - 'OU' (default): basta um pedir ligar (regra padrão `arbitrarBomba`).
+ *  - 'E': só liga se TODOS pedirem ligar; qualquer 'desligar' vence.
+ * Sem decisões (nenhum sensor), mantém o estado anterior nos dois casos.
+ */
+export function combinarSensores(
+  decisoes: Decisao[],
+  logica: 'E' | 'OU',
+  estadoAnterior: boolean,
+): boolean {
+  if (decisoes.length === 0) return estadoAnterior;
+  if (logica === 'E') {
+    if (decisoes.includes('desligar')) return false; // um veta → desliga
+    return decisoes.every((d) => d === 'ligar') ? true : estadoAnterior;
+  }
+  return arbitrarBomba(decisoes, estadoAnterior); // 'OU'
+}
+
+/**
  * Boia mecânica (válvula de aresta) — tubo/fonte. Sem histerese/delay: decide
  * apenas se a válvula está ABERTA neste tick, monitorando o nível do
  * reservatório de destino (fecha quando cheio, abre quando baixo).

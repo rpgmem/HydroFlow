@@ -1142,7 +1142,7 @@ describe('um sensor controla várias bombas', () => {
 });
 
 describe('quadro de comandos (MCC)', () => {
-  const quadro = (id: string, canais: CanalQuadro[], sensores: string[] = []): Peca => ({ id, tipo: 'quadro', x: 0, y: 0, props: { canais, sensores } });
+  const quadro = (id: string, canais: CanalQuadro[], sensores: string[] = [], logica?: 'E' | 'OU'): Peca => ({ id, tipo: 'quadro', x: 0, y: 0, props: { canais, sensores, logica } });
   const estaLigada = (r: ReturnType<typeof tick>, id: string): boolean | undefined =>
     (r.projeto.pecas.find((p) => p.id === id)!.props as PropsBomba).ligada;
   // Reservatório D no fundo (nível 0 < mín 1) → sensor normal S pede LIGAR.
@@ -1193,6 +1193,94 @@ describe('quadro de comandos (MCC)', () => {
     );
     expect(estaLigada(r, 'P1')).toBe(true); // regida pelo quadro
     expect(estaLigada(r, 'P2')).toBe(false); // S é membro do quadro → vínculo direto inativo
+  });
+
+  // Dois sensores no canal auto, combinados pela lógica do quadro. S1 sempre pede
+  // ligar (D1 no fundo); S2 varia com o nível de D2 (banda morta em n2=3).
+  const doisSensores = (logica: 'E' | 'OU', n2: number) =>
+    tick(
+      projeto(
+        [
+          res('D1', { nivel: 0 }),
+          res('D2', { nivel: n2 }),
+          sensor('S1', { bombasAlvo: [], nivelMinimo: 1, nivelMaximo: 4 }),
+          sensor('S2', { bombasAlvo: [], nivelMinimo: 1, nivelMaximo: 4 }),
+          bomba('P', { ligada: false }),
+          quadro(
+            'Q',
+            [{ bomba: 'P', modo: 'auto', sensores: ['S1', 'S2'] }],
+            ['S1', 'S2'],
+            logica,
+          ),
+        ],
+        [criarConexao('S1', 'D1'), criarConexao('S2', 'D2')],
+      ),
+    );
+
+  it('lógica E: só liga quando TODOS os sensores pedem ligar', () => {
+    expect(estaLigada(doisSensores('E', 0), 'P')).toBe(true); // ambos pedem ligar
+    expect(estaLigada(doisSensores('E', 3), 'P')).toBe(false); // S2 em banda morta → não liga
+  });
+
+  it('lógica OU: basta um sensor pedir ligar', () => {
+    expect(estaLigada(doisSensores('OU', 3), 'P')).toBe(true); // S1 pede ligar
+  });
+
+  it('sensor desabilitado (ativo=false) não emite decisão', () => {
+    // S pediria LIGAR (D no fundo), mas está desabilitado no painel → não liga.
+    const r = tick(
+      projeto(
+        [
+          res('D', { nivel: 0 }),
+          sensor('S', { bombasAlvo: [], nivelMinimo: 1, nivelMaximo: 4, ativo: false }),
+          bomba('P', { ligada: false }),
+          quadro('Q', [{ bomba: 'P', modo: 'auto', sensores: ['S'] }], ['S']),
+        ],
+        [criarConexao('S', 'D')],
+      ),
+    );
+    expect(estaLigada(r, 'P')).toBe(false);
+    expect(r.sensores['S']).toBeUndefined(); // desabilitado → sem decisão
+  });
+
+  it('auto sem sensor: liga só quando há consumo (demanda) à jusante', () => {
+    const comDemanda = (dem: number) =>
+      tick(
+        projeto(
+          [
+            res('A', { nivel: 5 }),
+            bomba('P', { ligada: false, vazaoNominal: 5 }),
+            consumo('C', { vazaoDemanda: dem, aberto: true, perfil: 'fixo' }),
+            quadro('Q', [{ bomba: 'P', modo: 'auto' }]),
+          ],
+          [criarConexao('A', 'P'), criarConexao('P', 'C')],
+        ),
+      );
+    expect(estaLigada(comDemanda(3), 'P')).toBe(true); // consumo pedindo → liga
+    expect(estaLigada(comDemanda(0), 'P')).toBe(false); // sem demanda → não liga
+  });
+
+  it('revezamento e unidade ativa são controlados pelo quadro', () => {
+    const unidadeAtiva = (r: ReturnType<typeof tick>, id: string): 1 | 2 | undefined =>
+      (r.projeto.pecas.find((p) => p.id === id)!.props as PropsBomba).unidadeAtiva;
+    const comCanal = (canal: CanalQuadro) =>
+      tick(
+        projeto(
+          [
+            res('A', { nivel: 5 }),
+            res('B', {}),
+            bomba('P', { ligada: false, vazaoNominal: 5 }),
+            quadro('Q', [canal]),
+          ],
+          [criarConexao('A', 'P'), criarConexao('P', 'B')],
+        ),
+      );
+    // Unidade forçada = 2 → fica na 2 (não alterna).
+    expect(unidadeAtiva(comCanal({ bomba: 'P', modo: 'manual', revezamento: true, unidade: 2 }), 'P')).toBe(2);
+    // Sem unidade forçada → alterna no acionamento (undefined → 1).
+    expect(unidadeAtiva(comCanal({ bomba: 'P', modo: 'manual', revezamento: true }), 'P')).toBe(1);
+    // Sem revezamento → bomba única (unidadeAtiva indefinida).
+    expect(unidadeAtiva(comCanal({ bomba: 'P', modo: 'manual' }), 'P')).toBeUndefined();
   });
 });
 

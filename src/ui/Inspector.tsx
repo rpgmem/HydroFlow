@@ -88,9 +88,11 @@ export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatc
         />
       )}
 
-      {/* Em execução tudo fica desabilitado: evita a falsa sensação de edição
-          (os valores são restaurados ao voltar para a edição). */}
-      <fieldset className="inspetor-campos" disabled={emExecucao}>
+      {/* Em execução, só os COMANDOS de operação ficam ativos (registro, modo da
+          bomba/quadro, saída de consumo, sensor on/off); o resto é bloqueado
+          campo a campo (via `disabled={emExecucao}`), não pelo fieldset. Assim o
+          operador comanda a simulação sem alterar a estrutura/dimensionamento. */}
+      <fieldset className="inspetor-campos">
         <div className="field">
           <label>{t('inspector.nome')}</label>
           <input
@@ -98,6 +100,7 @@ export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatc
             aria-label={t('inspector.nome')}
             placeholder={peca.id}
             value={peca.rotulo ?? ''}
+            disabled={emExecucao}
             onChange={(e) =>
               dispatch({ tipo: 'RENOMEAR_PECA', id: peca.id, rotulo: e.target.value })
             }
@@ -111,9 +114,9 @@ export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatc
         {isBomba(peca) && <BombaForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} projeto={projeto} pecaId={peca.id} dispatch={dispatch} />}
         {isFonte(peca) && <FonteForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
         {isConsumo(peca) && <ConsumoForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
-        {isSensor(peca) && <SensorForm props={peca.props} projeto={projeto} upd={upd} u={u} pecaId={peca.id} dispatch={dispatch} />}
+        {isSensor(peca) && <SensorForm props={peca.props} emExecucao={emExecucao} projeto={projeto} upd={upd} u={u} pecaId={peca.id} dispatch={dispatch} />}
         {isJuncao(peca) && <JuncaoForm props={peca.props} emExecucao={emExecucao} upd={upd} />}
-        {isQuadro(peca) && <QuadroForm props={peca.props} emExecucao={emExecucao} upd={upd} projeto={projeto} />}
+        {isQuadro(peca) && <QuadroForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} projeto={projeto} dispatch={dispatch} />}
       </fieldset>
 
       {!emExecucao && (

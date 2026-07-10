@@ -526,6 +526,7 @@ button.ativo {
 .ev-overflow span:last-child { color: var(--warn); }
 .ev-velocidade span:last-child { color: #fb7185; }
 .ev-refluxo span:last-child { color: #c084fc; }
+.ev-comando span:last-child { color: #e0863b; } /* comando de operação (âmbar do quadro) */
 
 .inspetor-campos {
   border: 0;

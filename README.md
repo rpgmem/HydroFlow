@@ -167,9 +167,9 @@ interface NivelControle {
 | `bomba` | `vazaoNominal`, `alturaNominal?` (altura de recalque; deriva a curva — a altura reduz a vazão), `curva?: {k}` (curva explícita; legado), `sensores: string[]`, `modoControle?` (`auto`\|`ligado`\|`desligado`), `ligada?`, `revezamento?` (dupla alternada: metades "1"/"2" que se revezam a cada acionamento) |
 | `fonte` | `vazaoFixa`, `boia?: NivelControle` |
 | `consumo` | `vazaoDemanda`, `aberto?`, `perfil?` (`fixo`\|`senoidal`\|`intermitente`), `vazaoMin?`/`vazaoMax?`/`periodo?`/`cicloLigado?` (perfil variável; `cicloLigado` = fração do período ligado no perfil intermitente) — ponto de saída/demanda; retira água e descarta |
-| `sensor` | `NivelControle & { bombasAlvo: string[] }` — controla **uma ou mais** bombas; `reversa` inverte a lógica (liga no máximo, desliga no mínimo) |
+| `sensor` | `NivelControle & { bombasAlvo: string[], ativo?: boolean }` — controla **uma ou mais** bombas; `reversa` inverte a lógica (liga no máximo, desliga no mínimo); `ativo` (ausente = true) habilita/desabilita o sensor em operação |
 | `juncao` | `diametro?`/`bitola?` (mm; **estrangula** o fluxo pela junção — reusa o catálogo de bitolas dos tubos). Nó sem volume que **divide/soma** a vazão por gravidade, conservando massa |
-| `quadro` | `canais: {bomba, modo, sensor?}[]` — quadro de comandos (MCC): por bomba, `modo` (`auto`\|`manual`\|`desligado`) e, no `auto`, qual `sensor`/boia respeitar. Liga por id (sem conexão física). Uma bomba/sensor regidos por um quadro perdem o controle direto |
+| `quadro` | `canais: {bomba, modo, sensores?, revezamento?, unidade?}[]`, `sensores?: string[]` (boias-membro), `logica?` (`E`\|`OU`) — quadro de comandos (MCC): por bomba, `modo` (`auto`\|`manual`\|`desligado`); no `auto`, quais `sensores` seguir (combinados pela `logica`) e o `revezamento`/`unidade` da bomba dupla. Liga por id (sem conexão física). Uma bomba/sensor regidos por um quadro perdem o controle direto |
 
 `cotaBase` é a elevação física da base do reservatório — permite **empilhamento**
 e entra no cálculo de carga hidráulica.
@@ -232,10 +232,19 @@ realistas (vazões em L/s enchendo tanques de milhares de litros) em segundos.
   nível baixo é feita por um **sensor reverso** monitorando a sucção.
 - **Controle da bomba** — modo `auto` (segue o sensor), `ligado` ou `desligado`.
 - **Quadro de comandos (MCC)** — a peça `quadro` centraliza o controle: por bomba,
-  modo Automático (seguindo uma boia escolhida) / Manual / Desligado. A associação
-  é escolhida no inspetor da bomba (seletor "Quadro"); uma bomba pertence a no
-  máximo um quadro e, enquanto regida, seu controle direto (e o `bombasAlvo` do
-  sensor usado) fica inativo.
+  modo Automático / Manual / Desligado. A associação de **bombas** e de
+  **boias/sensores** é escolhida no inspetor de cada peça (seletor "Quadro");
+  cada uma pertence a no máximo um quadro e, enquanto regida, seu controle direto
+  (o `modoControle` da bomba, o `bombasAlvo` do sensor) fica inativo. Liga por id,
+  sem conexão física — o quadro **não usa setas**. Recursos do automático:
+  - **Vários sensores por bomba** (multi-seleção), combinados pela **lógica** do
+    quadro: **OU** (basta um pedir) ou **E** (todos precisam pedir).
+  - Os **ajustes do sensor** (níveis, reverso, histerese, delay) são editados **no
+    quadro** enquanto ele for membro.
+  - **Revezamento** de bomba dupla delegado ao quadro: alterna a cada acionamento
+    ou força só a **unidade 1** ou só a **unidade 2**.
+  - **Sem sensor**, o automático vira acionamento por **demanda**: liga só quando
+    há consumo (demanda > 0) à jusante na linha.
 - **Alerta de dimensionamento** — cada tubo tem uma **vazão máxima recomendada**
   (área × velocidade de referência, configurável em ⚙ Opções; padrão 3 m/s, a
   velocidade clássica de projeto). Quando a velocidade real
@@ -276,8 +285,14 @@ sensor regendo várias bombas.
 ## Modos de operação
 
 - **`edicao`** — grafo mutável (add/remove peça, conexão, mover no canvas).
-- **`execucao`** — grafo estruturalmente imutável; só valores mudam (nível, vazão,
-  registro, bomba on/off, thresholds de sensor). Voltar à edição exige pause/reset.
+- **`execucao`** — grafo estruturalmente imutável; a estrutura e o dimensionamento
+  ficam travados. Voltar à edição exige pause/reset.
+- **Comandos de operação em execução** — como num supervisório, alguns controles
+  ficam ativos durante a simulação: **registro** (abrir/fechar), **modo da bomba**
+  (auto/ligada/desligada), **modo de cada bomba no quadro**, **saída do consumo** e
+  **habilitar/desabilitar sensor**. Cada comando **entra no log** (🎛️), **não** gera
+  desfazer/refazer e **persiste** ao voltar para a edição (o RESET zera só os
+  níveis/tempo, mantendo os comandos).
 - **Controle de velocidade** — 1x / 5x / 30x / 120x roda N ticks por frame **sem
   alterar o `dt`** da física (seção 7).
 

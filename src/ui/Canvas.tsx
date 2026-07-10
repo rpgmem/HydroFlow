@@ -153,7 +153,10 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
 
   const terminarConexao = (id: string): void => {
     const from = conectandoRef.current;
-    if (from && from !== id && !emExecucao) {
+    // O quadro de comandos liga por associação (props), não por setas — soltar a
+    // conexão sobre um quadro (ou a partir dele) não cria aresta.
+    const alvoQuadro = pecaPorId.get(id)?.tipo === 'quadro';
+    if (from && from !== id && !emExecucao && !alvoQuadro) {
       dispatch({ tipo: 'ADD_CONEXAO', conexao: criarConexao(from, id) });
     }
     setConectando(null);

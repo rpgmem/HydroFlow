@@ -200,8 +200,9 @@ export function PecaView({
         y={h / 2 + 4}
       />
 
-      {/* Alça de saída para iniciar conexões (só em edição). */}
-      {!emExecucao && (
+      {/* Alça de saída para iniciar conexões (só em edição). O quadro de comandos
+          liga por associação (props), não por setas — não tem alça. */}
+      {!emExecucao && peca.tipo !== 'quadro' && (
         <Circle
           x={w / 2 + 8}
           y={0}
