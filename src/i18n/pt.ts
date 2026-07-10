@@ -157,6 +157,7 @@ export const pt = {
     quadroModoDesligado: 'Desligado',
     quadroSensor: 'Boia/sensor (no automático)',
     quadroSensores: 'Boias/sensores seguidos (no automático)',
+    quadroSensoresTodos: 'Nenhum marcado — segue todos os membros do quadro.',
     quadroSeguirSensor: 'Seguir {{nome}}',
     quadroSemSensor: '— nenhuma boia no quadro —',
     quadroLogica: 'Lógica entre os sensores',
