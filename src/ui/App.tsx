@@ -3,6 +3,8 @@
  * ferramentas em torno do reducer central (Sprints 3–5).
  */
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
+import '../i18n'; // inicializa o i18next antes de qualquer useTranslation()
 import { reducer, estadoInicial } from '../state/store';
 import { projetoExemplo } from '../domain/exemplo';
 import { serializarProjeto } from '../domain/schema';
@@ -15,6 +17,7 @@ import { Inspector } from './Inspector';
 import { Legenda } from './Legenda';
 
 export function App() {
+  const { t } = useTranslation();
   // Restaura o autosave se houver; senão abre no exemplo. `exemploSerial` é a
   // referência do exemplo INTOCADO — enquanto o projeto for igual a ela, nada é
   // persistido (quem só abre e não mexe recarrega no exemplo).
@@ -139,21 +142,21 @@ export function App() {
           <button
             className="log-toggle"
             onClick={() => setLogAberto((v) => !v)}
-            aria-label="Log de eventos"
+            aria-label={t('app.logEventos')}
           >
-            📋 Log{estado.eventos.length ? ` (${estado.eventos.length})` : ''}
+            {t('app.log')}{estado.eventos.length ? ` (${estado.eventos.length})` : ''}
           </button>
           {logAberto && (
             <div className="log-panel">
               <div className="log-head">
-                <strong>Log de eventos</strong>
-                <button onClick={() => setLogAberto(false)} aria-label="Fechar log">
+                <strong>{t('app.logEventos')}</strong>
+                <button onClick={() => setLogAberto(false)} aria-label={t('app.fecharLog')}>
                   ✕
                 </button>
               </div>
               {estado.eventos.length === 0 ? (
                 <p className="telemetry" style={{ margin: '6px 0 0' }}>
-                  Sem eventos — inicie a execução (▶).
+                  {t('app.semEventos')}
                 </p>
               ) : (
                 <ul className="log-lista">
@@ -170,11 +173,8 @@ export function App() {
           {legendaAberta && <Legenda onFechar={() => setLegendaAberta(false)} />}
           {avisoVisivel && (
             <div className="aviso-desktop" role="note">
-              <span>
-                ✎ Edição (adicionar e conectar peças) disponível apenas no
-                computador — aqui você pode simular e inspecionar.
-              </span>
-              <button onClick={() => setAvisoVisivel(false)} aria-label="Fechar aviso">
+              <span>{t('app.avisoDesktop')}</span>
+              <button onClick={() => setAvisoVisivel(false)} aria-label={t('app.fecharAviso')}>
                 ✕
               </button>
             </div>
@@ -182,7 +182,7 @@ export function App() {
           {(estado.errosValidacao.length > 0 || erroImport) && (
             <div className="errors" role="alert">
               <strong>
-                {erroImport ? 'Falha ao carregar arquivo' : 'Validação bloqueou a execução'}
+                {erroImport ? t('app.falhaCarregar') : t('app.validacaoBloqueou')}
               </strong>
               <ul>
                 {erroImport
@@ -194,7 +194,7 @@ export function App() {
                     ))}
               </ul>
               <button style={{ marginTop: 8 }} onClick={() => setErroImport(null)}>
-                Fechar
+                {t('app.fechar')}
               </button>
             </div>
           )}
@@ -221,22 +221,21 @@ export function App() {
       <button
         className="fab-inspetor primary"
         onClick={() => setInspetorAberto((v) => !v)}
-        aria-label="Abrir inspetor de propriedades"
+        aria-label={t('app.abrirInspetor')}
       >
         ⚙
       </button>
 
       <footer className="rodape">
         <span>
-          <strong>HydroFlow</strong> — simulador hidráulico simplificado (Torricelli +
-          continuidade de volume)
+          <Trans i18nKey="app.rodape" components={{ 0: <strong /> }} />
         </span>
         <a
           href="https://github.com/rpgmem/HydroFlow"
           target="_blank"
           rel="noopener noreferrer"
         >
-          ★ Código no GitHub
+          {t('app.codigoGithub')}
         </a>
       </footer>
     </div>
