@@ -337,14 +337,19 @@ function BombaView({
   // vermelho escuro (está tentando rodar sem água).
   const corMetade = (n: 1 | 2): string =>
     ativa === n && ligada ? (aSeco ? '#8a3535' : '#38bdf8') : COR.bomba;
+  // O número da unidade ATIVA fica em branco vivo e maior; a inativa apaga —
+  // deixa claro QUAL metade está rodando (além da cor da metade).
+  const ativoAgora = (n: 1 | 2): boolean => ativa === n && ligada;
+  const corNum = (n: 1 | 2): string => (ativoAgora(n) ? '#ffffff' : '#5f6f7d');
+  const tamNum = (n: 1 | 2): number => (ativoAgora(n) ? 14 : 11);
   return (
     <>
       {/* Metade esquerda = unidade 1; direita = unidade 2. Os dois wedges de 180°
           já desenham o contorno do círculo e o divisor vertical. */}
       <Wedge radius={r} angle={180} rotation={90} fill={corMetade(1)} stroke={borda} strokeWidth={larguraBorda} />
       <Wedge radius={r} angle={180} rotation={-90} fill={corMetade(2)} stroke={borda} strokeWidth={larguraBorda} />
-      <Text text="1" fontSize={12} fontStyle="bold" fill="#e6edf3" x={-r} y={-6} width={r} align="center" />
-      <Text text="2" fontSize={12} fontStyle="bold" fill="#e6edf3" x={0} y={-6} width={r} align="center" />
+      <Text text="1" fontSize={tamNum(1)} fontStyle="bold" fill={corNum(1)} x={-r} y={-tamNum(1) / 2} width={r} align="center" />
+      <Text text="2" fontSize={tamNum(2)} fontStyle="bold" fill={corNum(2)} x={0} y={-tamNum(2) / 2} width={r} align="center" />
     </>
   );
 }

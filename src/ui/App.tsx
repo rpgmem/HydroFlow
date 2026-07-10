@@ -16,6 +16,17 @@ import { Canvas } from './Canvas';
 import { Inspector } from './Inspector';
 import { Legenda } from './Legenda';
 
+/** Chave de persistência do tema (preferência do dispositivo, mesma família das outras). */
+const CHAVE_TEMA = 'hydroflow:tema';
+/** Lê o tema salvo no localStorage; padrão 'escuro'. Robusto a storage indisponível. */
+function carregarTema(): 'escuro' | 'claro' {
+  try {
+    return localStorage.getItem(CHAVE_TEMA) === 'claro' ? 'claro' : 'escuro';
+  } catch {
+    return 'escuro';
+  }
+}
+
 export function App() {
   const { t } = useTranslation();
   // Restaura o autosave se houver; senão abre no exemplo. `exemploSerial` é a
@@ -32,9 +43,18 @@ export function App() {
   const [logAberto, setLogAberto] = useState(false);
   const [legendaAberta, setLegendaAberta] = useState(false);
   // Tema de exibição: escuro é o padrão; claro é opcional e usado na impressão.
-  const [tema, setTema] = useState<'escuro' | 'claro'>('escuro');
+  // Preferência do DISPOSITIVO — persistida no localStorage (como o idioma), não
+  // no arquivo do projeto. Sobrevive à recarga.
+  const [tema, setTema] = useState<'escuro' | 'claro'>(carregarTema);
   const [imprimindo, setImprimindo] = useState(false);
   const temaClaro = imprimindo || tema === 'claro';
+  useEffect(() => {
+    try {
+      localStorage.setItem(CHAVE_TEMA, tema);
+    } catch {
+      /* localStorage indisponível (modo privado/cota) — ignora. */
+    }
+  }, [tema]);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useSimulationLoop(estado.rodando, dispatch);
@@ -137,7 +157,7 @@ export function App() {
         alterado={alterado}
       />
       <div className="body">
-        <Palette dispatch={dispatch} desabilitado={emExecucao} />
+        <Palette dispatch={dispatch} desabilitado={emExecucao} pecas={estado.projeto.pecas} />
 
         <div ref={wrapRef} style={{ minWidth: 0, minHeight: 0, position: 'relative' }}>
           <Canvas
