@@ -6,6 +6,23 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.27.0] — Quadro de comandos (MCC)
+
+### Adicionado
+
+- **Quadro de comandos** (nova peça): centraliza o controle das bombas. Por bomba,
+  define-se o **modo** — **Automático** (seguindo uma **boia/sensor** escolhida),
+  **Manual** (ligada) ou **Desligado**.
+  - **Associação pelo lado da bomba**: no inspetor da bomba, um seletor **"Quadro
+    de comandos"** escolhe a qual quadro ela obedece (ou "nenhum"). A bomba
+    pertence a no máximo um quadro. No inspetor do quadro ajusta-se o modo e a boia
+    de cada bomba que lhe pertence.
+  - **Precedência**: uma bomba/sensor regidos por um quadro **perdem as opções
+    diretas** (o `modoControle` da bomba e o `bombasAlvo` do sensor ficam inativos).
+    Sem quadro, o controle direto de sempre continua.
+  - Liga por `props` (por id), sem conexão física. Motor puro: a arbitragem
+    consulta os quadros no início do tick.
+
 ## [1.26.2] — Comprimentos de tubo no projeto exemplo
 
 ### Alterado

@@ -18,7 +18,8 @@ export type TipoPeca =
   | 'fonte'
   | 'consumo'
   | 'sensor'
-  | 'juncao';
+  | 'juncao'
+  | 'quadro';
 
 export type ModoSistema = 'edicao' | 'execucao';
 
@@ -215,6 +216,29 @@ export interface PropsJuncao {
   bitola?: string;
 }
 
+/**
+ * Um canal do QUADRO DE COMANDOS: rege UMA bomba. `modo` = 'auto' (segue o
+ * `sensor` escolhido), 'manual' (forçada ligada) ou 'desligado'. `sensor` só é
+ * usado no 'auto' — é a boia/sensor que esta bomba passa a respeitar.
+ */
+export interface CanalQuadro {
+  bomba: string;
+  modo: 'auto' | 'manual' | 'desligado';
+  sensor?: string;
+}
+
+/**
+ * Quadro de comandos (MCC): centraliza o controle de uma ou mais bombas. Uma
+ * bomba referenciada por um canal passa a OBEDECER o quadro — o `modoControle`
+ * dela é ignorado. O sensor escolhido num canal 'auto' também passa a agir só
+ * pelo quadro (seu `bombasAlvo` direto é ignorado). Peças não referenciadas por
+ * nenhum quadro mantêm o controle direto de sempre. Liga por `props` (por id),
+ * sem conexão física.
+ */
+export interface PropsQuadro {
+  canais: CanalQuadro[];
+}
+
 export type PropsPorTipo =
   | PropsReservatorio
   | PropsTubo
@@ -222,7 +246,8 @@ export type PropsPorTipo =
   | PropsFonte
   | PropsConsumo
   | PropsSensor
-  | PropsJuncao;
+  | PropsJuncao
+  | PropsQuadro;
 
 // ---------------------------------------------------------------------------
 // Entidades principais
@@ -278,7 +303,9 @@ export type PecaDe<T extends TipoPeca> = Peca & {
             ? PropsConsumo
             : T extends 'sensor'
               ? PropsSensor
-              : PropsJuncao;
+              : T extends 'juncao'
+                ? PropsJuncao
+                : PropsQuadro;
 };
 
 export const isReservatorio = (p: Peca): p is PecaDe<'reservatorio'> =>
@@ -290,3 +317,4 @@ export const isConsumo = (p: Peca): p is PecaDe<'consumo'> =>
   p.tipo === 'consumo';
 export const isSensor = (p: Peca): p is PecaDe<'sensor'> => p.tipo === 'sensor';
 export const isJuncao = (p: Peca): p is PecaDe<'juncao'> => p.tipo === 'juncao';
+export const isQuadro = (p: Peca): p is PecaDe<'quadro'> => p.tipo === 'quadro';

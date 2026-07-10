@@ -10,6 +10,7 @@ import {
   isConsumo,
   isFonte,
   isJuncao,
+  isQuadro,
   isReservatorio,
   isSensor,
   isTubo,
@@ -25,6 +26,7 @@ import {
   ConsumoForm,
   FonteForm,
   JuncaoForm,
+  QuadroForm,
   ReservatorioForm,
   SensorForm,
   TuboForm,
@@ -106,11 +108,12 @@ export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatc
           <ReservatorioForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} />
         )}
         {isTubo(peca) && <TuboForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} atrito={projeto.configuracaoSimulacao.atrito === true} velRef={projeto.configuracaoSimulacao.velocidadeRef ?? VELOCIDADE_MAX_RECOMENDADA_MS} />}
-        {isBomba(peca) && <BombaForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
+        {isBomba(peca) && <BombaForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} projeto={projeto} pecaId={peca.id} dispatch={dispatch} />}
         {isFonte(peca) && <FonteForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
         {isConsumo(peca) && <ConsumoForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
-        {isSensor(peca) && <SensorForm props={peca.props} projeto={projeto} upd={upd} u={u} />}
+        {isSensor(peca) && <SensorForm props={peca.props} projeto={projeto} upd={upd} u={u} pecaId={peca.id} />}
         {isJuncao(peca) && <JuncaoForm props={peca.props} emExecucao={emExecucao} upd={upd} />}
+        {isQuadro(peca) && <QuadroForm props={peca.props} emExecucao={emExecucao} upd={upd} projeto={projeto} />}
       </fieldset>
 
       {!emExecucao && (

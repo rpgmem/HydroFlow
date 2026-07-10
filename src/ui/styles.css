@@ -625,6 +625,24 @@ button.ativo {
   user-select: none;
 }
 
+/* Linha de canal do quadro de comandos (uma bomba controlada). */
+.quadro-canal {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  margin: 6px 0;
+  position: relative;
+}
+.quadro-canal .field {
+  margin: 4px 0;
+}
+.quadro-canal button.danger {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 2px 7px;
+}
+
 .telemetry {
   font-size: 12px;
   color: var(--muted);

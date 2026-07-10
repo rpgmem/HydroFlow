@@ -15,6 +15,7 @@ const PECAS: { tipo: TipoPeca; icone: string }[] = [
   { tipo: 'consumo', icone: '🕳️' },
   { tipo: 'sensor', icone: '📡' },
   { tipo: 'juncao', icone: '⌥' },
+  { tipo: 'quadro', icone: '🎛️' },
 ];
 
 interface Props {
