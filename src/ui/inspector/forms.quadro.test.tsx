@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { QuadroForm } from './forms';
+import { QuadroForm, SensorForm } from './forms';
 import { projetoVazio } from '../../domain/factory';
-import type { Peca, ProjetoSimulacao, PropsQuadro, PropsSensor } from '../../domain/types';
+import type { Peca, ProjetoSimulacao, PropsQuadro, PropsSensor, CanalQuadro } from '../../domain/types';
 import type { UniLabel } from './campos';
 
 const u: UniLabel = { comp: 'm', vazao: 'L/s' };
@@ -74,5 +74,39 @@ describe('QuadroForm — controle centralizado (MCC)', () => {
       />,
     );
     expect(screen.getByText(/Nenhuma bomba ou boia associada/)).toBeTruthy();
+  });
+});
+
+describe('SensorForm — aviso de boia "solta" no quadro', () => {
+  const cenario = (canal: CanalQuadro): ProjetoSimulacao => {
+    const pecas: Peca[] = [
+      { id: 'P', tipo: 'bomba', rotulo: 'P', x: 0, y: 0, props: { vazaoNominal: 10, sensores: [], ligada: false } },
+      { id: 'S', tipo: 'sensor', rotulo: 'Boia S', x: 0, y: 0, props: { bombasAlvo: [] } as PropsSensor },
+      { id: 'Q', tipo: 'quadro', x: 0, y: 0, props: { canais: [canal], sensores: ['S'] } },
+    ];
+    return { ...projetoVazio(), unidades: { volume: 'm3', comprimento: 'm' }, pecas };
+  };
+  const render_ = (projeto: ProjetoSimulacao) =>
+    render(
+      <SensorForm
+        props={projeto.pecas.find((p) => p.id === 'S')!.props as PropsSensor}
+        emExecucao={false}
+        projeto={projeto}
+        upd={() => {}}
+        u={u}
+        pecaId="S"
+        dispatch={vi.fn()}
+      />,
+    );
+
+  it('avisa quando a boia é membro mas nenhuma bomba a segue', () => {
+    // Canal em 'manual' → não segue sensor nenhum → S fica solta.
+    render_(cenario({ bomba: 'P', modo: 'manual' }));
+    expect(screen.getByText(/Nenhuma bomba deste quadro segue esta boia/)).toBeTruthy();
+  });
+
+  it('não avisa quando a boia é seguida por uma bomba (canal auto)', () => {
+    render_(cenario({ bomba: 'P', modo: 'auto', sensores: ['S'] }));
+    expect(screen.queryByText(/Nenhuma bomba deste quadro segue esta boia/)).toBeNull();
   });
 });

@@ -157,7 +157,7 @@ export function App() {
         alterado={alterado}
       />
       <div className="body">
-        <Palette dispatch={dispatch} desabilitado={emExecucao} />
+        <Palette dispatch={dispatch} desabilitado={emExecucao} pecas={estado.projeto.pecas} />
 
         <div ref={wrapRef} style={{ minWidth: 0, minHeight: 0, position: 'relative' }}>
           <Canvas

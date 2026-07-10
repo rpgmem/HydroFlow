@@ -84,6 +84,17 @@ describe('validação de grafo — bloqueios', () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.erros.some((e) => e.mensagem.includes('excede'))).toBe(true);
   });
+
+  it('rejeita quadro sem efeito (não comanda nenhuma bomba)', () => {
+    // Quadro com uma boia-membro mas SEM canal de bomba → não faz nada.
+    const f = criarPeca('fonte', 0, 0, 'F');
+    const res = criarPeca('reservatorio', 0, 0, 'R');
+    const s = criarPeca('sensor', 0, 0, 'S');
+    const q: Peca = { id: 'Q', tipo: 'quadro', x: 0, y: 0, portas: [], props: { canais: [], sensores: ['S'] } };
+    const r = validarGrafo(proj([f, res, s, q], [criarConexao('F', 'R'), criarConexao('S', 'R')]));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.erros.some((e) => e.chave === 'validacao.quadroSemEfeito')).toBe(true);
+  });
 });
 
 describe('validação de grafo — permitidos', () => {

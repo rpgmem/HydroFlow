@@ -6,6 +6,26 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.31.0] — Polimentos: nome automático, indicador de unidade e avisos
+
+### Adicionado
+
+- **Nome automático ao criar** uma peça: nasce como "«Tipo» «n»" (ex.: "Sensor 3",
+  "Quadro de comandos 2") em vez de mostrar o id cru.
+- **Indicador da unidade ativa** na bomba dupla (revezamento): o número da metade
+  em operação fica em branco vivo e maior; a inativa apaga — deixa claro qual
+  unidade está rodando, além da cor.
+- **Aviso de "boia solta"** no inspetor do sensor: quando a boia é membro de um
+  quadro mas nenhuma bomba (canal automático) a segue — e o vínculo direto está
+  inativo —, um alerta avisa que ela não tem efeito.
+- **Validação de "quadro sem efeito"**: a execução é bloqueada se um quadro não
+  comanda nenhuma bomba (canais vazios ou apontando para bombas inexistentes).
+
+### Alterado
+
+- **Projeto exemplo**: a Boia Eletrônica (C2) passou a ser NORMAL (reverso
+  desligado), igual à do C1.
+
 ## [1.30.0] — Tema persistente e projeto exemplo com quadros
 
 ### Adicionado

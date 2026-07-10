@@ -146,6 +146,26 @@ export function validarGrafo(
     });
   }
 
+  // ---- Quadro sem efeito (não comanda nenhuma bomba) ------------------
+  // Um quadro só faz sentido se algum canal reger uma BOMBA existente. Um quadro
+  // vazio (ou só com sensores-membro, ou apontando para bombas inexistentes) não
+  // tem efeito nenhum — sinaliza para o usuário completar ou remover.
+  for (const p of projeto.pecas) {
+    if (!isQuadro(p)) continue;
+    const comandaBomba = p.props.canais.some((c) => {
+      const b = pecasPorId.get(c.bomba);
+      return b !== undefined && isBomba(b);
+    });
+    if (!comandaBomba) {
+      erros.push({
+        caminho: `pecas[${p.id}].canais`,
+        mensagem: `quadro "${p.id}" não comanda nenhuma bomba (sem efeito)`,
+        chave: 'validacao.quadroSemEfeito',
+        params: { id: p.id },
+      });
+    }
+  }
+
   // ---- Fonte: soma de vazaoAlocada > vazaoFixa -------------------------
   for (const p of projeto.pecas) {
     if (!isFonte(p)) continue;

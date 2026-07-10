@@ -170,6 +170,7 @@ export const en: Dicionario = {
     quadroRemover: 'Remove this pump from the panel',
     bombaRegida: 'Controlled by panel “{{nome}}” — the mode is set there.',
     sensorRegido: 'Member of panel “{{nome}}” — its settings (levels, reverse) are configured in the panel.',
+    sensorSolto: 'No pump in this panel follows this float — no effect. Check it in a pump’s channel (in the panel inspector).',
   },
   legenda: {
     titulo: 'Legend',
@@ -281,5 +282,6 @@ export const en: Dicionario = {
     orfa: 'part "{{id}}" ({{tipo}}) is orphaned — no connections',
     vazaoAlocada: 'sum of allocated flow ({{soma}}) exceeds fixed flow ({{vazaoFixa}})',
     motoPerpetuo: 'closed loop with a pump and no drain/outlet (perpetual motion not allowed)',
+    quadroSemEfeito: 'panel "{{id}}" controls no pump (no effect)',
   },
 };

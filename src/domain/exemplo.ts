@@ -186,14 +186,14 @@ export function projetoExemplo(): ProjetoSimulacao {
       },
       tubo('cavalete_incendio', 'Cavalete Incêndio', 600, 426.91209616829417, { bitola: 'DN60', diametro: 53.4, registro: { aberto: true } }),
       {
-        // Sensor REVERSO no meio: desliga a bomba de incêndio em 4 m (protege o
-        // meio de esvaziar), libera em 5 m.
+        // Boia NORMAL no meio (igual à do C1): pede LIGAR quando baixa (≤ 4 m) e
+        // DESLIGAR quando cheia (≥ 5 m).
         id: 'sensor_meio',
         tipo: 'sensor',
         x: 600,
         y: 351.55522163786617,
         portas: ['sonda'],
-        props: { bombasAlvo: ['bomba_incendio'], nivelMinimo: 4, nivelMaximo: 5, reversa: true } as PropsSensor,
+        props: { bombasAlvo: ['bomba_incendio'], nivelMinimo: 4, nivelMaximo: 5 } as PropsSensor,
         rotulo: 'Boia Eletrônica (C2)',
       },
       // Linha de limpeza/interligação: cavalete de incêndio → interligação

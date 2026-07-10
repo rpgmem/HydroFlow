@@ -171,6 +171,7 @@ export const pt = {
     quadroRemover: 'Remover esta bomba do quadro',
     bombaRegida: 'Controlada pelo quadro «{{nome}}» — o modo é definido lá.',
     sensorRegido: 'Membro do quadro «{{nome}}» — os ajustes (níveis, reverso) são feitos no quadro.',
+    sensorSolto: 'Nenhuma bomba deste quadro segue esta boia — sem efeito. Marque-a no canal de uma bomba (no inspetor do quadro).',
   },
   legenda: {
     titulo: 'Legenda',
@@ -286,6 +287,7 @@ export const pt = {
     orfa: 'peça "{{id}}" ({{tipo}}) está órfã — sem nenhuma conexão',
     vazaoAlocada: 'soma de vazaoAlocada ({{soma}}) excede vazaoFixa ({{vazaoFixa}})',
     motoPerpetuo: 'ciclo fechado com bomba e sem dreno/saída (moto-perpétuo não é permitido)',
+    quadroSemEfeito: 'quadro "{{id}}" não comanda nenhuma bomba (sem efeito)',
   },
 };
 

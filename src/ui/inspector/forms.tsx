@@ -7,6 +7,7 @@ import {
   isBomba,
   isQuadro,
   isSensor,
+  sensoresDoCanal,
   type CanalQuadro,
   type NivelControle,
   type Peca,
@@ -558,6 +559,16 @@ export function SensorForm({
   // que apontavam para esta boia.
   const quadros = projeto.pecas.filter(isQuadro);
   const membroDe = quadroDoSensor(projeto, pecaId);
+  // "Seguido?": alguma bomba do quadro (canal 'auto') efetivamente segue esta
+  // boia? (canal sem seleção segue todos os membros — o fallback do motor.)
+  const membroSeguido =
+    membroDe != null &&
+    (membroDe.props as PropsQuadro).canais.some((c) => {
+      if (c.modo !== 'auto') return false;
+      const marcados = sensoresDoCanal(c);
+      const efetivos = marcados.length > 0 ? marcados : (membroDe.props as PropsQuadro).sensores ?? [];
+      return efetivos.includes(pecaId);
+    });
   const escolherQuadro = (novoId: string): void => {
     if ((membroDe?.id ?? '') === novoId) return;
     for (const q of quadros) {
@@ -608,9 +619,18 @@ export function SensorForm({
       {membroDe ? (
         // Membro de um quadro → TODOS os ajustes (níveis, reverso, histerese,
         // delay) são feitos no inspetor do quadro. Aqui só a nota de vínculo.
-        <p className="telemetry" style={{ margin: 0 }}>
-          🎛️ {t('form.sensorRegido', { nome: nomePeca(membroDe) })}
-        </p>
+        <>
+          <p className="telemetry" style={{ margin: 0 }}>
+            🎛️ {t('form.sensorRegido', { nome: nomePeca(membroDe) })}
+          </p>
+          {/* Aviso: membro do quadro mas nenhuma bomba (canal 'auto') o segue —
+              e o vínculo direto está inativo → o sensor não tem efeito. */}
+          {!membroSeguido && (
+            <p className="telemetry" style={{ margin: 0, color: '#e0863b' }}>
+              ⚠️ {t('form.sensorSolto')}
+            </p>
+          )}
+        </>
       ) : (
         <>
           <div className="field">
