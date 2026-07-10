@@ -154,6 +154,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   const sensores: Record<string, Decisao> = {};
   for (const p of proj.pecas) {
     if (!isSensor(p)) continue;
+    if (p.props.ativo === false) continue; // sensor desabilitado no painel → sem decisão
     const resMon = reservatorioMonitorado(idx, p.id);
     const nivel = resMon?.props.nivel ?? 0;
     const decisao = avaliarSensor(p.props, nivel, tempoAtual);

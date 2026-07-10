@@ -6,7 +6,7 @@ import {
   projetoVazio,
   _resetContadorIds,
 } from '../domain/factory';
-import type { ProjetoSimulacao, PropsReservatorio } from '../domain/types';
+import type { ProjetoSimulacao, PropsReservatorio, PropsTubo } from '../domain/types';
 
 beforeEach(() => _resetContadorIds());
 
@@ -55,6 +55,43 @@ describe('mutação de grafo por modo', () => {
     });
     const r = e.projeto.pecas.find((p) => p.id === 'R')!.props as PropsReservatorio;
     expect(r.alturaMaxima).toBe(99);
+  });
+});
+
+describe('comandos de operação em execução', () => {
+  // Grafo válido com um tubo (registro operável): F → T → R.
+  function projetoComTubo(): ProjetoSimulacao {
+    return {
+      ...projetoVazio(),
+      pecas: [criarPeca('fonte', 0, 0, 'F'), criarPeca('tubo', 50, 0, 'T'), criarPeca('reservatorio', 100, 0, 'R')],
+      conexoes: [criarConexao('F', 'T'), criarConexao('T', 'R')],
+    };
+  }
+  const registroDe = (e: EstadoApp): boolean | undefined =>
+    (e.projeto.pecas.find((p) => p.id === 'T')!.props as PropsTubo).registro?.aberto;
+
+  it('um comando entra no log, mas não gera histórico de desfazer', () => {
+    let e = reducer(comEstado(projetoComTubo()), { tipo: 'ENTRAR_EXECUCAO' });
+    const undoAntes = e.undoStack.length;
+    e = reducer(e, { tipo: 'ATUALIZAR_PROPS', id: 'T', props: { registro: { aberto: false } } });
+    expect(e.eventos.some((ev) => ev.tipo === 'comando' && ev.chave === 'log.cmdRegistroFechado')).toBe(true);
+    expect(e.undoStack.length).toBe(undoAntes); // não empilhou undo
+  });
+
+  it('o comando persiste ao RESET e ao voltar para a edição', () => {
+    let e = reducer(comEstado(projetoComTubo()), { tipo: 'ENTRAR_EXECUCAO' });
+    e = reducer(e, { tipo: 'ATUALIZAR_PROPS', id: 'T', props: { registro: { aberto: false } } });
+    expect(registroDe(reducer(e, { tipo: 'RESET' }))).toBe(false); // RESET mantém o comando
+    const rEdit = reducer(e, { tipo: 'SAIR_EXECUCAO' });
+    expect(rEdit.modo).toBe('edicao');
+    expect(registroDe(rEdit)).toBe(false); // persiste na edição
+  });
+
+  it('em edição, ATUALIZAR_PROPS não gera log e entra no undo', () => {
+    let e = comEstado(projetoComTubo());
+    e = reducer(e, { tipo: 'ATUALIZAR_PROPS', id: 'T', props: { registro: { aberto: false } } });
+    expect(e.eventos).toHaveLength(0);
+    expect(e.undoStack).toHaveLength(1);
   });
 });
 

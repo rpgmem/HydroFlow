@@ -196,6 +196,11 @@ export interface PropsConsumo {
 export type PropsSensor = NivelControle & {
   /** IDs das bombas controladas por este sensor (um sensor pode reger várias). */
   bombasAlvo: string[];
+  /**
+   * Habilitado? Ausente/true = ativo. `false` = desabilitado no painel (comando
+   * de operação): não emite decisão neste tick (nem direto, nem via quadro).
+   */
+  ativo?: boolean;
   /** Estado interno do sensor (pedido de liga/desliga do tick anterior). */
   pedindoLigar?: boolean;
   /** Instante (s de simulação) da última troca de estado — usado pelo delay. */

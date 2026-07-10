@@ -139,6 +139,7 @@ export const pt = {
     controlar: 'Controlar {{nome}}',
     reverso: 'Reverso (desliga no mínimo; protege a origem)',
     reversoLabel: 'Sensor reverso (corte por nível baixo)',
+    sensorAtivo: 'Sensor habilitado',
     nivelMinLiga: 'Nível mínimo (liga)',
     nivelMinDesliga: 'Nível mínimo (desliga)',
     nivelMaxDesliga: 'Nível máximo (desliga)',
@@ -260,6 +261,19 @@ export const pt = {
     refluxo: '{{nome}}: refluxo (fluxo contrário à seta)',
     deficit: '{{nome}}: déficit (bomba não acompanha)',
     overflow: '{{nome}}: transbordou',
+    // Comandos de operação feitos DURANTE a simulação.
+    cmdRegistroAberto: '🎛️ {{nome}}: registro aberto (comando)',
+    cmdRegistroFechado: '🎛️ {{nome}}: registro fechado (comando)',
+    cmdBombaLigada: '🎛️ {{nome}}: bomba ligada (comando)',
+    cmdBombaDesligada: '🎛️ {{nome}}: bomba desligada (comando)',
+    cmdBombaAuto: '🎛️ {{nome}}: bomba em automático (comando)',
+    cmdConsumoAberto: '🎛️ {{nome}}: saída aberta (comando)',
+    cmdConsumoFechado: '🎛️ {{nome}}: saída fechada (comando)',
+    cmdSensorAtivo: '🎛️ {{nome}}: sensor habilitado (comando)',
+    cmdSensorInativo: '🎛️ {{nome}}: sensor desabilitado (comando)',
+    cmdQuadroAuto: '🎛️ {{nome}}: {{bomba}} em automático (comando)',
+    cmdQuadroManual: '🎛️ {{nome}}: {{bomba}} em manual/ligada (comando)',
+    cmdQuadroDesligado: '🎛️ {{nome}}: {{bomba}} desligada (comando)',
   },
   // Mensagens da validação de grafo (edição→execução). `{{tipo}}` é resolvido do
   // tipo da peça (traduzível); ids/origem/destino são dados do projeto.

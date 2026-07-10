@@ -20,6 +20,8 @@ import type { Decisao } from '../engine/arbitragem';
 import { novoId, sincronizarContador } from '../domain/factory';
 import {
   isBomba,
+  isConsumo,
+  isQuadro,
   isReservatorio,
   isSensor,
   isTubo,
@@ -27,11 +29,16 @@ import {
   type ModoSistema,
   type Peca,
   type ProjetoSimulacao,
+  type PropsBomba,
+  type PropsConsumo,
   type PropsPorTipo,
+  type PropsQuadro,
+  type PropsSensor,
+  type PropsTubo,
 } from '../domain/types';
 
 /** Uma entrada do log de eventos (acionamentos e alertas ao longo da execução). */
-export type TipoEvento = 'bomba' | 'sensor' | 'seco' | 'ladrao' | 'deficit' | 'overflow' | 'velocidade' | 'refluxo';
+export type TipoEvento = 'bomba' | 'sensor' | 'seco' | 'ladrao' | 'deficit' | 'overflow' | 'velocidade' | 'refluxo' | 'comando';
 export interface EventoLog {
   /** Tempo de simulação (s) em que o evento ocorreu. */
   tempo: number;
@@ -249,6 +256,64 @@ function derivarEventos(anterior: EstadoApp, r: ResultadoTick): EventoLog[] {
   return ev;
 }
 
+/**
+ * Evento de log para um COMANDO de operação feito durante a execução (abrir/
+ * fechar registro, modo da bomba/quadro, saída de consumo, habilitar sensor).
+ * Compara as props antigas com o patch para descobrir o que mudou; devolve null
+ * quando a mudança não é um comando operável (ex.: ajuste estrutural). Só é
+ * chamado em execução — em edição, comandos não vão para o log.
+ */
+function eventoDeComando(estado: EstadoApp, id: string, patch: Partial<PropsPorTipo>): EventoLog | null {
+  const p = estado.projeto.pecas.find((x) => x.id === id);
+  if (!p) return null;
+  const nome = rotuloDePeca(estado.projeto, id);
+  const tempo = estado.tempo;
+  const ev = (chave: string, params: Record<string, string | number> = {}): EventoLog => ({
+    tempo,
+    tipo: 'comando',
+    chave,
+    params: { nome, ...params },
+  });
+
+  if (isTubo(p)) {
+    const np = patch as Partial<PropsTubo>;
+    if (np.registro !== undefined && (np.registro.aberto ?? true) !== (p.props.registro?.aberto ?? true)) {
+      return ev(np.registro.aberto ? 'log.cmdRegistroAberto' : 'log.cmdRegistroFechado');
+    }
+  } else if (isBomba(p)) {
+    const np = patch as Partial<PropsBomba>;
+    if (np.modoControle !== undefined && np.modoControle !== (p.props.modoControle ?? 'auto')) {
+      const chave =
+        np.modoControle === 'ligado' ? 'log.cmdBombaLigada' : np.modoControle === 'desligado' ? 'log.cmdBombaDesligada' : 'log.cmdBombaAuto';
+      return ev(chave);
+    }
+  } else if (isConsumo(p)) {
+    const np = patch as Partial<PropsConsumo>;
+    if (np.aberto !== undefined && np.aberto !== (p.props.aberto ?? true)) {
+      return ev(np.aberto ? 'log.cmdConsumoAberto' : 'log.cmdConsumoFechado');
+    }
+  } else if (isSensor(p)) {
+    const np = patch as Partial<PropsSensor>;
+    if (np.ativo !== undefined && np.ativo !== (p.props.ativo ?? true)) {
+      return ev(np.ativo ? 'log.cmdSensorAtivo' : 'log.cmdSensorInativo');
+    }
+  } else if (isQuadro(p)) {
+    const np = patch as Partial<PropsQuadro>;
+    if (np.canais) {
+      for (const nc of np.canais) {
+        const oc = p.props.canais.find((c) => c.bomba === nc.bomba);
+        if (oc && oc.modo !== nc.modo) {
+          const bomba = rotuloDePeca(estado.projeto, nc.bomba);
+          const chave =
+            nc.modo === 'manual' ? 'log.cmdQuadroManual' : nc.modo === 'desligado' ? 'log.cmdQuadroDesligado' : 'log.cmdQuadroAuto';
+          return ev(chave, { bomba });
+        }
+      }
+    }
+  }
+  return null;
+}
+
 /** Ações de EDIÇÃO que alteram o projeto e devem entrar no histórico (undo). */
 const ACOES_UNDOAVEIS = new Set<Acao['tipo']>([
   'ADD_PECA',
@@ -374,16 +439,28 @@ function reducerBase(estado: EstadoApp, acao: Acao): EstadoApp {
           estado.conexaoSelecionada === acao.id ? null : estado.conexaoSelecionada,
       };
 
-    case 'ATUALIZAR_PROPS':
-      // Permitido em ambos os modos: ajustar valores (registro, thresholds,
-      // bomba manual) faz parte da operação em execução.
-      return {
-        ...estado,
-        projeto: atualizarPeca(estado.projeto, acao.id, (p) => ({
+    case 'ATUALIZAR_PROPS': {
+      // Permitido em ambos os modos: em execução, só os COMANDOS de operação
+      // (registro, modo da bomba/quadro, saída de consumo, sensor on/off) chegam
+      // aqui — a UI trava o resto. O comando também atualiza o snapshot de edição
+      // (persiste ao voltar à edição e sobrevive ao RESET) e entra no log; NÃO
+      // gera histórico de desfazer (o wrapper só registra em edição).
+      const aplicar = (proj: ProjetoSimulacao): ProjetoSimulacao =>
+        atualizarPeca(proj, acao.id, (p) => ({
           ...p,
           props: { ...p.props, ...acao.props } as PropsPorTipo,
-        })),
+        }));
+      if (estado.modo !== 'execucao') {
+        return { ...estado, projeto: aplicar(estado.projeto) };
+      }
+      const ev = eventoDeComando(estado, acao.id, acao.props);
+      return {
+        ...estado,
+        projeto: aplicar(estado.projeto),
+        snapshotEdicao: estado.snapshotEdicao ? aplicar(estado.snapshotEdicao) : estado.snapshotEdicao,
+        eventos: ev ? [...estado.eventos, ev].slice(-MAX_EVENTOS) : estado.eventos,
       };
+    }
 
     case 'DUPLICAR_PECA': {
       const orig = estado.projeto.pecas.find((p) => p.id === acao.id);

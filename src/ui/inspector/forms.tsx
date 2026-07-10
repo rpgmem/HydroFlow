@@ -84,7 +84,7 @@ export function ReservatorioForm({
       )}
       <Num label={t('form.alturaMaxima')} unidade={u.comp} value={props.alturaMaxima} disabled={emExecucao} onChange={(v) => upd({ alturaMaxima: v })} />
       <Num label={t('form.cotaBase')} unidade={u.comp} value={props.cotaBase} disabled={emExecucao} onChange={(v) => upd({ cotaBase: v })} />
-      <Num label={t('form.nivelAtual')} unidade={u.comp} value={props.nivel} onChange={(v) => upd({ nivel: v })} />
+      <Num label={t('form.nivelAtual')} unidade={u.comp} value={props.nivel} disabled={emExecucao} onChange={(v) => upd({ nivel: v })} />
       {capacidade > 0 && (
         <p className="telemetry" style={{ marginTop: -4 }}>
           <Trans
@@ -204,11 +204,12 @@ export function TuboForm({
         disabled={emExecucao}
         onChange={(v) => upd({ alturaSaida: v })}
       />
-      {/* Com boia, o registro manual perde o sentido (a boia governa a abertura). */}
+      {/* Com boia, o registro manual perde o sentido (a boia governa a abertura).
+          Abrir/fechar o registro é um COMANDO de operação — fica ativo também na
+          execução (não leva `disabled={emExecucao}`). */}
       {!temBoia && (
         <Switch
           checked={props.registro?.aberto ?? true}
-          disabled={emExecucao}
           ariaLabel={t('form.registroAberto')}
           onChange={(v) => upd({ registro: { aberto: v } })}
         >
@@ -225,7 +226,7 @@ export function TuboForm({
       </Switch>
       {/* Boia e ladrão são mutuamente exclusivos (papéis de válvula distintos). */}
       {!temLadrao && (
-        <BoiaFields boia={props.boia} upd={upd} unidade={u.comp} aoAtivar={{ registro: { aberto: true } }} />
+        <BoiaFields boia={props.boia} upd={upd} unidade={u.comp} emExecucao={emExecucao} aoAtivar={{ registro: { aberto: true } }} />
       )}
       {!temBoia && (
         <>
@@ -261,11 +262,13 @@ export function BoiaFields({
   boia,
   upd,
   unidade,
+  emExecucao = false,
   aoAtivar = {},
 }: {
   boia: NivelControle | undefined;
   upd: Upd;
   unidade?: string;
+  emExecucao?: boolean;
   aoAtivar?: Record<string, unknown>;
 }) {
   const { t } = useTranslation();
@@ -274,6 +277,7 @@ export function BoiaFields({
     <>
       <Switch
         checked={ativa}
+        disabled={emExecucao}
         ariaLabel={t('form.boia')}
         onChange={(v) =>
           upd(v ? { boia: { nivelMinimo: 0, nivelMaximo: 1 }, ...aoAtivar } : { boia: undefined })
@@ -287,12 +291,14 @@ export function BoiaFields({
             label={t('form.boiaAbre')}
             unidade={unidade}
             value={boia.nivelMinimo}
+            disabled={emExecucao}
             onChange={(v) => upd({ boia: { ...boia, nivelMinimo: v } })}
           />
           <Num
             label={t('form.boiaFecha')}
             unidade={unidade}
             value={boia.nivelMaximo}
+            disabled={emExecucao}
             onChange={(v) => upd({ boia: { ...boia, nivelMaximo: v } })}
           />
         </>
@@ -501,9 +507,9 @@ export function ConsumoForm({
         </>
       )}
 
+      {/* Abrir/fechar a saída é um COMANDO de operação — ativo também na execução. */}
       <Switch
         checked={props.aberto ?? true}
-        disabled={emExecucao}
         ariaLabel={t('form.saidaAberta')}
         onChange={(v) => upd({ aberto: v })}
       >
@@ -526,6 +532,7 @@ export function FonteForm({ props, emExecucao, upd, u }: { props: PropsFonte; em
 
 export function SensorForm({
   props,
+  emExecucao,
   projeto,
   upd,
   u,
@@ -533,6 +540,7 @@ export function SensorForm({
   dispatch,
 }: {
   props: PropsSensor;
+  emExecucao: boolean;
   projeto: ProjetoSimulacao;
   upd: Upd;
   u: UniLabel;
@@ -571,11 +579,22 @@ export function SensorForm({
   };
   return (
     <>
+      {/* Habilitar/desabilitar o sensor é um COMANDO de operação — ativo também
+          na execução. Desabilitado, ele não emite decisão (nem direto, nem via
+          quadro). */}
+      <Switch
+        checked={props.ativo ?? true}
+        ariaLabel={t('form.sensorAtivo')}
+        onChange={(v) => upd({ ativo: v })}
+      >
+        {t('form.sensorAtivo')}
+      </Switch>
       {quadros.length > 0 && (
         <div className="field">
           <label>{t('form.bombaQuadro')}</label>
           <select
             value={membroDe?.id ?? ''}
+            disabled={emExecucao}
             aria-label={t('form.bombaQuadro')}
             onChange={(e) => escolherQuadro(e.target.value)}
           >
@@ -606,6 +625,7 @@ export function SensorForm({
                   <input
                     type="checkbox"
                     checked={alvos.includes(b.id)}
+                    disabled={emExecucao}
                     aria-label={t('form.controlar', { nome })}
                     onChange={(e) => alternarAlvo(b.id, e.target.checked)}
                   />
@@ -617,6 +637,7 @@ export function SensorForm({
           </div>
           <Switch
             checked={reversa}
+            disabled={emExecucao}
             ariaLabel={t('form.reversoLabel')}
             onChange={(v) => upd({ reversa: v })}
           >
@@ -626,18 +647,20 @@ export function SensorForm({
             label={reversa ? t('form.nivelMinDesliga') : t('form.nivelMinLiga')}
             unidade={u.comp}
             value={props.nivelMinimo}
+            disabled={emExecucao}
             onChange={(v) => upd({ nivelMinimo: v })}
           />
           <Num
             label={reversa ? t('form.nivelMaxLiga') : t('form.nivelMaxDesliga')}
             unidade={u.comp}
             value={props.nivelMaximo}
+            disabled={emExecucao}
             onChange={(v) => upd({ nivelMaximo: v })}
           />
-          <Switch checked={props.histerese ?? false} ariaLabel={t('form.histerese')} onChange={(v) => upd({ histerese: v })}>
+          <Switch checked={props.histerese ?? false} disabled={emExecucao} ariaLabel={t('form.histerese')} onChange={(v) => upd({ histerese: v })}>
             {t('form.histerese')}
           </Switch>
-          <Num label={t('form.delay')} value={props.delay} onChange={(v) => upd({ delay: v })} />
+          <Num label={t('form.delay')} value={props.delay} disabled={emExecucao} onChange={(v) => upd({ delay: v })} />
         </>
       )}
     </>
@@ -766,9 +789,9 @@ export function QuadroForm({
           <strong style={{ fontSize: 13 }}>⚙️ {nomeBomba(c.bomba)}</strong>
           <div className="field">
             <label>{t('form.quadroModo')}</label>
+            {/* O modo (auto/manual/desligado) é um COMANDO — ativo na execução. */}
             <select
               value={c.modo}
-              disabled={emExecucao}
               aria-label={t('form.quadroModo')}
               onChange={(e) => atualiza(i, { modo: e.target.value as CanalQuadro['modo'] })}
             >

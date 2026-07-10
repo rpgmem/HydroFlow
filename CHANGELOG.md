@@ -6,6 +6,31 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.29.0] — Comandos de operação durante a simulação
+
+### Adicionado
+
+- **Operar a simulação em tempo real**: em execução, os **comandos de operação**
+  ficam ativos enquanto o resto (estrutura e dimensionamento) permanece travado:
+  - **Registro** de tubo — abrir/fechar;
+  - **Bomba** — modo Automático/Ligada/Desligada;
+  - **Quadro** — modo de cada bomba (Automático/Manual/Desligado);
+  - **Consumo** — saída aberta/fechada;
+  - **Sensor** — habilitar/desabilitar (um sensor desabilitado não emite decisão).
+- **Comandos no log**: cada comando feito **durante a simulação** entra no log de
+  eventos (marcado com 🎛️). Comandos **não** geram histórico de desfazer/refazer.
+- **Persistência dos comandos**: os comandos viram o novo estado-base — persistem
+  ao voltar para a edição e sobrevivem ao **RESET** (que zera só os níveis/tempo).
+
+### Técnico
+
+- `PropsSensor` ganhou `ativo?` (habilitado; ausente = true). O motor ignora um
+  sensor inativo.
+- O inspetor deixou de desabilitar o `fieldset` inteiro em execução — cada campo
+  decide (`disabled={emExecucao}`); os comandos ficam ativos.
+- Reducer: `ATUALIZAR_PROPS` em execução também atualiza o `snapshotEdicao` e
+  emite um `EventoLog` de `tipo: 'comando'` (via `eventoDeComando`).
+
 ## [1.28.0] — Quadro de comandos: lógica, revezamento e demanda
 
 ### Adicionado

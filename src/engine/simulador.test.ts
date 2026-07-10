@@ -1226,6 +1226,23 @@ describe('quadro de comandos (MCC)', () => {
     expect(estaLigada(doisSensores('OU', 3), 'P')).toBe(true); // S1 pede ligar
   });
 
+  it('sensor desabilitado (ativo=false) não emite decisão', () => {
+    // S pediria LIGAR (D no fundo), mas está desabilitado no painel → não liga.
+    const r = tick(
+      projeto(
+        [
+          res('D', { nivel: 0 }),
+          sensor('S', { bombasAlvo: [], nivelMinimo: 1, nivelMaximo: 4, ativo: false }),
+          bomba('P', { ligada: false }),
+          quadro('Q', [{ bomba: 'P', modo: 'auto', sensores: ['S'] }], ['S']),
+        ],
+        [criarConexao('S', 'D')],
+      ),
+    );
+    expect(estaLigada(r, 'P')).toBe(false);
+    expect(r.sensores['S']).toBeUndefined(); // desabilitado → sem decisão
+  });
+
   it('auto sem sensor: liga só quando há consumo (demanda) à jusante', () => {
     const comDemanda = (dem: number) =>
       tick(
