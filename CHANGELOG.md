@@ -6,6 +6,24 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.27.1] — Quadro: seleção pelo lado da boia/sensor
+
+### Alterado
+
+- **Boia/sensor também "seleciona o quadro"** (simétrico à bomba): no inspetor do
+  sensor, o seletor **"Quadro de comandos"** define a qual quadro ele pertence.
+  Ao entrar num quadro, o sensor deixa de acionar bombas pelo `bombasAlvo` direto
+  (esse vínculo fica inativo enquanto for membro).
+- **Quadro**: a lista de boias disponíveis no automático de cada bomba passa a
+  ser filtrada pelos **sensores-membro** do quadro (escolhidos no inspetor de cada
+  sensor). Ao remover um sensor do quadro, os canais que o referenciavam são
+  limpos automaticamente.
+
+### Técnico
+
+- `PropsQuadro` ganhou `sensores?: string[]` (ids das boias-membro). O motor
+  ignora o roteamento direto de um sensor que seja membro de um quadro.
+
 ## [1.27.0] — Quadro de comandos (MCC)
 
 ### Adicionado

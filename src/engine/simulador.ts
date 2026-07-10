@@ -116,8 +116,8 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     if (!isQuadro(p)) continue;
     for (const c of p.props.canais) {
       if (c.bomba && !regidaPorQuadro.has(c.bomba)) regidaPorQuadro.set(c.bomba, c);
-      if (c.modo === 'auto' && c.sensor) sensoresEmQuadro.add(c.sensor);
     }
+    for (const s of p.props.sensores ?? []) sensoresEmQuadro.add(s); // boias-membro
   }
 
   // ---- (1) Sensores avaliam sobre o estado do tick anterior -------------
