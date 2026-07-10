@@ -156,6 +156,7 @@ export const en: Dicionario = {
     quadroModoDesligado: 'Off',
     quadroSensor: 'Float/sensor (in automatic)',
     quadroSensores: 'Floats/sensors followed (in automatic)',
+    quadroSensoresTodos: 'None checked — follows all panel members.',
     quadroSeguirSensor: 'Follow {{nome}}',
     quadroSemSensor: '— no float in the panel —',
     quadroLogica: 'Logic between sensors',

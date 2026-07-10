@@ -806,18 +806,25 @@ export function QuadroForm({
               {membrosSensor.length === 0 ? (
                 <p className="telemetry" style={{ margin: 0 }}>{t('form.quadroSemSensor')}</p>
               ) : (
-                membrosSensor.map((s) => (
-                  <label className="checkbox" key={s.id}>
-                    <input
-                      type="checkbox"
-                      checked={seguidos.includes(s.id)}
-                      disabled={emExecucao}
-                      aria-label={t('form.quadroSeguirSensor', { nome: nomePeca(s) })}
-                      onChange={(e) => alternarSensorCanal(i, s.id, e.target.checked)}
-                    />
-                    {nomePeca(s)}
-                  </label>
-                ))
+                <>
+                  {membrosSensor.map((s) => (
+                    <label className="checkbox" key={s.id}>
+                      <input
+                        type="checkbox"
+                        checked={seguidos.includes(s.id)}
+                        disabled={emExecucao}
+                        aria-label={t('form.quadroSeguirSensor', { nome: nomePeca(s) })}
+                        onChange={(e) => alternarSensorCanal(i, s.id, e.target.checked)}
+                      />
+                      {nomePeca(s)}
+                    </label>
+                  ))}
+                  {/* Nenhum marcado = segue TODOS os membros (o motor faz esse
+                      fallback, para uma boia-membro nunca ser ignorada). */}
+                  {seguidos.length === 0 && (
+                    <p className="telemetry" style={{ margin: 0 }}>{t('form.quadroSensoresTodos')}</p>
+                  )}
+                </>
               )}
             </div>
           )}

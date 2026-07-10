@@ -6,6 +6,19 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.29.1] — Correção: boia-membro do quadro ignorada
+
+### Corrigido
+
+- **Boia/sensor membro do quadro era ignorada quando o canal não marcava sensor
+  nenhum**: nesse caso a bomba caía no acionamento por **demanda** e o `desligar`
+  de uma boia-membro (em especial uma **reversa de proteção**) era silenciosamente
+  descartado — a bomba não desligava. Agora um canal em automático **sem seleção
+  segue TODOS os sensores-membro** do quadro (o `desligar` volta a ter
+  precedência); o acionamento por demanda só vale quando o quadro **não tem
+  sensor-membro algum**. O inspetor do quadro sinaliza "nenhum marcado → segue
+  todos".
+
 ## [1.29.0] — Comandos de operação durante a simulação
 
 ### Adicionado

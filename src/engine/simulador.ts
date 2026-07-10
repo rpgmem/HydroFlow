@@ -138,15 +138,16 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   // `modoControle` dela é ignorado). O sensor escolhido num canal 'auto' age só
   // pelo quadro (seu `bombasAlvo` direto não roteia). Peças não referenciadas por
   // nenhum quadro mantêm o controle direto. Primeira referência a uma bomba vence.
-  const regidaPorQuadro = new Map<string, { canal: CanalQuadro; logica: 'E' | 'OU' }>();
+  const regidaPorQuadro = new Map<string, { canal: CanalQuadro; logica: 'E' | 'OU'; membros: string[] }>();
   const sensoresEmQuadro = new Set<string>();
   for (const p of proj.pecas) {
     if (!isQuadro(p)) continue;
     const logica = p.props.logica ?? 'OU';
+    const membros = p.props.sensores ?? [];
     for (const c of p.props.canais) {
-      if (c.bomba && !regidaPorQuadro.has(c.bomba)) regidaPorQuadro.set(c.bomba, { canal: c, logica });
+      if (c.bomba && !regidaPorQuadro.has(c.bomba)) regidaPorQuadro.set(c.bomba, { canal: c, logica, membros });
     }
-    for (const s of p.props.sensores ?? []) sensoresEmQuadro.add(s); // boias-membro
+    for (const s of membros) sensoresEmQuadro.add(s); // boias-membro
   }
 
   // ---- (1) Sensores avaliam sobre o estado do tick anterior -------------
@@ -206,10 +207,13 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
       if (canal.modo === 'desligado') agora = false;
       else if (canal.modo === 'manual') agora = true;
       else {
-        // 'auto': segue os sensores-membro marcados no canal, combinados pela
-        // lógica E/OU do quadro. Sem sensores, é acionada pela DEMANDA — liga só
-        // se houver consumo (> 0) à jusante na linha.
-        const ids = sensoresDoCanal(canal);
+        // 'auto': segue os sensores marcados no canal; se NENHUM foi marcado,
+        // segue TODOS os sensores-membro do quadro (assim uma boia-membro — em
+        // especial uma REVERSA de proteção — nunca é silenciosamente ignorada: seu
+        // 'desligar' continua tendo precedência). Só quando o quadro não tem sensor
+        // ALGUM é que o 'auto' vira acionamento por DEMANDA (consumo > 0 à jusante).
+        const marcados = sensoresDoCanal(canal);
+        const ids = marcados.length > 0 ? marcados : regida.membros;
         if (ids.length === 0) {
           agora = demandaJusante(idx, p.id, tempoAtual) > 1e-9;
         } else {

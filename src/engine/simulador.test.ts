@@ -1226,6 +1226,44 @@ describe('quadro de comandos (MCC)', () => {
     expect(estaLigada(doisSensores('OU', 3), 'P')).toBe(true); // S1 pede ligar
   });
 
+  it('boia-membro sem seleção no canal é seguida (reversa protege a origem)', () => {
+    // S (reversa) é MEMBRO do quadro, mas o canal não marcou sensor nenhum. Antes,
+    // a bomba caía na demanda e ignorava o 'desligar' da reversa (origem vazia).
+    // Agora o canal sem seleção segue TODOS os membros → o desligar tem precedência.
+    const r = tick(
+      projeto(
+        [
+          res('A', { nivel: 0 }), // origem vazia → reversa pede DESLIGAR
+          sensor('S', { reversa: true, nivelMinimo: 1, nivelMaximo: 4 }),
+          bomba('P', { ligada: true }),
+          consumo('C', { vazaoDemanda: 5, aberto: true, perfil: 'fixo' }),
+          quadro('Q', [{ bomba: 'P', modo: 'auto' }], ['S'], 'E'), // canal SEM sensores
+        ],
+        [criarConexao('S', 'A'), criarConexao('P', 'C')],
+      ),
+    );
+    expect(r.sensores['S']).toBe('desligar');
+    expect(estaLigada(r, 'P')).toBe(false); // membro reverso respeitado (não caiu na demanda)
+  });
+
+  it('canal sem sensores e quadro sem membros → aciona por demanda', () => {
+    // Sem sensor algum no quadro, o 'auto' continua sendo demanda-driven.
+    const comDemanda = (dem: number) =>
+      tick(
+        projeto(
+          [
+            res('A', { nivel: 5 }),
+            bomba('P', { ligada: false, vazaoNominal: 5 }),
+            consumo('C', { vazaoDemanda: dem, aberto: true, perfil: 'fixo' }),
+            quadro('Q', [{ bomba: 'P', modo: 'auto' }]), // sem membros
+          ],
+          [criarConexao('A', 'P'), criarConexao('P', 'C')],
+        ),
+      );
+    expect(estaLigada(comDemanda(3), 'P')).toBe(true);
+    expect(estaLigada(comDemanda(0), 'P')).toBe(false);
+  });
+
   it('sensor desabilitado (ativo=false) não emite decisão', () => {
     // S pediria LIGAR (D no fundo), mas está desabilitado no painel → não liga.
     const r = tick(
