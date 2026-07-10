@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import type { Acao, EstadoApp } from '../state/store';
 import type { Unidades } from '../domain/types';
+import { Switch } from './Switch';
 
 interface Props {
   estado: EstadoApp;
@@ -66,22 +67,19 @@ export function Opcoes({ estado, dispatch, tema, onAlternarTema }: Props) {
             </div>
 
             <p className="opcoes-sec">Exibição</p>
-            <label className="checkbox">
-              <input type="checkbox" checked={tema === 'claro'} onChange={onAlternarTema} />
+            <Switch checked={tema === 'claro'} onChange={onAlternarTema} ariaLabel="Tema claro">
               Tema claro
-            </label>
+            </Switch>
 
             <p className="opcoes-sec">Física</p>
-            <label className="checkbox">
-              <input
-                type="checkbox"
-                disabled={emExecucao}
-                checked={atrito}
-                aria-label="Perda de carga por atrito"
-                onChange={(e) => dispatch({ tipo: 'SET_ATRITO', atrito: e.target.checked })}
-              />
+            <Switch
+              checked={atrito}
+              disabled={emExecucao}
+              ariaLabel="Perda de carga por atrito"
+              onChange={(v) => dispatch({ tipo: 'SET_ATRITO', atrito: v })}
+            >
               Perda de carga (atrito)
-            </label>
+            </Switch>
             <p className="telemetry" style={{ margin: '2px 0 0' }}>
               Hazen-Williams: cada tubo usa seu <strong>comprimento</strong> e <strong>C</strong>.
               Desligado = Torricelli puro.

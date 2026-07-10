@@ -78,7 +78,15 @@ export interface EstadoApp {
   /** Pilhas de desfazer/refazer (só edição): projetos anteriores/posteriores. */
   undoStack: ProjetoSimulacao[];
   redoStack: ProjetoSimulacao[];
+  /** Sequência incrementada a cada projeto CARREGADO (início/troca) — sinaliza ao
+   *  Canvas que deve recentralizar a vista. Não faz parte do projeto salvo. */
+  geracao: number;
 }
+
+// Sequência de "carregamentos" de projeto. Fora do estado (contador de módulo)
+// porque `estadoInicial` cria estado do zero a cada carga e precisa de um valor
+// crescente entre chamadas. É só bookkeeping de UI (não afeta a física/autosave).
+let geracaoSeq = 0;
 
 export type Acao =
   | { tipo: 'ADD_PECA'; peca: Peca }
@@ -133,6 +141,7 @@ export function estadoInicial(projeto: ProjetoSimulacao): EstadoApp {
     snapshotEdicao: null,
     undoStack: [],
     redoStack: [],
+    geracao: (geracaoSeq += 1),
   };
 }
 

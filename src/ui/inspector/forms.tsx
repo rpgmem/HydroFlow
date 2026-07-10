@@ -16,21 +16,29 @@ import {
   type PropsTubo,
   type Unidades,
 } from '../../domain/types';
-import { vazaoDeM3, vazaoMaxRecomendadaM3 } from '../../engine/geometria';
+import { vazaoDeM3, vazaoMaxRecomendadaM3, volumeMaximoM3 } from '../../engine/geometria';
+import { labelVolume, m3PorVolume } from '../../domain/unidades';
 import { CATALOGO_TUBOS, CATEGORIAS_TUBO, bitolaPorDn, rotuloBitola } from '../../domain/tubosCatalogo';
 import { Num, type Upd, type UniLabel } from './campos';
+import { Switch } from '../Switch';
 
 export function ReservatorioForm({
   props,
   emExecucao,
   upd,
   u,
+  unidades,
 }: {
   props: PropsReservatorio;
   emExecucao: boolean;
   upd: Upd;
   u: UniLabel;
+  unidades: Unidades;
 }) {
+  // Capacidade (litragem) derivada da geometria informada (raio/lados × altura
+  // máxima), na unidade de volume do usuário. Só informativo — atualiza sozinho.
+  const capacidade = volumeMaximoM3(props, unidades) / m3PorVolume(unidades);
+  const nivelAtual = volumeMaximoM3({ ...props, alturaMaxima: props.nivel ?? 0 }, unidades) / m3PorVolume(unidades);
   return (
     <>
       <div className="field">
@@ -56,6 +64,15 @@ export function ReservatorioForm({
       <Num label="Altura máxima" unidade={u.comp} value={props.alturaMaxima} disabled={emExecucao} onChange={(v) => upd({ alturaMaxima: v })} />
       <Num label="Cota da base" unidade={u.comp} value={props.cotaBase} disabled={emExecucao} onChange={(v) => upd({ cotaBase: v })} />
       <Num label="Nível atual" unidade={u.comp} value={props.nivel} onChange={(v) => upd({ nivel: v })} />
+      {capacidade > 0 && (
+        <p className="telemetry" style={{ marginTop: -4 }}>
+          Capacidade:{' '}
+          <strong>
+            {capacidade.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} {labelVolume(unidades)}
+          </strong>{' '}
+          (atual: {nivelAtual.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} {labelVolume(unidades)})
+        </p>
+      )}
     </>
   );
 }
@@ -167,42 +184,37 @@ export function TuboForm({
       />
       {/* Com boia, o registro manual perde o sentido (a boia governa a abertura). */}
       {!temBoia && (
-        <label className="checkbox">
-          <input
-            type="checkbox"
-            checked={props.registro?.aberto ?? true}
-            aria-label="Registro aberto"
-            onChange={(e) => upd({ registro: { aberto: e.target.checked } })}
-          />
-          Registro aberto
-        </label>
-      )}
-      <label className="checkbox" style={{ marginTop: 8 }}>
-        <input
-          type="checkbox"
-          checked={props.checkValve ?? false}
+        <Switch
+          checked={props.registro?.aberto ?? true}
           disabled={emExecucao}
-          aria-label="Check valve"
-          onChange={(e) => upd({ checkValve: e.target.checked })}
-        />
+          ariaLabel="Registro aberto"
+          onChange={(v) => upd({ registro: { aberto: v } })}
+        >
+          Registro aberto
+        </Switch>
+      )}
+      <Switch
+        checked={props.checkValve ?? false}
+        disabled={emExecucao}
+        ariaLabel="Check valve"
+        onChange={(v) => upd({ checkValve: v })}
+      >
         Check valve (anti-refluxo)
-      </label>
+      </Switch>
       {/* Boia e ladrão são mutuamente exclusivos (papéis de válvula distintos). */}
       {!temLadrao && (
         <BoiaFields boia={props.boia} upd={upd} unidade={u.comp} aoAtivar={{ registro: { aberto: true } }} />
       )}
       {!temBoia && (
         <>
-          <label className="checkbox" style={{ marginTop: 8 }}>
-            <input
-              type="checkbox"
-              checked={temLadrao}
-              disabled={emExecucao}
-              aria-label="Ladrão (dreno de transbordo)"
-              onChange={(e) => upd({ ladrao: e.target.checked ? { nivel: 0 } : undefined })}
-            />
+          <Switch
+            checked={temLadrao}
+            disabled={emExecucao}
+            ariaLabel="Ladrão (dreno de transbordo)"
+            onChange={(v) => upd({ ladrao: v ? { nivel: 0 } : undefined })}
+          >
             Ladrão (dreno de transbordo)
-          </label>
+          </Switch>
           {temLadrao && (
             <Num
               label="Ladrão: escoa acima de"
@@ -237,21 +249,15 @@ export function BoiaFields({
   const ativa = boia !== undefined;
   return (
     <>
-      <label className="checkbox" style={{ marginTop: 8 }}>
-        <input
-          type="checkbox"
-          checked={ativa}
-          aria-label="Boia (válvula de nível)"
-          onChange={(e) =>
-            upd(
-              e.target.checked
-                ? { boia: { nivelMinimo: 0, nivelMaximo: 1 }, ...aoAtivar }
-                : { boia: undefined },
-            )
-          }
-        />
+      <Switch
+        checked={ativa}
+        ariaLabel="Boia (válvula de nível)"
+        onChange={(v) =>
+          upd(v ? { boia: { nivelMinimo: 0, nivelMaximo: 1 }, ...aoAtivar } : { boia: undefined })
+        }
+      >
         Boia (válvula de nível)
-      </label>
+      </Switch>
       {ativa && (
         <>
           <Num
@@ -305,16 +311,14 @@ export function BombaForm({ props, emExecucao, upd, u }: { props: PropsBomba; em
       </div>
       {/* Bomba dupla em revezamento: rodízio de desgaste entre duas metades
           (mesma vazão e tubulação). Padrão = bomba única. */}
-      <label className="checkbox">
-        <input
-          type="checkbox"
-          checked={props.revezamento ?? false}
-          disabled={emExecucao}
-          aria-label="Bomba dupla em revezamento"
-          onChange={(e) => upd({ revezamento: e.target.checked })}
-        />
+      <Switch
+        checked={props.revezamento ?? false}
+        disabled={emExecucao}
+        ariaLabel="Bomba dupla em revezamento"
+        onChange={(v) => upd({ revezamento: v })}
+      >
         Dupla em revezamento (alterna a cada acionamento)
-      </label>
+      </Switch>
     </>
   );
 }
@@ -323,23 +327,21 @@ export function JuncaoForm({ props, emExecucao, upd }: { props: PropsJuncao; emE
   const temDiam = props.diametro !== undefined && props.diametro > 0;
   return (
     <>
-      <label className="checkbox">
-        <input
-          type="checkbox"
-          checked={temDiam}
-          disabled={emExecucao}
-          aria-label="Estrangular a junção (diâmetro)"
-          // Ao ligar, assume a bitola DN110 (mesmo default dos tubos maiores);
-          // ao desligar, limpa diâmetro e bitola.
-          onChange={(e) => {
-            const b = bitolaPorDn('DN110');
-            if (e.target.checked && b) upd({ diametro: b.internoMm, bitola: b.dn });
-            else if (e.target.checked) upd({ diametro: 100, bitola: undefined });
-            else upd({ diametro: undefined, bitola: undefined });
-          }}
-        />
+      <Switch
+        checked={temDiam}
+        disabled={emExecucao}
+        ariaLabel="Estrangular a junção (diâmetro)"
+        // Ao ligar, assume a bitola DN110 (mesmo default dos tubos maiores);
+        // ao desligar, limpa diâmetro e bitola.
+        onChange={(marcado) => {
+          const b = bitolaPorDn('DN110');
+          if (marcado && b) upd({ diametro: b.internoMm, bitola: b.dn });
+          else if (marcado) upd({ diametro: 100, bitola: undefined });
+          else upd({ diametro: undefined, bitola: undefined });
+        }}
+      >
         Estrangular (limitar o fluxo pela junção)
-      </label>
+      </Switch>
       {temDiam && (
         <>
           {/* Mesma lista de bitolas dos tubos: seleciona o DN e grava o diâmetro
@@ -430,15 +432,14 @@ export function ConsumoForm({
         </>
       )}
 
-      <label className="checkbox">
-        <input
-          type="checkbox"
-          checked={props.aberto ?? true}
-          aria-label="Saída aberta"
-          onChange={(e) => upd({ aberto: e.target.checked })}
-        />
+      <Switch
+        checked={props.aberto ?? true}
+        disabled={emExecucao}
+        ariaLabel="Saída aberta"
+        onChange={(v) => upd({ aberto: v })}
+      >
         Saída aberta
-      </label>
+      </Switch>
     </>
   );
 }
@@ -489,15 +490,13 @@ export function SensorForm({
           ))
         )}
       </div>
-      <label className="checkbox">
-        <input
-          type="checkbox"
-          checked={reversa}
-          aria-label="Sensor reverso (corte por nível baixo)"
-          onChange={(e) => upd({ reversa: e.target.checked })}
-        />
+      <Switch
+        checked={reversa}
+        ariaLabel="Sensor reverso (corte por nível baixo)"
+        onChange={(v) => upd({ reversa: v })}
+      >
         Reverso (desliga no mínimo; protege a origem)
-      </label>
+      </Switch>
       <Num
         label={reversa ? 'Nível mínimo (desliga)' : 'Nível mínimo (liga)'}
         unidade={u.comp}
@@ -510,15 +509,9 @@ export function SensorForm({
         value={props.nivelMaximo}
         onChange={(v) => upd({ nivelMaximo: v })}
       />
-      <label className="checkbox">
-        <input
-          type="checkbox"
-          checked={props.histerese ?? false}
-          aria-label="Histerese"
-          onChange={(e) => upd({ histerese: e.target.checked })}
-        />
+      <Switch checked={props.histerese ?? false} ariaLabel="Histerese" onChange={(v) => upd({ histerese: v })}>
         Histerese
-      </label>
+      </Switch>
       <Num label="Delay (s)" value={props.delay} onChange={(v) => upd({ delay: v })} />
     </>
   );

@@ -58,6 +58,8 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
   // Enquanto o usuário não mexer no zoom/pan, reenquadramos ao mudar o tamanho
   // (ex.: primeira medição real no mobile, rotação de tela).
   const usuarioMexeu = useRef(false);
+  // Última "geração" de projeto já centralizada (ver efeito abaixo).
+  const geracaoAplicada = useRef<number | null>(null);
   // Transform do Stage salvo antes de imprimir (para restaurar a vista depois).
   const vistaAntesImpressao = useRef<{ scale: number; x: number; y: number } | null>(null);
 
@@ -122,6 +124,20 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
     if (b.rawW > largura || b.rawH > altura) ajustarView();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [largura, altura, estado.projeto.pecas.length]);
+
+  // Ao CARREGAR/trocar de projeto (ou na primeira medição real), centraliza o
+  // diagrama na área visível — mesmo quando já caberia sem reduzir (o exemplo).
+  // `geracao` muda só no carregamento, então editar peças não recentraliza; e o
+  // guard por geração evita recentralizar a cada resize (isso fica com o efeito
+  // acima, que respeita o pan/zoom do usuário).
+  useEffect(() => {
+    if (largura <= 0 || altura <= 0) return;
+    if (geracaoAplicada.current === estado.geracao) return;
+    geracaoAplicada.current = estado.geracao;
+    usuarioMexeu.current = false;
+    ajustarView();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [estado.geracao, largura, altura]);
 
   const iniciarConexao = (id: string): void => {
     if (emExecucao) return;

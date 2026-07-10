@@ -33,7 +33,7 @@ function FormaTubo() {
 function FormaBomba() {
   return (
     <Swatch>
-      <circle r={9} fill="#334a5e" stroke={stroke} />
+      <circle r={9} fill="#7c5cff" stroke={stroke} />
     </Swatch>
   );
 }
@@ -53,7 +53,7 @@ function FormaJuncao() {
     <Swatch>
       <polygon
         points={`${-hx},${-hy} ${hx},${-hy} ${R},0 ${hx},${hy} ${-hx},${hy} ${-R},0`}
-        fill="#44566a"
+        fill="#0d9488"
         stroke={stroke}
       />
     </Swatch>
@@ -90,9 +90,9 @@ const PECAS: { forma: React.ReactNode; nome: string }[] = [
 ];
 
 const VALVULAS: { c: string; nome: string }[] = [
-  { c: '#34d399', nome: 'Registro aberto (▪)' },
+  { c: '#34d399', nome: 'Registro/boia aberto' },
   { c: '#f87171', nome: 'Registro/boia fechado' },
-  { c: '#fbbf24', nome: 'Boia aberta / ladrão em espera' },
+  { c: '#fbbf24', nome: 'Ladrão em espera' },
   { c: '#f59e0b', nome: 'Ladrão em transbordo' },
 ];
 

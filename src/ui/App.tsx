@@ -2,7 +2,7 @@
  * Componente raiz do HydroFlow. Junta paleta, canvas, inspetor e barra de
  * ferramentas em torno do reducer central (Sprints 3–5).
  */
-import { useEffect, useReducer, useRef, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { reducer, estadoInicial } from '../state/store';
 import { projetoExemplo } from '../domain/exemplo';
 import { serializarProjeto } from '../domain/schema';
@@ -101,6 +101,13 @@ export function App() {
 
   const selecionada = estado.projeto.pecas.find((p) => p.id === estado.selecionada);
   const emExecucao = estado.modo === 'execucao';
+  // "Alterado" = o projeto difere do exemplo intocado. Em execução tratamos como
+  // alterado (o nível/estado é transitório). Guia a exibição de Salvar/Restaurar:
+  // não faz sentido salvar nem "restaurar o exemplo" quando já se está nele.
+  const alterado = useMemo(
+    () => emExecucao || serializarProjeto(estado.projeto) !== exemploSerial.current,
+    [estado.projeto, emExecucao],
+  );
 
   return (
     <div
@@ -115,6 +122,7 @@ export function App() {
         onAlternarTema={() => setTema((t) => (t === 'claro' ? 'escuro' : 'claro'))}
         onAlternarLegenda={() => setLegendaAberta((v) => !v)}
         legendaAberta={legendaAberta}
+        alterado={alterado}
       />
       <div className="body">
         <Palette dispatch={dispatch} desabilitado={emExecucao} />
