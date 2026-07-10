@@ -6,6 +6,26 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.26.0] — Internacionalização (i18n): Português e Inglês
+
+### Adicionado
+
+- **i18n com react-i18next**: toda a interface passa a ser traduzível. Idiomas
+  **Português** (padrão/origem) e **Inglês**.
+  - **Detecção automática** do idioma do navegador na primeira visita e **troca
+    manual** em **⚙ Opções → Idioma**; a escolha é **persistida** em localStorage.
+  - Dicionários em `src/i18n/pt.ts` e `en.ts` (mesmas chaves, garantido por teste
+    de paridade); `fmtNumero` formata números na convenção do idioma.
+  - Migrados: toolbar, paleta, ⚙ Opções, inspetor e formulários, legenda, dicas e
+    tooltip do canvas, avisos, rodapé e sparkline.
+
+### Notas
+
+- As **mensagens do motor** (log de eventos e validação de grafo) e os **rótulos do
+  projeto exemplo** seguem em Português por ora — o motor permanece puro (sem
+  dependência de i18n) e os rótulos do exemplo são dados do projeto, não textos da
+  interface. Podem ser internacionalizados num passo futuro.
+
 ## [1.25.0] — Polimentos de UI e do projeto exemplo
 
 ### Adicionado

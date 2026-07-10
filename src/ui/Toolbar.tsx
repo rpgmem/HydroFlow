@@ -3,6 +3,7 @@
  * play/pause/reset, controle de velocidade e persistência (salvar/carregar).
  */
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Acao, EstadoApp, Velocidade } from '../state/store';
 import { baixarProjeto, carregarArquivo } from '../persistence/arquivo';
 import { projetoVazio } from '../domain/factory';
@@ -25,6 +26,7 @@ interface Props {
 const VELOCIDADES: Velocidade[] = [1, 5, 30, 120];
 
 export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAlternarTema, onAlternarLegenda, legendaAberta, alterado }: Props) {
+  const { t } = useTranslation();
   const inputFile = useRef<HTMLInputElement>(null);
   const [menuAberto, setMenuAberto] = useState(false);
   const emExecucao = estado.modo === 'execucao';
@@ -35,30 +37,30 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
 
       <input
         type="text"
-        aria-label="Nome do projeto"
+        aria-label={t('toolbar.nomeProjeto')}
         value={estado.projeto.nome}
         disabled={emExecucao}
         onChange={(e) => dispatch({ tipo: 'SET_NOME', nome: e.target.value })}
       />
 
-      <span className={`badge ${estado.modo}`}>{estado.modo}</span>
+      <span className={`badge ${estado.modo}`}>{t(`modo.${estado.modo}`)}</span>
 
       {!emExecucao ? (
         <>
           <button className="primary" onClick={() => dispatch({ tipo: 'ENTRAR_EXECUCAO' })}>
-            ▶ Executar
+            {t('toolbar.executar')}
           </button>
           <button
-            aria-label="Desfazer"
-            title="Desfazer (Ctrl+Z)"
+            aria-label={t('toolbar.desfazer')}
+            title={t('toolbar.desfazerTitulo')}
             disabled={estado.undoStack.length === 0}
             onClick={() => dispatch({ tipo: 'UNDO' })}
           >
             ↶
           </button>
           <button
-            aria-label="Refazer"
-            title="Refazer (Ctrl+Shift+Z)"
+            aria-label={t('toolbar.refazer')}
+            title={t('toolbar.refazerTitulo')}
             disabled={estado.redoStack.length === 0}
             onClick={() => dispatch({ tipo: 'REDO' })}
           >
@@ -68,23 +70,23 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
       ) : (
         <>
           {estado.rodando ? (
-            <button onClick={() => dispatch({ tipo: 'PAUSE' })}>⏸ Pausar</button>
+            <button onClick={() => dispatch({ tipo: 'PAUSE' })}>{t('toolbar.pausar')}</button>
           ) : (
             <button className="primary" onClick={() => dispatch({ tipo: 'PLAY' })}>
-              ▶ Play
+              {t('toolbar.play')}
             </button>
           )}
-          <button onClick={() => dispatch({ tipo: 'RESET' })}>⟲ Reset</button>
+          <button onClick={() => dispatch({ tipo: 'RESET' })}>{t('toolbar.reset')}</button>
           <button
             onClick={() => dispatch({ tipo: 'SAIR_EXECUCAO' })}
             disabled={estado.rodando}
-            title={estado.rodando ? 'Pause antes de voltar à edição' : ''}
+            title={estado.rodando ? t('toolbar.pauseAntes') : ''}
           >
-            ✎ Editar
+            {t('toolbar.editar')}
           </button>
 
           <span className="telemetry" style={{ marginLeft: 8 }}>
-            Velocidade:
+            {t('toolbar.velocidade')}
           </span>
           {VELOCIDADES.map((v) => (
             <button
@@ -96,7 +98,7 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
             </button>
           ))}
           <span className="telemetry" style={{ marginLeft: 8 }}>
-            t = <strong>{estado.tempo.toFixed(1)}s</strong>
+            {t('toolbar.tempo')}<strong>{estado.tempo.toFixed(1)}s</strong>
           </span>
         </>
       )}
@@ -109,7 +111,7 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
           desktop, onde elas seguem inline via `display: contents`). */}
       <button
         className="menu-toggle"
-        aria-label="Mais ações"
+        aria-label={t('toolbar.maisAcoes')}
         aria-expanded={menuAberto}
         onClick={() => setMenuAberto((v) => !v)}
       >
@@ -123,20 +125,20 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
             setMenuAberto(false);
             onAlternarLegenda();
           }}
-          title="Mostrar/ocultar a legenda de formas e cores"
+          title={t('toolbar.legendaTitulo')}
         >
-          📖 Legenda
+          {t('toolbar.legenda')}
         </button>
         {!emExecucao && (
           <button
             onClick={() => {
               setMenuAberto(false);
-              if (window.confirm('Criar um projeto novo? Tudo que não foi salvo será perdido.')) {
+              if (window.confirm(t('toolbar.novoConfirm'))) {
                 dispatch({ tipo: 'CARREGAR_PROJETO', projeto: projetoVazio() });
               }
             }}
           >
-            ✨ Novo
+            {t('toolbar.novo')}
           </button>
         )}
         {/* "Restaurar exemplo" só quando já se saiu do exemplo (senão nada a
@@ -145,13 +147,13 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
           <button
             onClick={() => {
               setMenuAberto(false);
-              if (window.confirm('Restaurar o projeto de exemplo? Descarta o trabalho atual (e o autosave).')) {
+              if (window.confirm(t('toolbar.restaurarConfirm'))) {
                 dispatch({ tipo: 'CARREGAR_PROJETO', projeto: projetoExemplo() });
               }
             }}
-            title="Volta ao projeto de exemplo e limpa o autosave"
+            title={t('toolbar.restaurarTitulo')}
           >
-            ♻ Restaurar exemplo
+            {t('toolbar.restaurar')}
           </button>
         )}
         <button
@@ -159,9 +161,9 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
             setMenuAberto(false);
             onImprimir();
           }}
-          title="Imprimir o diagrama (fundo branco)"
+          title={t('toolbar.imprimirTitulo')}
         >
-          🖨 Imprimir
+          {t('toolbar.imprimir')}
         </button>
         {/* "Salvar" só quando há algo diferente do exemplo intocado. */}
         {alterado && (
@@ -171,7 +173,7 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
               baixarProjeto(estado.projeto);
             }}
           >
-            💾 Salvar
+            {t('toolbar.salvar')}
           </button>
         )}
         <button
@@ -181,13 +183,13 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
             inputFile.current?.click();
           }}
         >
-          📂 Carregar
+          {t('toolbar.carregar')}
         </button>
         <input
           ref={inputFile}
           type="file"
           accept="application/json,.json"
-          aria-label="Carregar arquivo"
+          aria-label={t('toolbar.carregarArquivo')}
           style={{ display: 'none' }}
           onChange={async (e) => {
             const file = e.target.files?.[0];

@@ -50,9 +50,13 @@ selecioná-la e apague com **Delete** (ou no botão flutuante). O canvas tem
 
 - **Log de eventos** (📋) — histórico com acionamento de bomba, disparos de
   sensores e alertas (ladrão/transbordo, déficit, rodando a seco).
-- **⚙ Opções** — menu com **unidades** (volume/comprimento), **tema** claro/escuro,
-  a **física opcional** (perda de carga por atrito) e a **velocidade de referência**
-  do alerta de dimensionamento (padrão 3 m/s).
+- **⚙ Opções** — menu com **idioma** (Português/Inglês), **unidades**
+  (volume/comprimento), **tema** claro/escuro, a **física opcional** (perda de carga
+  por atrito) e a **velocidade de referência** do alerta de dimensionamento (padrão
+  3 m/s).
+- **Idiomas (i18n)** — interface em **Português** (padrão) e **Inglês**, com
+  detecção automática do navegador e troca manual em ⚙ Opções (a escolha é
+  lembrada). As leis de física e os rótulos do projeto exemplo seguem em Português.
 - **Desfazer/refazer** (`Ctrl+Z` / `Ctrl+Shift+Z` e botões ↶/↷) e **duplicar peça**
   (`Ctrl+D` / ⧉ no inspetor).
 - **Autosave local** (localStorage) — preserva o trabalho entre recarregamentos;
@@ -91,6 +95,7 @@ src/
 │   └── validacaoGrafo.ts  # validação de grafo (seção 5)
 ├── state/          # Sprint 4 — reducer central (modos edição/execução)
 │   └── store.ts
+├── i18n/           # traduções (react-i18next): pt.ts, en.ts + init
 ├── persistence/    # Sprint 5 — export/import .json + autosave
 │   ├── arquivo.ts      # export/import manual .json
 │   └── autosave.ts     # persistência automática em localStorage

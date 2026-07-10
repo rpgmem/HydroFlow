@@ -3,6 +3,8 @@
  * acumulada durante a execução. Sem eixos — só a curva, o valor atual e a
  * faixa min–máx, para caber no inspetor.
  */
+import { useTranslation } from 'react-i18next';
+
 interface Props {
   dados: number[];
   titulo: string;
@@ -14,10 +16,11 @@ const H = 46;
 const PAD = 3;
 
 export function Sparkline({ dados, titulo, unidade }: Props) {
+  const { t } = useTranslation();
   if (dados.length < 2) {
     return (
       <p className="telemetry" style={{ margin: '2px 0 0' }}>
-        {titulo}: coletando… (execute a simulação)
+        {t('sparkline.coletando', { titulo })}
       </p>
     );
   }
@@ -50,8 +53,8 @@ export function Sparkline({ dados, titulo, unidade }: Props) {
         <circle cx={x(dados.length - 1)} cy={y(atual)} r={2} fill="#22d3ee" />
       </svg>
       <div className="spark-faixa">
-        <span>mín {min.toFixed(2)}</span>
-        <span>máx {max.toFixed(2)}</span>
+        <span>{t('sparkline.min')} {min.toFixed(2)}</span>
+        <span>{t('sparkline.max')} {max.toFixed(2)}</span>
       </div>
     </div>
   );

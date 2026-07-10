@@ -3,6 +3,7 @@
  * peça selecionada (os formulários vivem em `inspector/forms.tsx`) e mostra a
  * telemetria corrente + o sparkline. Em execução, os campos ficam somente-leitura.
  */
+import { useTranslation } from 'react-i18next';
 import type { Acao } from '../state/store';
 import {
   isBomba,
@@ -41,11 +42,12 @@ interface Props {
 }
 
 export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatch }: Props) {
+  const { t } = useTranslation();
   if (!peca) {
     return (
       <div className="panel right">
-        <h3>Inspetor</h3>
-        <p className="telemetry">Selecione uma peça para editar suas propriedades.</p>
+        <h3>{t('inspector.titulo')}</h3>
+        <p className="telemetry">{t('inspector.vazio')}</p>
       </div>
     );
   }
@@ -61,25 +63,25 @@ export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatc
   return (
     <div className="panel right">
       <h3>
-        {peca.tipo} <span className="telemetry">#{peca.id}</span>
+        {t(`pecas.${peca.tipo}`)} <span className="telemetry">#{peca.id}</span>
       </h3>
 
       {emExecucao && (
         <p className="telemetry" style={{ marginTop: 0 }}>
-          Somente leitura durante a execução. Volte à edição para alterar valores.
+          {t('inspector.somenteLeitura')}
         </p>
       )}
 
       {vazao !== undefined && Math.abs(vazao) > 1e-9 && (
         <p className="telemetry" style={{ marginTop: 0 }}>
-          Vazão atual: <strong>{vazao.toFixed(2)} {u.vazao}</strong>
+          {t('inspector.vazaoAtual')}<strong>{vazao.toFixed(2)} {u.vazao}</strong>
         </p>
       )}
 
       {emExecucao && historico && historico.length >= 2 && (
         <Sparkline
           dados={historico}
-          titulo={isReservatorio(peca) ? 'Nível' : 'Vazão'}
+          titulo={isReservatorio(peca) ? t('inspector.nivel') : t('inspector.vazao')}
           unidade={isReservatorio(peca) ? u.comp : u.vazao}
         />
       )}
@@ -88,10 +90,10 @@ export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatc
           (os valores são restaurados ao voltar para a edição). */}
       <fieldset className="inspetor-campos" disabled={emExecucao}>
         <div className="field">
-          <label>Nome</label>
+          <label>{t('inspector.nome')}</label>
           <input
             type="text"
-            aria-label="Nome"
+            aria-label={t('inspector.nome')}
             placeholder={peca.id}
             value={peca.rotulo ?? ''}
             onChange={(e) =>
@@ -114,10 +116,10 @@ export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatc
       {!emExecucao && (
         <div className="inspetor-acoes">
           <button onClick={() => dispatch({ tipo: 'DUPLICAR_PECA', id: peca.id })}>
-            ⧉ Duplicar
+            {t('inspector.duplicar')}
           </button>
           <button className="danger" onClick={() => dispatch({ tipo: 'REMOVER_PECA', id: peca.id })}>
-            Remover peça
+            {t('inspector.remover')}
           </button>
         </div>
       )}

@@ -140,7 +140,7 @@ describe('modo execução — validação e transição (Sprint 4)', () => {
   it('entra em execução com o projeto de exemplo válido', () => {
     render(<App />);
     fireEvent.click(screen.getByText('▶ Executar'));
-    expect(screen.getByText('execucao')).toBeInTheDocument();
+    expect(screen.getByText('execução')).toBeInTheDocument();
     // Em execução a paleta fica desabilitada (grafo imutável).
     expect(screen.getByLabelText('Adicionar Tubo')).toBeDisabled();
   });
@@ -151,7 +151,7 @@ describe('modo execução — validação e transição (Sprint 4)', () => {
     adicionar('Reservatório');
     fireEvent.click(screen.getByText('▶ Executar'));
     expect(screen.getByRole('alert')).toBeInTheDocument();
-    expect(screen.getByText('edicao')).toBeInTheDocument(); // permaneceu em edição
+    expect(screen.getByText('edição')).toBeInTheDocument(); // permaneceu em edição
   });
 
   it('campos do inspetor ficam somente-leitura em execução', () => {

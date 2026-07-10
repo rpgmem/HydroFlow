@@ -1,11 +1,13 @@
 /**
- * Menu ⚙ Opções: consolida configurações que não são "peças" — unidades do
- * projeto, tema de exibição e a física opcional (perda de carga por atrito).
+ * Menu ⚙ Opções: consolida configurações que não são "peças" — idioma, unidades
+ * do projeto, tema de exibição e a física opcional (perda de carga por atrito).
  * Dropdown recolhível na toolbar (inline no desktop, colapsado no ⋯ no mobile).
  */
 import { useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import type { Acao, EstadoApp } from '../state/store';
 import type { Unidades } from '../domain/types';
+import { IDIOMAS } from '../i18n';
 import { Switch } from './Switch';
 
 interface Props {
@@ -16,83 +18,100 @@ interface Props {
 }
 
 export function Opcoes({ estado, dispatch, tema, onAlternarTema }: Props) {
+  const { t, i18n } = useTranslation();
   const [aberto, setAberto] = useState(false);
   const emExecucao = estado.modo === 'execucao';
   const u = estado.projeto.unidades;
   const atrito = estado.projeto.configuracaoSimulacao.atrito === true;
   const velRef = estado.projeto.configuracaoSimulacao.velocidadeRef ?? 3;
+  const idiomaAtual = (i18n.resolvedLanguage ?? i18n.language ?? 'pt').split('-')[0];
 
   return (
     <div className="opcoes">
       <button
         className={aberto ? 'ativo' : ''}
-        aria-label="Opções"
+        aria-label={t('opcoes.titulo')}
         aria-expanded={aberto}
         onClick={() => setAberto((v) => !v)}
       >
-        ⚙ Opções
+        {t('opcoes.botao')}
       </button>
       {aberto && (
         <>
           <div className="opcoes-backdrop" onClick={() => setAberto(false)} aria-hidden />
-          <div className="opcoes-menu" role="dialog" aria-label="Opções">
-            <p className="opcoes-sec">Unidades</p>
+          <div className="opcoes-menu" role="dialog" aria-label={t('opcoes.titulo')}>
+            <p className="opcoes-sec">{t('opcoes.idioma')}</p>
             <div className="field">
-              <label>Volume</label>
+              <label>{t('opcoes.idiomaLabel')}</label>
               <select
-                aria-label="Unidade de volume"
+                aria-label={t('opcoes.idiomaLabel')}
+                value={idiomaAtual}
+                onChange={(e) => void i18n.changeLanguage(e.target.value)}
+              >
+                {IDIOMAS.map((lng) => (
+                  <option key={lng} value={lng}>
+                    {t(`idioma.${lng}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <p className="opcoes-sec">{t('opcoes.unidades')}</p>
+            <div className="field">
+              <label>{t('opcoes.volume')}</label>
+              <select
+                aria-label={t('opcoes.volumeLabel')}
                 disabled={emExecucao}
                 value={u.volume}
                 onChange={(e) =>
                   dispatch({ tipo: 'SET_UNIDADES', unidades: { ...u, volume: e.target.value as Unidades['volume'] } })
                 }
               >
-                <option value="litros">litros</option>
-                <option value="m3">m³</option>
+                <option value="litros">{t('opcoes.litros')}</option>
+                <option value="m3">{t('opcoes.m3')}</option>
               </select>
             </div>
             <div className="field">
-              <label>Comprimento</label>
+              <label>{t('opcoes.comprimento')}</label>
               <select
-                aria-label="Unidade de comprimento"
+                aria-label={t('opcoes.comprimentoLabel')}
                 disabled={emExecucao}
                 value={u.comprimento}
                 onChange={(e) =>
                   dispatch({ tipo: 'SET_UNIDADES', unidades: { ...u, comprimento: e.target.value as Unidades['comprimento'] } })
                 }
               >
-                <option value="m">m</option>
-                <option value="cm">cm</option>
+                <option value="m">{t('opcoes.metros')}</option>
+                <option value="cm">{t('opcoes.cm')}</option>
               </select>
             </div>
 
-            <p className="opcoes-sec">Exibição</p>
-            <Switch checked={tema === 'claro'} onChange={onAlternarTema} ariaLabel="Tema claro">
-              Tema claro
+            <p className="opcoes-sec">{t('opcoes.exibicao')}</p>
+            <Switch checked={tema === 'claro'} onChange={onAlternarTema} ariaLabel={t('opcoes.temaClaro')}>
+              {t('opcoes.temaClaro')}
             </Switch>
 
-            <p className="opcoes-sec">Física</p>
+            <p className="opcoes-sec">{t('opcoes.fisica')}</p>
             <Switch
               checked={atrito}
               disabled={emExecucao}
-              ariaLabel="Perda de carga por atrito"
+              ariaLabel={t('opcoes.atritoLabel')}
               onChange={(v) => dispatch({ tipo: 'SET_ATRITO', atrito: v })}
             >
-              Perda de carga (atrito)
+              {t('opcoes.atrito')}
             </Switch>
             <p className="telemetry" style={{ margin: '2px 0 0' }}>
-              Hazen-Williams: cada tubo usa seu <strong>comprimento</strong> e <strong>C</strong>.
-              Desligado = Torricelli puro.
+              <Trans i18nKey="opcoes.atritoDica" components={{ 1: <strong />, 3: <strong /> }} />
             </p>
 
             <div className="field" style={{ marginTop: 8 }}>
-              <label>Velocidade de referência (m/s)</label>
+              <label>{t('opcoes.velocidadeRef')}</label>
               <input
                 type="number"
                 step={0.1}
                 min={0.1}
                 disabled={emExecucao}
-                aria-label="Velocidade de referência"
+                aria-label={t('opcoes.velocidadeRefLabel')}
                 value={velRef}
                 onChange={(e) => {
                   const v = Number(e.target.value);
@@ -101,8 +120,7 @@ export function Opcoes({ estado, dispatch, tema, onAlternarTema }: Props) {
               />
             </div>
             <p className="telemetry" style={{ margin: '2px 0 0' }}>
-              Limite de dimensionamento (padrão <strong>3 m/s</strong>): acima dela o tubo é
-              sinalizado e define a vazão máx. recomendada.
+              <Trans i18nKey="opcoes.velocidadeRefDica" components={{ 1: <strong /> }} />
             </p>
           </div>
         </>

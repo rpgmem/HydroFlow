@@ -2,18 +2,19 @@
  * Paleta de peças (Sprint 3). Cada botão adiciona uma peça nova ao canvas.
  * Desabilitada em execução (grafo estruturalmente imutável).
  */
+import { useTranslation } from 'react-i18next';
 import { criarPeca } from '../domain/factory';
 import type { Acao } from '../state/store';
 import type { TipoPeca } from '../domain/types';
 
-const PECAS: { tipo: TipoPeca; rotulo: string; icone: string }[] = [
-  { tipo: 'reservatorio', rotulo: 'Reservatório', icone: '🛢️' },
-  { tipo: 'tubo', rotulo: 'Tubo', icone: '━' },
-  { tipo: 'bomba', rotulo: 'Bomba', icone: '⚙️' },
-  { tipo: 'fonte', rotulo: 'Fonte', icone: '🚰' },
-  { tipo: 'consumo', rotulo: 'Consumo', icone: '🕳️' },
-  { tipo: 'sensor', rotulo: 'Sensor', icone: '📡' },
-  { tipo: 'juncao', rotulo: 'Junção', icone: '⌥' },
+const PECAS: { tipo: TipoPeca; icone: string }[] = [
+  { tipo: 'reservatorio', icone: '🛢️' },
+  { tipo: 'tubo', icone: '━' },
+  { tipo: 'bomba', icone: '⚙️' },
+  { tipo: 'fonte', icone: '🚰' },
+  { tipo: 'consumo', icone: '🕳️' },
+  { tipo: 'sensor', icone: '📡' },
+  { tipo: 'juncao', icone: '⌥' },
 ];
 
 interface Props {
@@ -22,14 +23,17 @@ interface Props {
 }
 
 export function Palette({ dispatch, desabilitado }: Props) {
+  const { t } = useTranslation();
   return (
     <div className="panel palette">
-      <h3>Peças</h3>
-      {PECAS.map(({ tipo, rotulo, icone }) => (
+      <h3>{t('palette.titulo')}</h3>
+      {PECAS.map(({ tipo, icone }) => {
+        const rotulo = t(`pecas.${tipo}`);
+        return (
         <button
           key={tipo}
           disabled={desabilitado}
-          aria-label={`Adicionar ${rotulo}`}
+          aria-label={t('palette.adicionar', { nome: rotulo })}
           onClick={() => {
             // Posição inicial escalonada para não sobrepor peças novas.
             const x = 120 + Math.round((Date.now() % 5) * 40);
@@ -41,7 +45,8 @@ export function Palette({ dispatch, desabilitado }: Props) {
           </span>
           {rotulo}
         </button>
-      ))}
+        );
+      })}
     </div>
   );
 }

@@ -8,9 +8,11 @@
  *    ＋ / － / ⤢ (ajustar) — essencial no mobile, onde o diagrama não cabe na tela.
  */
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Stage, Layer, Line, Arrow } from 'react-konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 import type { Stage as KonvaStage } from 'konva/lib/Stage';
+import i18n from '../i18n';
 import { PecaView } from './PecaView';
 import { tamanhoPeca } from './pecaGeom';
 import { criarConexao } from '../domain/factory';
@@ -41,6 +43,7 @@ const ZOOM_MAX = 4;
 const clampZoom = (s: number): number => Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, s));
 
 export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimindo }: Props) {
+  const { t } = useTranslation();
   const emExecucao = estado.modo === 'execucao';
   const [conectando, setConectando] = useState<string | null>(null);
   const [ponteiro, setPonteiro] = useState<{ x: number; y: number } | null>(null);
@@ -318,21 +321,21 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
   const hint = emExecucao
     ? null
     : conectando
-      ? `Conectando a partir de "${rotuloDe(pecaPorId.get(conectando))}" — solte sobre a peça de destino`
-      : 'Arraste do ponto ciano (saída) de uma peça até outra para conectar. Clique numa linha para selecioná-la e apague com Delete.';
+      ? t('canvas.conectando', { nome: rotuloDe(pecaPorId.get(conectando)) })
+      : t('canvas.dica');
 
   return (
     <div className="canvas-wrap" data-testid="canvas">
       {hint && <div className="hint">{hint}</div>}
 
       <div className="zoom-ctrls">
-        <button aria-label="Aproximar" onClick={() => zoomBotao(1.2)}>
+        <button aria-label={t('canvas.aproximar')} onClick={() => zoomBotao(1.2)}>
           ＋
         </button>
-        <button aria-label="Afastar" onClick={() => zoomBotao(1 / 1.2)}>
+        <button aria-label={t('canvas.afastar')} onClick={() => zoomBotao(1 / 1.2)}>
           －
         </button>
-        <button aria-label="Ajustar à tela" title="Ajustar à tela" onClick={ajustarView}>
+        <button aria-label={t('canvas.ajustar')} title={t('canvas.ajustar')} onClick={ajustarView}>
           ⤢
         </button>
       </div>
@@ -571,6 +574,7 @@ function rotuloDe(p: { id: string; rotulo?: string } | undefined): string {
  * execução, os valores correntes (vazão, nível). Unidades conforme o projeto.
  */
 function linhasTooltip(peca: Peca, estado: EstadoApp): string[] {
+  const t = i18n.t.bind(i18n);
   const u = estado.projeto.unidades;
   const volL = u.volume === 'm3' ? 'm³' : 'L';
   const vazL = `${volL}/s`;
@@ -579,40 +583,56 @@ function linhasTooltip(peca: Peca, estado: EstadoApp): string[] {
   const q = estado.vazoes[peca.id];
   const linhaVazao = (): string | null => {
     if (!emExec || q === undefined || Math.abs(q) < 1e-6) return null;
-    return `Vazão: ${q.toFixed(2)} ${vazL}${q < -1e-6 ? ' (refluxo)' : ''}`;
+    return t('canvas.tipVazao', { vazao: q.toFixed(2), unidade: vazL, refluxo: q < -1e-6 ? t('canvas.tipRefluxo') : '' });
   };
   const linhas: (string | null)[] = [];
   if (isReservatorio(peca)) {
     const p = peca.props;
-    linhas.push(`Nível: ${(p.nivel ?? 0).toFixed(2)} / ${p.alturaMaxima} ${compL}`);
-    linhas.push(`Cota base: ${p.cotaBase} ${compL}`);
-    linhas.push(`Carga: ${(p.cotaBase + (p.nivel ?? 0)).toFixed(2)} ${compL}`);
+    linhas.push(t('canvas.tipNivel', { nivel: (p.nivel ?? 0).toFixed(2), max: p.alturaMaxima, unidade: compL }));
+    linhas.push(t('canvas.tipCotaBase', { cota: p.cotaBase, unidade: compL }));
+    linhas.push(t('canvas.tipCarga', { carga: (p.cotaBase + (p.nivel ?? 0)).toFixed(2), unidade: compL }));
   } else if (isTubo(peca)) {
     const p = peca.props;
     linhas.push(`Ø ${p.diametro} mm${p.bitola ? ` (${p.bitola})` : ''}`);
-    if (p.ladrao) linhas.push(`Ladrão em ${p.ladrao.nivel} ${compL}`);
-    if (p.registro) linhas.push(`Registro: ${p.registro.aberto ? 'aberto' : 'fechado'}`);
+    if (p.ladrao) linhas.push(t('canvas.tipLadrao', { nivel: p.ladrao.nivel, unidade: compL }));
+    if (p.registro) linhas.push(t('canvas.tipRegistro', { estado: p.registro.aberto ? t('canvas.aberto') : t('canvas.fechado') }));
     linhas.push(linhaVazao());
   } else if (isBomba(peca)) {
     const p = peca.props;
-    linhas.push(`Vazão nominal: ${p.vazaoNominal} ${vazL}`);
-    if (p.alturaNominal) linhas.push(`Altura nominal: ${p.alturaNominal} ${compL}`);
-    if (emExec) linhas.push(`Estado: ${p.ligada ? 'ligada' : 'desligada'}`);
+    linhas.push(t('canvas.tipVazaoNominal', { vazao: p.vazaoNominal, unidade: vazL }));
+    if (p.alturaNominal) linhas.push(t('canvas.tipAlturaNominal', { altura: p.alturaNominal, unidade: compL }));
+    if (emExec) linhas.push(t('canvas.tipEstado', { estado: p.ligada ? t('canvas.ligada') : t('canvas.desligada') }));
     linhas.push(linhaVazao());
   } else if (isFonte(peca)) {
-    linhas.push(`Vazão fixa: ${peca.props.vazaoFixa} ${vazL}`);
+    linhas.push(t('canvas.tipVazaoFixa', { vazao: peca.props.vazaoFixa, unidade: vazL }));
     linhas.push(linhaVazao());
   } else if (isConsumo(peca)) {
     const p = peca.props;
-    linhas.push(`Demanda: ${p.vazaoDemanda} ${vazL}${p.perfil && p.perfil !== 'fixo' ? ` (${p.perfil})` : ''}`);
-    if (p.aberto === false) linhas.push('Fechado');
+    const perfilSuf =
+      p.perfil && p.perfil !== 'fixo'
+        ? ` (${t(p.perfil === 'senoidal' ? 'canvas.perfilSenoidal' : 'canvas.perfilIntermitente')})`
+        : '';
+    linhas.push(t('canvas.tipDemanda', { vazao: p.vazaoDemanda, unidade: vazL, perfil: perfilSuf }));
+    if (p.aberto === false) linhas.push(t('canvas.tipFechado'));
     linhas.push(linhaVazao());
   } else if (isSensor(peca)) {
     const p = peca.props;
-    linhas.push(`${p.reversa ? 'Reverso — ' : ''}liga/desliga: ${p.nivelMinimo}–${p.nivelMaximo} ${compL}`);
+    linhas.push(
+      t('canvas.tipSensor', {
+        reverso: p.reversa ? t('canvas.tipReverso') : '',
+        min: p.nivelMinimo,
+        max: p.nivelMaximo,
+        unidade: compL,
+      }),
+    );
   } else if (peca.tipo === 'juncao') {
     const d = (peca.props as { diametro?: number; bitola?: string }).diametro;
-    linhas.push(d && d > 0 ? `Estrangula: Ø ${d} mm${(peca.props as { bitola?: string }).bitola ? ` (${(peca.props as { bitola?: string }).bitola})` : ''}` : 'Junção (sem estrangulamento)');
+    const bitola = (peca.props as { bitola?: string }).bitola;
+    linhas.push(
+      d && d > 0
+        ? t('canvas.tipEstrangula', { diametro: d, bitola: bitola ? ` (${bitola})` : '' })
+        : t('canvas.tipJuncaoLivre'),
+    );
     linhas.push(linhaVazao());
   }
   return linhas.filter((l): l is string => l !== null);

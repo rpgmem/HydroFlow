@@ -3,6 +3,7 @@
  * tubo e as CORES de estado usadas na simulação. Cartão recolhível (como o log).
  * As cores espelham as de PecaView/Canvas para a leitura bater com o desenho.
  */
+import { useTranslation } from 'react-i18next';
 
 // Glifos SVG pequenos (18×18) espelhando as formas do canvas.
 function Swatch({ children }: { children: React.ReactNode }) {
@@ -79,84 +80,85 @@ function Cor({ c }: { c: string }) {
   return <span className="leg-cor" style={{ background: c }} />;
 }
 
-const PECAS: { forma: React.ReactNode; nome: string }[] = [
-  { forma: <FormaReservatorio />, nome: 'Reservatório' },
-  { forma: <FormaTubo />, nome: 'Tubo' },
-  { forma: <FormaBomba />, nome: 'Bomba (círculo)' },
-  { forma: <FormaSensor />, nome: 'Sensor (losango)' },
-  { forma: <FormaJuncao />, nome: 'Junção (hexágono)' },
-  { forma: <FormaFonte />, nome: 'Fonte' },
-  { forma: <FormaConsumo />, nome: 'Consumo' },
+const PECAS: { forma: React.ReactNode; k: string }[] = [
+  { forma: <FormaReservatorio />, k: 'pecas.reservatorio' },
+  { forma: <FormaTubo />, k: 'pecas.tubo' },
+  { forma: <FormaBomba />, k: 'legenda.bomba' },
+  { forma: <FormaSensor />, k: 'legenda.sensor' },
+  { forma: <FormaJuncao />, k: 'legenda.juncao' },
+  { forma: <FormaFonte />, k: 'pecas.fonte' },
+  { forma: <FormaConsumo />, k: 'pecas.consumo' },
 ];
 
-const VALVULAS: { c: string; nome: string }[] = [
-  { c: '#34d399', nome: 'Registro/boia aberto' },
-  { c: '#f87171', nome: 'Registro/boia fechado' },
-  { c: '#fbbf24', nome: 'Ladrão em espera' },
-  { c: '#f59e0b', nome: 'Ladrão em transbordo' },
+const VALVULAS: { c: string; k: string }[] = [
+  { c: '#34d399', k: 'legenda.registroAberto' },
+  { c: '#f87171', k: 'legenda.registroFechado' },
+  { c: '#fbbf24', k: 'legenda.ladraoEspera' },
+  { c: '#f59e0b', k: 'legenda.ladraoTransbordo' },
 ];
 
-const ESTADOS: { c: string; nome: string }[] = [
-  { c: '#22d3ee', nome: 'Fluxo (linha ativa)' },
-  { c: '#2b8fe0', nome: 'Tubo com fluxo' },
-  { c: '#c084fc', nome: 'Refluxo (contra a seta)' },
-  { c: '#f43f5e', nome: 'Velocidade acima do recomendado' },
-  { c: '#5b2b2b', nome: 'Bomba a seco' },
-  { c: '#f59e0b', nome: 'Déficit de consumo / transbordo' },
+const ESTADOS: { c: string; k: string }[] = [
+  { c: '#22d3ee', k: 'legenda.fluxoLinha' },
+  { c: '#2b8fe0', k: 'legenda.fluxoTubo' },
+  { c: '#c084fc', k: 'legenda.refluxo' },
+  { c: '#f43f5e', k: 'legenda.velocidade' },
+  { c: '#5b2b2b', k: 'legenda.seco' },
+  { c: '#f59e0b', k: 'legenda.deficit' },
 ];
 
-const SENSOR: { c: string; nome: string }[] = [
-  { c: '#34d399', nome: 'Pedindo ligar' },
-  { c: '#f87171', nome: 'Pedindo desligar' },
-  { c: '#fbbf24', nome: 'Em espera (banda morta)' },
+const SENSOR: { c: string; k: string }[] = [
+  { c: '#34d399', k: 'legenda.pedindoLigar' },
+  { c: '#f87171', k: 'legenda.pedindoDesligar' },
+  { c: '#fbbf24', k: 'legenda.espera' },
 ];
 
 export function Legenda({ onFechar }: { onFechar: () => void }) {
+  const { t } = useTranslation();
   return (
-    <div className="legenda-panel" role="dialog" aria-label="Legenda">
+    <div className="legenda-panel" role="dialog" aria-label={t('legenda.titulo')}>
       <div className="log-head">
-        <strong>Legenda</strong>
-        <button onClick={onFechar} aria-label="Fechar legenda">
+        <strong>{t('legenda.titulo')}</strong>
+        <button onClick={onFechar} aria-label={t('legenda.fechar')}>
           ✕
         </button>
       </div>
 
-      <p className="leg-sec">Peças</p>
+      <p className="leg-sec">{t('legenda.secPecas')}</p>
       <ul className="leg-lista">
         {PECAS.map((p) => (
-          <li key={p.nome}>
+          <li key={p.k}>
             {p.forma}
-            <span>{p.nome}</span>
+            <span>{t(p.k)}</span>
           </li>
         ))}
       </ul>
 
-      <p className="leg-sec">Válvulas no tubo</p>
+      <p className="leg-sec">{t('legenda.secValvulas')}</p>
       <ul className="leg-lista">
         {VALVULAS.map((v) => (
-          <li key={v.nome}>
+          <li key={v.k}>
             <Cor c={v.c} />
-            <span>{v.nome}</span>
+            <span>{t(v.k)}</span>
           </li>
         ))}
       </ul>
 
-      <p className="leg-sec">Cores de fluxo/estado</p>
+      <p className="leg-sec">{t('legenda.secEstados')}</p>
       <ul className="leg-lista">
         {ESTADOS.map((e) => (
-          <li key={e.nome}>
+          <li key={e.k}>
             <Cor c={e.c} />
-            <span>{e.nome}</span>
+            <span>{t(e.k)}</span>
           </li>
         ))}
       </ul>
 
-      <p className="leg-sec">Sensor (na execução)</p>
+      <p className="leg-sec">{t('legenda.secSensor')}</p>
       <ul className="leg-lista">
         {SENSOR.map((s) => (
-          <li key={s.nome}>
+          <li key={s.k}>
             <Cor c={s.c} />
-            <span>{s.nome}</span>
+            <span>{t(s.k)}</span>
           </li>
         ))}
       </ul>
