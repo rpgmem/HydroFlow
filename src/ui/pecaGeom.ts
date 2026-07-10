@@ -28,5 +28,8 @@ export function tamanhoPeca(tipo: Peca['tipo']): { w: number; h: number } {
     case 'juncao':
       // Componentes pontuais: mesmo diâmetro para todos (forma + cor distinguem).
       return { w: TAMANHO_NO, h: TAMANHO_NO };
+    case 'quadro':
+      // Quadro de comandos (painel): quadrado, do mesmo diâmetro dos demais nós.
+      return { w: TAMANHO_NO, h: TAMANHO_NO };
   }
 }

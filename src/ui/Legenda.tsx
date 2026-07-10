@@ -74,6 +74,16 @@ function FormaConsumo() {
     </Swatch>
   );
 }
+function FormaQuadro() {
+  return (
+    <Swatch>
+      <rect x={-8} y={-8} width={16} height={16} rx={2} fill="#e0863b" stroke={stroke} />
+      {[-1, 0, 1].map((i) => (
+        <circle key={i} cx={i * 4.5} cy={-4} r={1.4} fill="#fff3e0" />
+      ))}
+    </Swatch>
+  );
+}
 
 /** Bolinha de cor para a seção de estados. */
 function Cor({ c }: { c: string }) {
@@ -88,6 +98,7 @@ const PECAS: { forma: React.ReactNode; k: string }[] = [
   { forma: <FormaJuncao />, k: 'legenda.juncao' },
   { forma: <FormaFonte />, k: 'pecas.fonte' },
   { forma: <FormaConsumo />, k: 'pecas.consumo' },
+  { forma: <FormaQuadro />, k: 'legenda.quadro' },
 ];
 
 const VALVULAS: { c: string; k: string }[] = [

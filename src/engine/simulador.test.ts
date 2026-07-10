@@ -9,6 +9,7 @@ import {
 } from '../domain/factory';
 import { serializarProjeto } from '../domain/schema';
 import type {
+  CanalQuadro,
   Peca,
   ProjetoSimulacao,
   PropsBomba,
@@ -1137,6 +1138,61 @@ describe('um sensor controla várias bombas', () => {
     );
     expect(r.vazoes['P1']).toBeCloseTo(4, 9); // ambas ligaram pelo mesmo sensor
     expect(r.vazoes['P2']).toBeCloseTo(6, 9);
+  });
+});
+
+describe('quadro de comandos (MCC)', () => {
+  const quadro = (id: string, canais: CanalQuadro[]): Peca => ({ id, tipo: 'quadro', x: 0, y: 0, props: { canais } });
+  const estaLigada = (r: ReturnType<typeof tick>, id: string): boolean | undefined =>
+    (r.projeto.pecas.find((p) => p.id === id)!.props as PropsBomba).ligada;
+  // Reservatório D no fundo (nível 0 < mín 1) → sensor normal S pede LIGAR.
+  const cenario = (canais: CanalQuadro[], extraBomba: Partial<PropsBomba> = {}) =>
+    tick(
+      projeto(
+        [
+          res('D', { nivel: 0 }),
+          sensor('S', { bombasAlvo: [], nivelMinimo: 1, nivelMaximo: 4 }),
+          bomba('P', { ligada: false, ...extraBomba }),
+          quadro('Q', canais),
+        ],
+        [criarConexao('S', 'D')],
+      ),
+    );
+
+  it('modo manual liga a bomba', () => {
+    expect(estaLigada(cenario([{ bomba: 'P', modo: 'manual' }]), 'P')).toBe(true);
+  });
+
+  it('modo desligado desliga, mesmo com a boia pedindo ligar', () => {
+    expect(estaLigada(cenario([{ bomba: 'P', modo: 'desligado', sensor: 'S' }]), 'P')).toBe(false);
+  });
+
+  it('modo auto segue a boia escolhida', () => {
+    expect(estaLigada(cenario([{ bomba: 'P', modo: 'auto', sensor: 'S' }]), 'P')).toBe(true);
+  });
+
+  it('o quadro sobrepõe o modoControle direto da bomba', () => {
+    // modoControle 'desligado', mas o quadro manda 'manual' → o quadro vence.
+    expect(estaLigada(cenario([{ bomba: 'P', modo: 'manual' }], { modoControle: 'desligado' }), 'P')).toBe(true);
+  });
+
+  it('sensor sob o quadro deixa de acionar bombas pelo bombasAlvo direto', () => {
+    // S rege P1 pelo quadro (auto) e ainda lista P2 em bombasAlvo; como está sob o
+    // quadro, o vínculo direto S→P2 fica inativo → P2 não liga.
+    const r = tick(
+      projeto(
+        [
+          res('D', { nivel: 0 }),
+          sensor('S', { bombasAlvo: ['P2'], nivelMinimo: 1, nivelMaximo: 4 }),
+          bomba('P1', { ligada: false }),
+          bomba('P2', { ligada: false }),
+          quadro('Q', [{ bomba: 'P1', modo: 'auto', sensor: 'S' }]),
+        ],
+        [criarConexao('S', 'D')],
+      ),
+    );
+    expect(estaLigada(r, 'P1')).toBe(true); // regida pelo quadro
+    expect(estaLigada(r, 'P2')).toBe(false); // vínculo direto de S inativo
   });
 });
 

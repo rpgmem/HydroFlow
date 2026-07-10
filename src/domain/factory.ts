@@ -69,6 +69,8 @@ export function portasPadrao(tipo: TipoPeca): string[] {
       return ['entrada'];
     case 'sensor':
       return ['sonda'];
+    case 'quadro':
+      return []; // liga por props (ids de bomba/sensor), sem porta física
   }
 }
 
@@ -105,6 +107,8 @@ export function criarPeca(
       return { ...base, props: { bombasAlvo: [], nivelMinimo: 1, nivelMaximo: 4 } };
     case 'juncao':
       return { ...base, props: {} };
+    case 'quadro':
+      return { ...base, props: { canais: [] } };
   }
 }
 

@@ -28,9 +28,11 @@ import {
   isBomba,
   isConsumo,
   isFonte,
+  isQuadro,
   isReservatorio,
   isSensor,
   isTubo,
+  type CanalQuadro,
   type PecaDe,
   type ProjetoSimulacao,
 } from '../domain/types';
@@ -103,6 +105,21 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   const velRef = proj.configuracaoSimulacao.velocidadeRef ?? VELOCIDADE_MAX_RECOMENDADA_MS;
   const tempoFim = tempoAtual + dt;
 
+  // ---- (0) Quadros de comando (MCC) -------------------------------------
+  // Uma bomba referenciada por um canal passa a OBEDECER o quadro (o
+  // `modoControle` dela é ignorado). O sensor escolhido num canal 'auto' age só
+  // pelo quadro (seu `bombasAlvo` direto não roteia). Peças não referenciadas por
+  // nenhum quadro mantêm o controle direto. Primeira referência a uma bomba vence.
+  const regidaPorQuadro = new Map<string, CanalQuadro>();
+  const sensoresEmQuadro = new Set<string>();
+  for (const p of proj.pecas) {
+    if (!isQuadro(p)) continue;
+    for (const c of p.props.canais) {
+      if (c.bomba && !regidaPorQuadro.has(c.bomba)) regidaPorQuadro.set(c.bomba, c);
+      if (c.modo === 'auto' && c.sensor) sensoresEmQuadro.add(c.sensor);
+    }
+  }
+
   // ---- (1) Sensores avaliam sobre o estado do tick anterior -------------
   const decisoesPorBomba = new Map<string, Decisao[]>();
   const sensores: Record<string, Decisao> = {};
@@ -132,11 +149,14 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
       p.props.ultimaTroca = tempoAtual;
       p.props.pedindoLigar = querLigar;
     }
-    // Um sensor pode reger várias bombas simultaneamente.
-    for (const alvo of p.props.bombasAlvo) {
-      const lista = decisoesPorBomba.get(alvo) ?? [];
-      lista.push(efetiva);
-      decisoesPorBomba.set(alvo, lista);
+    // Um sensor pode reger várias bombas simultaneamente — a MENOS que ele esteja
+    // sob um quadro de comandos (aí só age pelo quadro; o roteamento direto para).
+    if (!sensoresEmQuadro.has(p.id)) {
+      for (const alvo of p.props.bombasAlvo) {
+        const lista = decisoesPorBomba.get(alvo) ?? [];
+        lista.push(efetiva);
+        decisoesPorBomba.set(alvo, lista);
+      }
     }
   }
 
@@ -148,11 +168,23 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   for (const p of proj.pecas) {
     if (!isBomba(p)) continue;
     const antes = p.props.ligada ?? false;
-    const modo = p.props.modoControle ?? 'auto';
+    const canal = regidaPorQuadro.get(p.id);
     let agora: boolean;
-    if (modo === 'ligado') agora = true;
-    else if (modo === 'desligado') agora = false;
-    else agora = arbitrarBomba(decisoesPorBomba.get(p.id) ?? [], antes);
+    if (canal) {
+      // Regida por um quadro: o canal manda (o modoControle da bomba é ignorado).
+      // 'auto' segue o sensor escolhido (só ele); sem sensor → mantém o estado.
+      if (canal.modo === 'desligado') agora = false;
+      else if (canal.modo === 'manual') agora = true;
+      else {
+        const dec = canal.sensor ? sensores[canal.sensor] : undefined;
+        agora = arbitrarBomba(dec ? [dec] : [], antes);
+      }
+    } else {
+      const modo = p.props.modoControle ?? 'auto';
+      if (modo === 'ligado') agora = true;
+      else if (modo === 'desligado') agora = false;
+      else agora = arbitrarBomba(decisoesPorBomba.get(p.id) ?? [], antes);
+    }
     p.props.ligada = agora;
     // Revezamento: a cada ACIONAMENTO (borda de subida) a metade ativa alterna —
     // undefined→1, 1→2, 2→1. Quem assumiu por último descansa no ciclo seguinte.

@@ -20,6 +20,7 @@ import {
   isBomba,
   isConsumo,
   isFonte,
+  isQuadro,
   isReservatorio,
   isSensor,
   isTubo,
@@ -634,6 +635,8 @@ function linhasTooltip(peca: Peca, estado: EstadoApp): string[] {
         : t('canvas.tipJuncaoLivre'),
     );
     linhas.push(linhaVazao());
+  } else if (isQuadro(peca)) {
+    linhas.push(t('canvas.tipQuadro', { n: peca.props.canais.length }));
   }
   return linhas.filter((l): l is string => l !== null);
 }

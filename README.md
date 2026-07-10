@@ -169,6 +169,7 @@ interface NivelControle {
 | `consumo` | `vazaoDemanda`, `aberto?`, `perfil?` (`fixo`\|`senoidal`\|`intermitente`), `vazaoMin?`/`vazaoMax?`/`periodo?`/`cicloLigado?` (perfil variável; `cicloLigado` = fração do período ligado no perfil intermitente) — ponto de saída/demanda; retira água e descarta |
 | `sensor` | `NivelControle & { bombasAlvo: string[] }` — controla **uma ou mais** bombas; `reversa` inverte a lógica (liga no máximo, desliga no mínimo) |
 | `juncao` | `diametro?`/`bitola?` (mm; **estrangula** o fluxo pela junção — reusa o catálogo de bitolas dos tubos). Nó sem volume que **divide/soma** a vazão por gravidade, conservando massa |
+| `quadro` | `canais: {bomba, modo, sensor?}[]` — quadro de comandos (MCC): por bomba, `modo` (`auto`\|`manual`\|`desligado`) e, no `auto`, qual `sensor`/boia respeitar. Liga por id (sem conexão física). Uma bomba/sensor regidos por um quadro perdem o controle direto |
 
 `cotaBase` é a elevação física da base do reservatório — permite **empilhamento**
 e entra no cálculo de carga hidráulica.
@@ -230,6 +231,11 @@ realistas (vazões em L/s enchendo tanques de milhares de litros) em segundos.
   com ela ligada, a vazão é 0 (sem fantasma) e um alerta é emitido. A proteção por
   nível baixo é feita por um **sensor reverso** monitorando a sucção.
 - **Controle da bomba** — modo `auto` (segue o sensor), `ligado` ou `desligado`.
+- **Quadro de comandos (MCC)** — a peça `quadro` centraliza o controle: por bomba,
+  modo Automático (seguindo uma boia escolhida) / Manual / Desligado. A associação
+  é escolhida no inspetor da bomba (seletor "Quadro"); uma bomba pertence a no
+  máximo um quadro e, enquanto regida, seu controle direto (e o `bombasAlvo` do
+  sensor usado) fica inativo.
 - **Alerta de dimensionamento** — cada tubo tem uma **vazão máxima recomendada**
   (área × velocidade de referência, configurável em ⚙ Opções; padrão 3 m/s, a
   velocidade clássica de projeto). Quando a velocidade real

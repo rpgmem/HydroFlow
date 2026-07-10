@@ -71,6 +71,7 @@ const COR: Record<Peca['tipo'], string> = {
   consumo: '#5a3d2b',
   sensor: '#3b3b6d',
   juncao: '#0d9488',
+  quadro: '#e0863b',
 };
 
 export function PecaView({
@@ -157,6 +158,15 @@ export function PecaView({
         // Junção = hexágono (evoca uma luva/porca de tubo — peça de conexão).
         // Distinto do círculo (bomba) e do losango (sensor).
         <Line closed points={hexagono(w / 2)} fill={COR.juncao} stroke={borda} strokeWidth={larguraBorda} />
+      ) : peca.tipo === 'quadro' ? (
+        // Quadro de comandos = painel retangular com "luzes" (MCC). Distinto dos
+        // demais pela forma larga + fileira de indicadores no topo.
+        <>
+          <Rect x={-w / 2} y={-h / 2} width={w} height={h} cornerRadius={3} fill={COR.quadro} stroke={borda} strokeWidth={larguraBorda} />
+          {[-1, 0, 1].map((i) => (
+            <Circle key={i} x={i * 11} y={-h / 2 + 8} radius={3} fill="#fff3e0" stroke="#0d1620" strokeWidth={0.5} />
+          ))}
+        </>
       ) : peca.tipo === 'consumo' ? (
         // Triângulo apontando para baixo (dreno/saída). Laranja quando em déficit
         // (a bomba que o alimenta não acompanha a demanda).
@@ -363,6 +373,7 @@ function icone(tipo: Peca['tipo']): string {
     consumo: '🕳️',
     sensor: '📡',
     juncao: '⌥',
+    quadro: '🎛️',
   }[tipo];
 }
 

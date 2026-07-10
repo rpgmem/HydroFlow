@@ -31,6 +31,7 @@ const TIPOS_VALIDOS: readonly TipoPeca[] = [
   'consumo',
   'sensor',
   'juncao',
+  'quadro',
 ];
 
 /** Compara apenas o componente MAJOR do semver (ex.: "1.x" ⇔ "1.y"). */
@@ -152,6 +153,13 @@ function validarPeca(peca: unknown, idx: number, erros: ErroValidacao[]): void {
       erros.push({
         caminho: `${base}.props.bombasAlvo`,
         mensagem: 'bombasAlvo (lista de ids de bomba) obrigatória',
+      });
+    }
+  } else if (peca.tipo === 'quadro') {
+    if (!Array.isArray(props.canais)) {
+      erros.push({
+        caminho: `${base}.props.canais`,
+        mensagem: 'canais (lista de {bomba, modo, sensor?}) obrigatória',
       });
     }
   }

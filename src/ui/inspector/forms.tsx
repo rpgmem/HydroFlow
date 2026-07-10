@@ -5,12 +5,17 @@
  */
 import {
   isBomba,
+  isQuadro,
+  isSensor,
+  type CanalQuadro,
   type NivelControle,
+  type Peca,
   type ProjetoSimulacao,
   type PropsBomba,
   type PropsConsumo,
   type PropsFonte,
   type PropsJuncao,
+  type PropsQuadro,
   type PropsReservatorio,
   type PropsSensor,
   type PropsTubo,
@@ -21,8 +26,23 @@ import { vazaoDeM3, vazaoMaxRecomendadaM3, volumeMaximoM3 } from '../../engine/g
 import { labelVolume, m3PorVolume } from '../../domain/unidades';
 import { CATALOGO_TUBOS, CATEGORIAS_TUBO, bitolaPorDn, rotuloBitola } from '../../domain/tubosCatalogo';
 import { fmtNumero } from '../../i18n';
+import type { Acao } from '../../state/store';
 import { Num, type Upd, type UniLabel } from './campos';
 import { Switch } from '../Switch';
+
+const nomePeca = (p: Peca): string => (p.rotulo && p.rotulo.trim() ? p.rotulo : p.id);
+
+/** Quadro de comandos que rege a bomba `id` (via canal), ou null. */
+function quadroDaBomba(projeto: ProjetoSimulacao, id: string): Peca | null {
+  return projeto.pecas.find((p) => isQuadro(p) && p.props.canais.some((c) => c.bomba === id)) ?? null;
+}
+/** Rótulo do quadro que usa o sensor `id` num canal 'auto', ou null. */
+function quadroDoSensor(projeto: ProjetoSimulacao, id: string): string | null {
+  const q = projeto.pecas.find(
+    (p) => isQuadro(p) && p.props.canais.some((c) => c.modo === 'auto' && c.sensor === id),
+  );
+  return q ? nomePeca(q) : null;
+}
 
 export function ReservatorioForm({
   props,
@@ -284,8 +304,27 @@ export function BoiaFields({
   );
 }
 
-export function BombaForm({ props, emExecucao, upd, u }: { props: PropsBomba; emExecucao: boolean; upd: Upd; u: UniLabel }) {
+export function BombaForm({ props, emExecucao, upd, u, projeto, pecaId, dispatch }: { props: PropsBomba; emExecucao: boolean; upd: Upd; u: UniLabel; projeto: ProjetoSimulacao; pecaId: string; dispatch: React.Dispatch<Acao> }) {
   const { t } = useTranslation();
+  // Quadros do projeto e o que rege esta bomba (se algum). O seletor abaixo é a
+  // ESCOLHA de "qual quadro" — a bomba pertence a no máximo um. Ao escolher, o
+  // canal é movido para o quadro alvo (fonte da verdade = canais do quadro).
+  const quadros = projeto.pecas.filter(isQuadro);
+  const regidaPor = quadroDaBomba(projeto, pecaId);
+  const escolherQuadro = (novoId: string): void => {
+    if ((regidaPor?.id ?? '') === novoId) return;
+    // Remove esta bomba de qualquer quadro em que esteja.
+    for (const q of quadros) {
+      if (q.props.canais.some((c) => c.bomba === pecaId)) {
+        dispatch({ tipo: 'ATUALIZAR_PROPS', id: q.id, props: { canais: q.props.canais.filter((c) => c.bomba !== pecaId) } as never });
+      }
+    }
+    // Adiciona ao quadro escolhido (modo 'auto' por padrão; ajusta-se no quadro).
+    const alvo = quadros.find((q) => q.id === novoId);
+    if (alvo) {
+      dispatch({ tipo: 'ATUALIZAR_PROPS', id: alvo.id, props: { canais: [...alvo.props.canais.filter((c) => c.bomba !== pecaId), { bomba: pecaId, modo: 'auto' }] } as never });
+    }
+  };
   return (
     <>
       <Num label={t('form.vazaoNominal')} unidade={u.vazao} value={props.vazaoNominal} disabled={emExecucao} onChange={(v) => upd({ vazaoNominal: v })} />
@@ -303,18 +342,43 @@ export function BombaForm({ props, emExecucao, upd, u }: { props: PropsBomba; em
       <p className="telemetry" style={{ marginTop: -4 }}>
         {t('form.alturaNominalDica')}
       </p>
-      <div className="field">
-        <label>{t('form.controleBomba')}</label>
-        <select
-          value={props.modoControle ?? 'auto'}
-          aria-label={t('form.controleBomba')}
-          onChange={(e) => upd({ modoControle: e.target.value })}
-        >
-          <option value="auto">{t('form.controleAuto')}</option>
-          <option value="ligado">{t('form.controleLigado')}</option>
-          <option value="desligado">{t('form.controleDesligado')}</option>
-        </select>
-      </div>
+      {/* Seletor de quadro: só aparece se existir algum quadro no projeto. */}
+      {quadros.length > 0 && (
+        <div className="field">
+          <label>{t('form.bombaQuadro')}</label>
+          <select
+            value={regidaPor?.id ?? ''}
+            disabled={emExecucao}
+            aria-label={t('form.bombaQuadro')}
+            onChange={(e) => escolherQuadro(e.target.value)}
+          >
+            <option value="">{t('form.bombaSemQuadro')}</option>
+            {quadros.map((q) => (
+              <option key={q.id} value={q.id}>{nomePeca(q)}</option>
+            ))}
+          </select>
+        </div>
+      )}
+      {/* Regida por um quadro → o modo/boia é definido lá (controle direto some).
+          Sem quadro → o seletor de modo direto de sempre. */}
+      {regidaPor ? (
+        <p className="telemetry" style={{ marginTop: -4 }}>
+          🎛️ {t('form.bombaRegida', { nome: nomePeca(regidaPor) })}
+        </p>
+      ) : (
+        <div className="field">
+          <label>{t('form.controleBomba')}</label>
+          <select
+            value={props.modoControle ?? 'auto'}
+            aria-label={t('form.controleBomba')}
+            onChange={(e) => upd({ modoControle: e.target.value })}
+          >
+            <option value="auto">{t('form.controleAuto')}</option>
+            <option value="ligado">{t('form.controleLigado')}</option>
+            <option value="desligado">{t('form.controleDesligado')}</option>
+          </select>
+        </div>
+      )}
       {/* Bomba dupla em revezamento: rodízio de desgaste entre duas metades
           (mesma vazão e tubulação). Padrão = bomba única. */}
       <Switch
@@ -468,11 +532,13 @@ export function SensorForm({
   projeto,
   upd,
   u,
+  pecaId,
 }: {
   props: PropsSensor;
   projeto: ProjetoSimulacao;
   upd: Upd;
   u: UniLabel;
+  pecaId: string;
 }) {
   const { t } = useTranslation();
   const bombas = projeto.pecas.filter(isBomba);
@@ -480,29 +546,38 @@ export function SensorForm({
   const alternarAlvo = (id: string, marcado: boolean): void =>
     upd({ bombasAlvo: marcado ? [...alvos, id] : alvos.filter((x) => x !== id) });
   const reversa = props.reversa ?? false;
+  // Se um quadro usa este sensor, o vínculo direto com as bombas (bombasAlvo)
+  // fica inativo — o quadro decide quais bombas ele aciona.
+  const usadoPor = quadroDoSensor(projeto, pecaId);
   return (
     <>
-      <div className="field">
-        <label>{t('form.bombasControladas')}</label>
-        {bombas.length === 0 ? (
-          <p className="telemetry" style={{ margin: 0 }}>{t('form.semBombas')}</p>
-        ) : (
-          bombas.map((b) => {
-            const nome = b.rotulo && b.rotulo.trim() ? b.rotulo : b.id;
-            return (
-            <label className="checkbox" key={b.id}>
-              <input
-                type="checkbox"
-                checked={alvos.includes(b.id)}
-                aria-label={t('form.controlar', { nome })}
-                onChange={(e) => alternarAlvo(b.id, e.target.checked)}
-              />
-              {nome}
-            </label>
-            );
-          })
-        )}
-      </div>
+      {usadoPor ? (
+        <p className="telemetry" style={{ margin: 0 }}>
+          🎛️ {t('form.sensorRegido', { nome: usadoPor })}
+        </p>
+      ) : (
+        <div className="field">
+          <label>{t('form.bombasControladas')}</label>
+          {bombas.length === 0 ? (
+            <p className="telemetry" style={{ margin: 0 }}>{t('form.semBombas')}</p>
+          ) : (
+            bombas.map((b) => {
+              const nome = b.rotulo && b.rotulo.trim() ? b.rotulo : b.id;
+              return (
+              <label className="checkbox" key={b.id}>
+                <input
+                  type="checkbox"
+                  checked={alvos.includes(b.id)}
+                  aria-label={t('form.controlar', { nome })}
+                  onChange={(e) => alternarAlvo(b.id, e.target.checked)}
+                />
+                {nome}
+              </label>
+              );
+            })
+          )}
+        </div>
+      )}
       <Switch
         checked={reversa}
         ariaLabel={t('form.reversoLabel')}
@@ -526,6 +601,78 @@ export function SensorForm({
         {t('form.histerese')}
       </Switch>
       <Num label={t('form.delay')} value={props.delay} onChange={(v) => upd({ delay: v })} />
+    </>
+  );
+}
+
+/**
+ * Quadro de comandos (MCC): uma linha por bomba controlada — modo (Automático/
+ * Manual/Desligado) e, no automático, qual boia/sensor respeitar. Quem estiver
+ * aqui passa a obedecer o quadro (o controle direto da bomba/sensor fica inativo).
+ */
+export function QuadroForm({
+  props,
+  emExecucao,
+  upd,
+  projeto,
+}: {
+  props: PropsQuadro;
+  emExecucao: boolean;
+  upd: Upd;
+  projeto: ProjetoSimulacao;
+}) {
+  const { t } = useTranslation();
+  const sensores = projeto.pecas.filter(isSensor);
+  const canais = props.canais;
+  const atualiza = (i: number, patch: Partial<CanalQuadro>): void =>
+    upd({ canais: canais.map((c, k) => (k === i ? { ...c, ...patch } : c)) });
+  const nomeBomba = (id: string): string => {
+    const b = projeto.pecas.find((p) => p.id === id);
+    return b ? nomePeca(b) : id;
+  };
+
+  // A ASSOCIAÇÃO (quais bombas) é escolhida no inspetor de cada bomba; aqui só se
+  // ajusta o modo + a boia de cada bomba que já pertence a este quadro.
+  if (canais.length === 0) {
+    return <p className="telemetry" style={{ margin: 0 }}>{t('form.quadroVazio')}</p>;
+  }
+  return (
+    <>
+      <label>{t('form.quadroCanais')}</label>
+      {canais.map((c, i) => (
+        <div key={c.bomba} className="quadro-canal">
+          <strong style={{ fontSize: 13 }}>{nomeBomba(c.bomba)}</strong>
+          <div className="field">
+            <label>{t('form.quadroModo')}</label>
+            <select
+              value={c.modo}
+              disabled={emExecucao}
+              aria-label={t('form.quadroModo')}
+              onChange={(e) => atualiza(i, { modo: e.target.value as CanalQuadro['modo'] })}
+            >
+              <option value="auto">{t('form.quadroModoAuto')}</option>
+              <option value="manual">{t('form.quadroModoManual')}</option>
+              <option value="desligado">{t('form.quadroModoDesligado')}</option>
+            </select>
+          </div>
+          {c.modo === 'auto' && (
+            <div className="field">
+              <label>{t('form.quadroSensor')}</label>
+              <select
+                value={c.sensor ?? ''}
+                disabled={emExecucao}
+                aria-label={t('form.quadroSensor')}
+                onChange={(e) => atualiza(i, { sensor: e.target.value || undefined })}
+              >
+                <option value="">{t('form.quadroSemSensor')}</option>
+                {sensores.map((s) => (
+                  <option key={s.id} value={s.id}>{nomePeca(s)}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+      ))}
     </>
   );
 }
