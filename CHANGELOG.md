@@ -6,6 +6,38 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.25.0] — Polimentos de UI e do projeto exemplo
+
+### Adicionado
+
+- **Interruptores (on/off)** no lugar de checkboxes para as opções booleanas: tema
+  claro e perda de carga (⚙ Opções), e no tubo (registro, check valve, boia,
+  ladrão) — além de revezamento da bomba, saída do consumo e reverso/histerese do
+  sensor. Componente reutilizável `Switch`.
+- **Capacidade (litragem)** no inspetor do reservatório: mostra o volume máximo
+  calculado da geometria (raio/lados × altura) e o volume atual, na unidade do
+  usuário.
+- **Centralização automática** do diagrama ao carregar/trocar de projeto (o exemplo
+  abre centralizado, não só quando não cabe).
+
+### Alterado
+
+- **Cores das peças**: bomba (violeta) e junção (teal) ganham cores próprias para se
+  distinguir à primeira vista, além da forma.
+- **Boia aberta agora é verde** (antes amarela) — alinha com "aberto = verde" do
+  registro; o ladrão em espera segue âmbar.
+- **Tamanho uniforme** dos nós/componentes (bomba, fonte, consumo, sensor, junção):
+  mesma pegada; a forma e a cor distinguem.
+- **Reservatório cilíndrico × retangular** com silhuetas distintas (cilindro com
+  cantos arredondados e boca elíptica; caixa angulosa).
+- **Salvar** e **Restaurar exemplo** só aparecem quando o projeto difere do exemplo
+  intocado (não há o que salvar/restaurar no exemplo padrão).
+- **Projeto exemplo**: perda de carga por atrito **ligada** por padrão (projetos
+  novos seguem desligados); consumo com vazão máx. 10 e período 90 s; bomba de saída
+  com altura nominal de recalque 25 m; ids internos das peças renomeados para nomes
+  semânticos (`divisor`, `uniao`, `bomba_incendio`, `hidrantes`, `cavalete_incendio`,
+  `sensor_meio`, `interligacao_limpeza`, `cavalete_recalque`).
+
 ## [1.24.1] — Desempenho do atrito e divisão do motor
 
 ### Desempenho

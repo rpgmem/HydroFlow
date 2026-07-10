@@ -9,24 +9,24 @@ import type { Peca } from '../domain/types';
  *  colunas do exemplo (múltiplas de 120) continuam alinhadas — 120 = 6×20. */
 export const GRADE = 20;
 
+/** Diâmetro (px) uniforme dos nós/componentes pontuais (bomba, fonte, consumo,
+ *  sensor, junção). Padronizado para todos terem a MESMA pegada — a diferença
+ *  entre eles vem da forma e da cor, não do tamanho. */
+export const TAMANHO_NO = 46;
+
 /** Metade da "pegada" de cada tipo, usada para desenhar e ancorar conexões. */
 export function tamanhoPeca(tipo: Peca['tipo']): { w: number; h: number } {
   switch (tipo) {
     case 'reservatorio':
-      return { w: 64, h: 88 };
+      return { w: 64, h: 88 }; // recipiente (alto): mantém proporção de tanque
     case 'tubo':
-      return { w: 76, h: 16 };
+      return { w: 76, h: 16 }; // conduto (comprido): mantém proporção de cano
     case 'bomba':
-      return { w: 46, h: 46 };
     case 'fonte':
-      return { w: 48, h: 48 };
     case 'consumo':
-      return { w: 44, h: 44 };
     case 'sensor':
-      return { w: 32, h: 32 };
     case 'juncao':
-      // Peça de conexão compacta (hexágono, como uma luva/porca de tubo): pegada
-      // enxuta para as setas encostarem na peça, e menor que os componentes.
-      return { w: 22, h: 22 };
+      // Componentes pontuais: mesmo diâmetro para todos (forma + cor distinguem).
+      return { w: TAMANHO_NO, h: TAMANHO_NO };
   }
 }

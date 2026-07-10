@@ -238,15 +238,18 @@ describe('novos recursos de UI', () => {
     expect(leg.getByText(/Refluxo/)).toBeTruthy();
   });
 
-  it('ligar o atrito nas ⚙ Opções revela Comprimento e C no tubo', () => {
+  it('alternar o atrito nas ⚙ Opções revela/oculta Comprimento e C no tubo', () => {
     render(<App />);
     const id = adicionar('Tubo');
     fireEvent.click(screen.getByTestId(`peca-${id}`));
-    expect(screen.queryByLabelText('Comprimento')).toBeNull(); // atrito desligado
-    fireEvent.click(screen.getByLabelText('Opções'));
-    fireEvent.click(screen.getByLabelText('Perda de carga por atrito'));
+    // O exemplo já vem com o atrito LIGADO → os campos aparecem.
     expect(screen.getByLabelText('Comprimento')).toBeTruthy();
     expect(screen.getByLabelText('Coeficiente C (Hazen-Williams)')).toBeTruthy();
+    fireEvent.click(screen.getByLabelText('Opções'));
+    fireEvent.click(screen.getByLabelText('Perda de carga por atrito')); // desliga
+    expect(screen.queryByLabelText('Comprimento')).toBeNull();
+    fireEvent.click(screen.getByLabelText('Perda de carga por atrito')); // religa
+    expect(screen.getByLabelText('Comprimento')).toBeTruthy();
   });
 
   it('duplica a peça selecionada', () => {
@@ -280,6 +283,7 @@ describe('persistência — salvar (Sprint 5)', () => {
       .mockImplementation(() => {});
 
     render(<App />);
+    adicionar('Tubo'); // "Salvar" só aparece depois de alterar o exemplo intocado
     fireEvent.click(screen.getByText('💾 Salvar'));
     expect(createUrl).toHaveBeenCalled();
     expect(clickSpy).toHaveBeenCalled();

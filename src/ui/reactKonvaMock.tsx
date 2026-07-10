@@ -47,6 +47,7 @@ export function Group({ children, name, x, y, draggable, onClick, onMouseUp, onD
 }
 export const Rect = (_: NoProps) => null;
 export const Wedge = (_: NoProps) => null;
+export const Ellipse = (_: NoProps) => null;
 // Circles com nome/handlers (ex.: alça de saída de conexão) viram DOM testável.
 export function Circle({ name, onMouseDown, onMouseUp, onClick }: NoProps) {
   if (!name && !onMouseDown && !onMouseUp) return null;

@@ -49,7 +49,10 @@ export function projetoExemplo(): ProjetoSimulacao {
     nome: 'Reservatórios empilhados',
     versao: SCHEMA_VERSION,
     unidades: { volume: 'litros', comprimento: 'm' },
-    configuracaoSimulacao: { dt: 0.1, g: 9.81 },
+    // O exemplo já demonstra a perda de carga por atrito LIGADA (projetos novos
+    // nascem com ela desligada). Assim o cenário mostra o efeito de sucção/
+    // recalque no ponto de operação da bomba de saída.
+    configuracaoSimulacao: { dt: 0.1, g: 9.81, atrito: true },
     // Layout em 6 colunas com espaçamento uniforme (passo 120) no eixo x:
     //   240 (bomba/fonte/boia inferior/junção divisora) · 360 (sucção/recalque/
     //   ladrões/boia manual) · 480 (reservatórios) · 600 (saídas, bypass,
@@ -94,11 +97,11 @@ export function projetoExemplo(): ProjetoSimulacao {
         portas: ['entrada', 'saida'],
         props: {
           vazaoNominal: 50,
-          // Altura nominal de recalque 40 m: a curva é derivada e a altura real
-          // da instalação (~16–21 m até o superior) reduz a vazão sozinha, para
-          // ~24–30 L/s. Ainda alto para os recalques DN60 (segue o alerta de
-          // velocidade), mas mostra o efeito da altura.
-          alturaNominal: 40,
+          // Altura nominal de recalque 25 m: a curva é derivada e a altura real
+          // da instalação (~16–21 m até o superior) reduz bastante a vazão; com o
+          // atrito ligado, a perda de sucção/recalque reduz ainda mais (ponto de
+          // operação). Mostra o efeito da altura e do atrito juntos.
+          alturaNominal: 25,
           sensores: ['sensor_sup', 'sensor_inf'],
           ligada: false,
           revezamento: true,
@@ -119,8 +122,8 @@ export function projetoExemplo(): ProjetoSimulacao {
           aberto: true,
           perfil: 'senoidal',
           vazaoMin: 0,
-          vazaoMax: 5,
-          periodo: 60,
+          vazaoMax: 10,
+          periodo: 90,
         } as PropsConsumo,
         rotulo: 'Consumo',
       },
@@ -152,16 +155,16 @@ export function projetoExemplo(): ProjetoSimulacao {
       tubo('ladrao_meio', 'Ladrão (meio)', 360, 265.7996038521959, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true }, ladrao: { nivel: 6.5 } }),
       tubo('ladrao_inf', 'Ladrão (inferior)', 360, 522, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true }, ladrao: { nivel: 9 } }),
       {
-        id: 'bom_19',
+        id: 'bomba_incendio',
         tipo: 'bomba',
         x: 720,
         y: 531.7205108940645,
         portas: ['entrada', 'saida'],
-        props: { vazaoNominal: 10, sensores: ['sen_26'], ligada: true } as PropsBomba,
+        props: { vazaoNominal: 10, sensores: ['sensor_meio'], ligada: true } as PropsBomba,
         rotulo: 'Bomba Incêndio',
       },
       {
-        id: 'con_21',
+        id: 'hidrantes',
         tipo: 'consumo',
         x: 840,
         y: 437.731029301277,
@@ -169,43 +172,43 @@ export function projetoExemplo(): ProjetoSimulacao {
         props: { vazaoDemanda: 0, aberto: false } as PropsConsumo,
         rotulo: 'Hidrantes',
       },
-      tubo('tub_23', 'Cavalete Incêndio', 600, 426.91209616829417, { bitola: 'DN60', diametro: 53.4, registro: { aberto: true } }),
+      tubo('cavalete_incendio', 'Cavalete Incêndio', 600, 426.91209616829417, { bitola: 'DN60', diametro: 53.4, registro: { aberto: true } }),
       {
         // Sensor REVERSO no meio: desliga a bomba de incêndio em 4 m (protege o
         // meio de esvaziar), libera em 5 m.
-        id: 'sen_26',
+        id: 'sensor_meio',
         tipo: 'sensor',
         x: 600,
         y: 351.55522163786617,
         portas: ['sonda'],
-        props: { bombasAlvo: ['bom_19'], nivelMinimo: 4, nivelMaximo: 5, reversa: true } as PropsSensor,
+        props: { bombasAlvo: ['bomba_incendio'], nivelMinimo: 4, nivelMaximo: 5, reversa: true } as PropsSensor,
         rotulo: 'Boia Eletrônica (meio)',
       },
       // Linha de limpeza/interligação: cavalete de incêndio → interligação
       // (registro fechado) → cavalete de recalque → volta ao inferior.
-      tubo('tub_29', 'Interligação de Limpeza', 600, 490.3981968444768, { bitola: 'DN50', diametro: 44.0, registro: { aberto: false }, checkValve: false }),
-      tubo('tub_34', 'Cavalete Bomba Recalque', 600, 555.7625845229148, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true } }),
+      tubo('interligacao_limpeza', 'Interligação de Limpeza', 600, 490.3981968444768, { bitola: 'DN50', diametro: 44.0, registro: { aberto: false }, checkValve: false }),
+      tubo('cavalete_recalque', 'Cavalete Bomba Recalque', 600, 555.7625845229148, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true } }),
       // Divisor: a bomba recalca por aqui, dividindo para o superior e o meio (o
       // recalque do meio está com o registro fechado). União: as saídas do
       // superior e do meio se juntam antes do consumo.
-      juncao('jun_37', 'Divisor', 240, 253.18762379618877, { bitola: 'DN60', diametro: 53.4 }),
-      juncao('jun_41', 'União', 720, 272.99501400177576, { bitola: 'DN160', diametro: 147.0 }),
+      juncao('divisor', 'Divisor', 240, 253.18762379618877, { bitola: 'DN60', diametro: 53.4 }),
+      juncao('uniao', 'União', 720, 272.99501400177576, { bitola: 'DN160', diametro: 147.0 }),
     ],
     conexoes: [
       { id: 'c_2', origem: 'inferior', destino: 'succao' },
       { id: 'c_3', origem: 'succao', destino: 'bomba' },
       // Recalque pela junção DIVISORA: bomba → divisor → superior / meio.
-      { id: 'c_38', origem: 'bomba', destino: 'jun_37' },
-      { id: 'c_39', origem: 'jun_37', destino: 'recalque_sup' },
-      { id: 'c_40', origem: 'jun_37', destino: 'recalque_meio' },
+      { id: 'c_38', origem: 'bomba', destino: 'divisor' },
+      { id: 'c_39', origem: 'divisor', destino: 'recalque_sup' },
+      { id: 'c_40', origem: 'divisor', destino: 'recalque_meio' },
       { id: 'c_5', origem: 'recalque_meio', destino: 'meio' },
       { id: 'c_7', origem: 'recalque_sup', destino: 'superior' },
       // Saídas pela junção de UNIÃO: superior / meio → união → consumo.
       { id: 'c_8', origem: 'superior', destino: 'saida_sup' },
       { id: 'c_10', origem: 'meio', destino: 'saida_meio' },
-      { id: 'c_42', origem: 'saida_sup', destino: 'jun_41' },
-      { id: 'c_43', origem: 'saida_meio', destino: 'jun_41' },
-      { id: 'c_44', origem: 'jun_41', destino: 'consumo' },
+      { id: 'c_42', origem: 'saida_sup', destino: 'uniao' },
+      { id: 'c_43', origem: 'saida_meio', destino: 'uniao' },
+      { id: 'c_44', origem: 'uniao', destino: 'consumo' },
       { id: 'c_12', origem: 'sensor_sup', destino: 'superior' },
       { id: 'c_13', origem: 'superior', destino: 'bypass' },
       { id: 'c_14', origem: 'bypass', destino: 'meio' },
@@ -216,15 +219,15 @@ export function projetoExemplo(): ProjetoSimulacao {
       { id: 'c_lad_meio', origem: 'meio', destino: 'ladrao_meio' },
       { id: 'c_lad_inf', origem: 'inferior', destino: 'ladrao_inf' },
       // Sistema de incêndio: meio → bomba de incêndio → hidrantes.
-      { id: 'c_22', origem: 'bom_19', destino: 'con_21' },
-      { id: 'c_24', origem: 'meio', destino: 'tub_23' },
-      { id: 'c_25', origem: 'tub_23', destino: 'bom_19' },
-      { id: 'c_27', origem: 'sen_26', destino: 'meio' },
+      { id: 'c_22', origem: 'bomba_incendio', destino: 'hidrantes' },
+      { id: 'c_24', origem: 'meio', destino: 'cavalete_incendio' },
+      { id: 'c_25', origem: 'cavalete_incendio', destino: 'bomba_incendio' },
+      { id: 'c_27', origem: 'sensor_meio', destino: 'meio' },
       { id: 'c_inf', origem: 'sensor_inf', destino: 'inferior' },
       // Linha de limpeza: cavalete → interligação → cavalete recalque → inferior.
-      { id: 'c_30', origem: 'tub_23', destino: 'tub_29' },
-      { id: 'c_36', origem: 'tub_29', destino: 'tub_34' },
-      { id: 'c_35', origem: 'tub_34', destino: 'inferior' },
+      { id: 'c_30', origem: 'cavalete_incendio', destino: 'interligacao_limpeza' },
+      { id: 'c_36', origem: 'interligacao_limpeza', destino: 'cavalete_recalque' },
+      { id: 'c_35', origem: 'cavalete_recalque', destino: 'inferior' },
     ],
   };
 }

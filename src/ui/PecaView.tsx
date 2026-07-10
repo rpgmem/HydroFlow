@@ -6,7 +6,7 @@
  * direita). O usuário arrasta a partir dela até outra peça para criar a aresta —
  * clicar no corpo apenas seleciona. Isso evita conexões acidentais.
  */
-import { Group, Rect, Circle, Line, Text, Wedge } from 'react-konva';
+import { Group, Rect, Circle, Line, Text, Wedge, Ellipse } from 'react-konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 import {
   isBomba,
@@ -46,28 +46,31 @@ interface Props {
   onHover?: (info: { id: string; x: number; y: number } | null) => void;
 }
 
-// Cores de estado. Registro: verde = aberto, vermelho = fechado.
-// Boia: amarelo = aberta (enchendo/atenção), vermelho = fechada (destino cheio).
+// Cores de estado. Registro e boia: verde = aberto (deixa passar), vermelho =
+// fechado. O ladrão em espera usa âmbar (não é uma boia — só sinaliza o dreno).
 const COR_ABERTO = '#34d399';
 const COR_FECHADO = '#f87171';
-const COR_BOIA_ABERTA = '#fbbf24';
+const COR_BOIA_ABERTA = '#34d399'; // boia aberta = verde (deixa passar)
+const COR_AMBAR = '#fbbf24'; // ladrão em espera / sensor em banda morta
 
 // Sensor: verde = atuando p/ ligar, vermelho = atuando p/ desligar,
 // amarelo = esperando (banda morta). Sem simulação usa a cor padrão do sensor.
 const COR_SENSOR: Record<string, string> = {
   ligar: '#34d399',
   desligar: '#f87171',
-  manter: '#fbbf24',
+  manter: COR_AMBAR,
 };
 
+// Cor base de cada tipo. Bomba (violeta) e junção (teal) ganham cores próprias
+// para se distinguirem à primeira vista, além da forma (círculo/hexágono).
 const COR: Record<Peca['tipo'], string> = {
   reservatorio: '#1e3a52',
   tubo: '#8aa0b2',
-  bomba: '#334a5e',
+  bomba: '#7c5cff',
   fonte: '#2b6cb0',
   consumo: '#5a3d2b',
   sensor: '#3b3b6d',
-  juncao: '#44566a',
+  juncao: '#0d9488',
 };
 
 export function PecaView({
@@ -214,7 +217,7 @@ export function PecaView({
 /**
  * Tubo com indicador de válvula:
  *  - registro → quadrado verde (aberto) / vermelho (fechado);
- *  - boia → círculo amarelo (aberta) / vermelho (fechada).
+ *  - boia → círculo verde (aberta) / vermelho (fechada).
  */
 function TuboView({
   props,
@@ -266,12 +269,12 @@ function TuboView({
         <Line
           closed
           points={[0, -6, 6, 0, 0, 6, -6, 0]}
-          fill={ladraoAtivo ? '#f59e0b' : COR_BOIA_ABERTA}
+          fill={ladraoAtivo ? '#f59e0b' : COR_AMBAR}
           stroke="#0d1620"
           strokeWidth={1}
         />
       ) : props.boia ? (
-        // Boia = círculo (float). Amarelo aberta / vermelho fechada.
+        // Boia = círculo (float). Verde aberta / vermelho fechada.
         <Circle
           radius={6}
           fill={boiaFechada ? COR_FECHADO : COR_BOIA_ABERTA}
@@ -380,20 +383,30 @@ function Reservatorio({
 }) {
   const frac = props.alturaMaxima > 0 ? Math.min(1, (props.nivel ?? 0) / props.alturaMaxima) : 0;
   const alturaAgua = h * frac;
+  // Cilindro (tanque) vs retangular (caixa) ganham silhuetas distintas: o
+  // cilindro tem cantos arredondados e uma boca elíptica no topo; a caixa é
+  // angulosa (cantos retos). A água segue o mesmo raio de canto na base.
+  const cil = props.formato === 'cilindro';
+  const raioCanto = cil ? 14 : 2;
   return (
     <>
-      <Rect x={-w / 2} y={-h / 2} width={w} height={h} cornerRadius={4} fill={COR.reservatorio} stroke={borda} strokeWidth={larguraBorda} />
+      <Rect x={-w / 2} y={-h / 2} width={w} height={h} cornerRadius={raioCanto} fill={COR.reservatorio} stroke={borda} strokeWidth={larguraBorda} />
       <Rect
         x={-w / 2}
         y={h / 2 - alturaAgua}
         width={w}
         height={alturaAgua}
-        cornerRadius={[0, 0, 4, 4]}
+        cornerRadius={[0, 0, raioCanto, raioCanto]}
         fill={overflow ? '#3ba3ff' : '#2b8fe0'}
         opacity={0.85}
       />
-      {/* linha de topo (alturaMaxima) */}
-      <Line points={[-w / 2, -h / 2, w / 2, -h / 2]} stroke="#6b8299" strokeWidth={1} dash={[4, 3]} />
+      {cil ? (
+        // Boca do tanque (elipse) — dá o ar de cilindro visto de lado.
+        <Ellipse x={0} y={-h / 2} radiusX={w / 2} radiusY={5} stroke="#6b8299" strokeWidth={1} />
+      ) : (
+        // Linha de topo (alturaMaxima) — silhueta reta da caixa.
+        <Line points={[-w / 2, -h / 2, w / 2, -h / 2]} stroke="#6b8299" strokeWidth={1} dash={[4, 3]} />
+      )}
     </>
   );
 }

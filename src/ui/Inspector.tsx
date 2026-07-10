@@ -101,7 +101,7 @@ export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatc
         </div>
 
         {isReservatorio(peca) && (
-          <ReservatorioForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />
+          <ReservatorioForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} />
         )}
         {isTubo(peca) && <TuboForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} atrito={projeto.configuracaoSimulacao.atrito === true} velRef={projeto.configuracaoSimulacao.velocidadeRef ?? VELOCIDADE_MAX_RECOMENDADA_MS} />}
         {isBomba(peca) && <BombaForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}

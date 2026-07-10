@@ -18,11 +18,13 @@ interface Props {
   onAlternarTema: () => void;
   onAlternarLegenda: () => void;
   legendaAberta: boolean;
+  /** Projeto difere do exemplo intocado — revela Salvar e Restaurar exemplo. */
+  alterado: boolean;
 }
 
 const VELOCIDADES: Velocidade[] = [1, 5, 30, 120];
 
-export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAlternarTema, onAlternarLegenda, legendaAberta }: Props) {
+export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAlternarTema, onAlternarLegenda, legendaAberta, alterado }: Props) {
   const inputFile = useRef<HTMLInputElement>(null);
   const [menuAberto, setMenuAberto] = useState(false);
   const emExecucao = estado.modo === 'execucao';
@@ -137,7 +139,9 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
             ✨ Novo
           </button>
         )}
-        {!emExecucao && (
+        {/* "Restaurar exemplo" só quando já se saiu do exemplo (senão nada a
+            restaurar); só em edição. */}
+        {!emExecucao && alterado && (
           <button
             onClick={() => {
               setMenuAberto(false);
@@ -159,14 +163,17 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
         >
           🖨 Imprimir
         </button>
-        <button
-          onClick={() => {
-            setMenuAberto(false);
-            baixarProjeto(estado.projeto);
-          }}
-        >
-          💾 Salvar
-        </button>
+        {/* "Salvar" só quando há algo diferente do exemplo intocado. */}
+        {alterado && (
+          <button
+            onClick={() => {
+              setMenuAberto(false);
+              baixarProjeto(estado.projeto);
+            }}
+          >
+            💾 Salvar
+          </button>
+        )}
         <button
           disabled={emExecucao}
           onClick={() => {
