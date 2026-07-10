@@ -7,7 +7,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import '../i18n'; // inicializa o i18next antes de qualquer useTranslation()
 import { reducer, estadoInicial } from '../state/store';
 import { projetoExemplo } from '../domain/exemplo';
-import { serializarProjeto } from '../domain/schema';
+import { serializarProjeto, type ErroValidacao } from '../domain/schema';
 import { carregarAutosave, limparAutosave, salvarAutosave } from '../persistence/autosave';
 import { useSimulationLoop } from './useSimulationLoop';
 import { Toolbar } from './Toolbar';
@@ -111,6 +111,15 @@ export function App() {
     () => emExecucao || serializarProjeto(estado.projeto) !== exemploSerial.current,
     [estado.projeto, emExecucao],
   );
+  // Erro de validação: usa a chave i18n quando houver (resolvendo o tipo da peça
+  // em `pecas.<tipo>`); senão cai na mensagem em Português (ex.: erros de schema
+  // no import, ainda não internacionalizados).
+  const traduzErro = (e: ErroValidacao): string => {
+    if (!e.chave) return e.mensagem;
+    const p: Record<string, string | number> = { ...(e.params ?? {}) };
+    if (typeof p.tipoKey === 'string') p.tipo = t(`pecas.${p.tipoKey}`);
+    return t(e.chave, p);
+  };
 
   return (
     <div
@@ -163,7 +172,7 @@ export function App() {
                   {[...estado.eventos].reverse().map((e, i) => (
                     <li key={estado.eventos.length - i} className={`ev ev-${e.tipo}`}>
                       <span className="ev-t">{e.tempo.toFixed(1)}s</span>
-                      <span>{e.mensagem}</span>
+                      <span>{t(e.chave, e.params)}</span>
                     </li>
                   ))}
                 </ul>
@@ -189,7 +198,7 @@ export function App() {
                   ? erroImport.split('\n').map((l, i) => <li key={i}>{l}</li>)
                   : estado.errosValidacao.map((e, i) => (
                       <li key={i}>
-                        <code>{e.caminho}</code> — {e.mensagem}
+                        <code>{e.caminho}</code> — {traduzErro(e)}
                       </li>
                     ))}
               </ul>

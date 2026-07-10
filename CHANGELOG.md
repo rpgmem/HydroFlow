@@ -6,6 +6,24 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.26.1] — i18n do log de eventos e da validação de grafo
+
+### Adicionado
+
+- **Log de eventos** e **mensagens da validação de grafo** agora são traduzidos
+  (Português/Inglês). Os **nomes das peças** (rótulos do projeto) e os **ids/caminhos**
+  permanecem como estão — só o texto da mensagem muda de idioma. O **tipo** da peça
+  (ex.: Bomba/Pump) é traduzido.
+  - O motor e o reducer continuam **puros**: emitem `chave` i18n + `params`
+    (nome/valores) e a **UI traduz na renderização** (assim re-traduz ao trocar de
+    idioma). `ErroValidacao` mantém a `mensagem` em Português como fallback e para
+    os testes do motor (que rodam sem i18n).
+
+### Notas
+
+- As mensagens de validação do **schema no import** (`.json` malformado) seguem em
+  Português por ora — caminho raro; a UI cai no fallback `mensagem`.
+
 ## [1.26.0] — Internacionalização (i18n): Português e Inglês
 
 ### Adicionado

@@ -36,7 +36,10 @@ export interface EventoLog {
   /** Tempo de simulação (s) em que o evento ocorreu. */
   tempo: number;
   tipo: TipoEvento;
-  mensagem: string;
+  /** Chave i18n da mensagem (traduzida na UI) — o store não depende de i18n. */
+  chave: string;
+  /** Parâmetros de interpolação (ex.: `nome` = rótulo da peça, não traduzido). */
+  params: Record<string, string | number>;
 }
 
 const MAX_EVENTOS = 300;
@@ -212,28 +215,36 @@ function derivarEventos(anterior: EstadoApp, r: ResultadoTick): EventoLog[] {
     if (antes !== agora) {
       // Revezamento: anota qual metade assumiu (a unidadeAtiva já foi alternada
       // no tick da borda de subida).
-      const unidade = agora && p.props.revezamento ? ` (unidade ${p.props.unidadeAtiva ?? 1})` : '';
-      ev.push({ tempo: t, tipo: 'bomba', mensagem: `${rot(p.id)} ${agora ? 'ligou' : 'desligou'}${unidade}` });
+      const nome = rot(p.id);
+      if (!agora) ev.push({ tempo: t, tipo: 'bomba', chave: 'log.bombaDesligou', params: { nome } });
+      else if (p.props.revezamento)
+        ev.push({ tempo: t, tipo: 'bomba', chave: 'log.bombaLigouUnidade', params: { nome, unidade: p.props.unidadeAtiva ?? 1 } });
+      else ev.push({ tempo: t, tipo: 'bomba', chave: 'log.bombaLigou', params: { nome } });
     }
   }
 
   for (const [id, dec] of Object.entries(r.sensores)) {
     if (anterior.sensores[id] !== dec && (dec === 'ligar' || dec === 'desligar')) {
-      ev.push({ tempo: t, tipo: 'sensor', mensagem: `${rot(id)} pediu ${dec}` });
+      ev.push({
+        tempo: t,
+        tipo: 'sensor',
+        chave: dec === 'ligar' ? 'log.sensorPediuLigar' : 'log.sensorPediuDesligar',
+        params: { nome: rot(id) },
+      });
     }
   }
 
-  const entraram = (atual: string[], antes: string[], tipo: TipoEvento, msg: (n: string) => string): void => {
+  const entraram = (atual: string[], antes: string[], tipo: TipoEvento, chave: string, extra: Record<string, string | number> = {}): void => {
     const set = new Set(antes);
-    for (const id of atual) if (!set.has(id)) ev.push({ tempo: t, tipo, mensagem: msg(rot(id)) });
+    for (const id of atual) if (!set.has(id)) ev.push({ tempo: t, tipo, chave, params: { nome: rot(id), ...extra } });
   };
-  entraram(r.bombasASeco, anterior.bombasASeco, 'seco', (n) => `${n}: rodando a seco (origem vazia)`);
-  entraram(r.ladroesAtivos, anterior.ladroesAtivos, 'ladrao', (n) => `${n}: ladrão em transbordo`);
+  entraram(r.bombasASeco, anterior.bombasASeco, 'seco', 'log.seco');
+  entraram(r.ladroesAtivos, anterior.ladroesAtivos, 'ladrao', 'log.ladrao');
   const velRef = r.projeto.configuracaoSimulacao.velocidadeRef ?? 3;
-  entraram(r.tubosVelozes, anterior.tubosVelozes, 'velocidade', (n) => `${n}: velocidade acima do recomendado (> ${velRef} m/s)`);
-  entraram(r.refluxos, anterior.refluxos, 'refluxo', (n) => `${n}: refluxo (fluxo contrário à seta)`);
-  entraram(r.consumoInsuficiente, anterior.consumoInsuficiente, 'deficit', (n) => `${n}: déficit (bomba não acompanha)`);
-  entraram(r.overflow, anterior.overflow, 'overflow', (n) => `${n}: transbordou`);
+  entraram(r.tubosVelozes, anterior.tubosVelozes, 'velocidade', 'log.velocidade', { velRef });
+  entraram(r.refluxos, anterior.refluxos, 'refluxo', 'log.refluxo');
+  entraram(r.consumoInsuficiente, anterior.consumoInsuficiente, 'deficit', 'log.deficit');
+  entraram(r.overflow, anterior.overflow, 'overflow', 'log.overflow');
 
   return ev;
 }

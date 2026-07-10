@@ -11,7 +11,12 @@ import { SCHEMA_VERSION, type ProjetoSimulacao, type TipoPeca } from './types';
 
 export interface ErroValidacao {
   caminho: string; // ex.: "pecas[2].props.alturaMaxima"
+  /** Mensagem em Português — usada pelo motor/testes e como fallback na UI. */
   mensagem: string;
+  /** Chave i18n opcional (a UI prefere `t(chave, params)` quando presente). */
+  chave?: string;
+  /** Parâmetros de interpolação da `chave`. `tipoKey` é resolvido em `pecas.<tipo>`. */
+  params?: Record<string, string | number>;
 }
 
 export type ResultadoParse =

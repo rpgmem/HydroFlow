@@ -219,6 +219,32 @@ export const pt = {
     min: 'mín',
     max: 'máx',
   },
+  // Log de eventos da execução. `{{nome}}` é o RÓTULO da peça (dado do projeto,
+  // não traduzido); os demais parâmetros são valores/estado.
+  log: {
+    bombaLigou: '{{nome}} ligou',
+    bombaLigouUnidade: '{{nome}} ligou (unidade {{unidade}})',
+    bombaDesligou: '{{nome}} desligou',
+    sensorPediuLigar: '{{nome}} pediu para ligar',
+    sensorPediuDesligar: '{{nome}} pediu para desligar',
+    seco: '{{nome}}: rodando a seco (origem vazia)',
+    ladrao: '{{nome}}: ladrão em transbordo',
+    velocidade: '{{nome}}: velocidade acima do recomendado (> {{velRef}} m/s)',
+    refluxo: '{{nome}}: refluxo (fluxo contrário à seta)',
+    deficit: '{{nome}}: déficit (bomba não acompanha)',
+    overflow: '{{nome}}: transbordou',
+  },
+  // Mensagens da validação de grafo (edição→execução). `{{tipo}}` é resolvido do
+  // tipo da peça (traduzível); ids/origem/destino são dados do projeto.
+  validacao: {
+    pecaDuplicada: 'id de peça duplicado: "{{id}}"',
+    conexaoDuplicada: 'id de conexão duplicado: "{{id}}"',
+    origemInexistente: 'origem "{{origem}}" não corresponde a nenhuma peça',
+    destinoInexistente: 'destino "{{destino}}" não corresponde a nenhuma peça',
+    orfa: 'peça "{{id}}" ({{tipo}}) está órfã — sem nenhuma conexão',
+    vazaoAlocada: 'soma de vazaoAlocada ({{soma}}) excede vazaoFixa ({{vazaoFixa}})',
+    motoPerpetuo: 'ciclo fechado com bomba e sem dreno/saída (moto-perpétuo não é permitido)',
+  },
 };
 
 export type Dicionario = typeof pt;
