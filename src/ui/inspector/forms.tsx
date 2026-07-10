@@ -32,16 +32,13 @@ import { Switch } from '../Switch';
 
 const nomePeca = (p: Peca): string => (p.rotulo && p.rotulo.trim() ? p.rotulo : p.id);
 
-/** Quadro de comandos que rege a bomba `id` (via canal), ou null. */
+/** Quadro de comandos de que a bomba `id` é membro (via canal), ou null. */
 function quadroDaBomba(projeto: ProjetoSimulacao, id: string): Peca | null {
   return projeto.pecas.find((p) => isQuadro(p) && p.props.canais.some((c) => c.bomba === id)) ?? null;
 }
-/** Rótulo do quadro que usa o sensor `id` num canal 'auto', ou null. */
-function quadroDoSensor(projeto: ProjetoSimulacao, id: string): string | null {
-  const q = projeto.pecas.find(
-    (p) => isQuadro(p) && p.props.canais.some((c) => c.modo === 'auto' && c.sensor === id),
-  );
-  return q ? nomePeca(q) : null;
+/** Quadro de comandos de que o sensor `id` é membro (via `sensores`), ou null. */
+function quadroDoSensor(projeto: ProjetoSimulacao, id: string): Peca | null {
+  return projeto.pecas.find((p) => isQuadro(p) && (p.props.sensores ?? []).includes(id)) ?? null;
 }
 
 export function ReservatorioForm({
@@ -533,12 +530,14 @@ export function SensorForm({
   upd,
   u,
   pecaId,
+  dispatch,
 }: {
   props: PropsSensor;
   projeto: ProjetoSimulacao;
   upd: Upd;
   u: UniLabel;
   pecaId: string;
+  dispatch: React.Dispatch<Acao>;
 }) {
   const { t } = useTranslation();
   const bombas = projeto.pecas.filter(isBomba);
@@ -546,14 +545,50 @@ export function SensorForm({
   const alternarAlvo = (id: string, marcado: boolean): void =>
     upd({ bombasAlvo: marcado ? [...alvos, id] : alvos.filter((x) => x !== id) });
   const reversa = props.reversa ?? false;
-  // Se um quadro usa este sensor, o vínculo direto com as bombas (bombasAlvo)
-  // fica inativo — o quadro decide quais bombas ele aciona.
-  const usadoPor = quadroDoSensor(projeto, pecaId);
+  // Membro de um quadro (simétrico à bomba): o seletor escolhe "qual quadro"; o
+  // vínculo direto (bombasAlvo) fica inativo. Ao remover, limpa também os canais
+  // que apontavam para esta boia.
+  const quadros = projeto.pecas.filter(isQuadro);
+  const membroDe = quadroDoSensor(projeto, pecaId);
+  const escolherQuadro = (novoId: string): void => {
+    if ((membroDe?.id ?? '') === novoId) return;
+    for (const q of quadros) {
+      if ((q.props.sensores ?? []).includes(pecaId)) {
+        dispatch({
+          tipo: 'ATUALIZAR_PROPS',
+          id: q.id,
+          props: {
+            sensores: (q.props.sensores ?? []).filter((s) => s !== pecaId),
+            canais: q.props.canais.map((c) => (c.sensor === pecaId ? { ...c, sensor: undefined } : c)),
+          } as never,
+        });
+      }
+    }
+    const alvo = quadros.find((q) => q.id === novoId);
+    if (alvo) {
+      dispatch({ tipo: 'ATUALIZAR_PROPS', id: alvo.id, props: { sensores: [...(alvo.props.sensores ?? []).filter((s) => s !== pecaId), pecaId] } as never });
+    }
+  };
   return (
     <>
-      {usadoPor ? (
+      {quadros.length > 0 && (
+        <div className="field">
+          <label>{t('form.bombaQuadro')}</label>
+          <select
+            value={membroDe?.id ?? ''}
+            aria-label={t('form.bombaQuadro')}
+            onChange={(e) => escolherQuadro(e.target.value)}
+          >
+            <option value="">{t('form.bombaSemQuadro')}</option>
+            {quadros.map((q) => (
+              <option key={q.id} value={q.id}>{nomePeca(q)}</option>
+            ))}
+          </select>
+        </div>
+      )}
+      {membroDe ? (
         <p className="telemetry" style={{ margin: 0 }}>
-          🎛️ {t('form.sensorRegido', { nome: usadoPor })}
+          🎛️ {t('form.sensorRegido', { nome: nomePeca(membroDe) })}
         </p>
       ) : (
         <div className="field">
@@ -622,7 +657,11 @@ export function QuadroForm({
   projeto: ProjetoSimulacao;
 }) {
   const { t } = useTranslation();
-  const sensores = projeto.pecas.filter(isSensor);
+  // Boias disponíveis = as MEMBROS deste quadro (escolhidas no inspetor de cada
+  // sensor). Assim a boia também "seleciona o quadro", simétrico à bomba.
+  const membrosSensor = (props.sensores ?? [])
+    .map((id) => projeto.pecas.find((p) => p.id === id))
+    .filter((p): p is Peca => !!p && isSensor(p));
   const canais = props.canais;
   const atualiza = (i: number, patch: Partial<CanalQuadro>): void =>
     upd({ canais: canais.map((c, k) => (k === i ? { ...c, ...patch } : c)) });
@@ -665,7 +704,7 @@ export function QuadroForm({
                 onChange={(e) => atualiza(i, { sensor: e.target.value || undefined })}
               >
                 <option value="">{t('form.quadroSemSensor')}</option>
-                {sensores.map((s) => (
+                {membrosSensor.map((s) => (
                   <option key={s.id} value={s.id}>{nomePeca(s)}</option>
                 ))}
               </select>

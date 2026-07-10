@@ -158,7 +158,7 @@ export const pt = {
     quadroSemSensor: '— nenhum —',
     quadroRemover: 'Remover esta bomba do quadro',
     bombaRegida: 'Controlada pelo quadro «{{nome}}» — o modo é definido lá.',
-    sensorRegido: 'Usada pelo quadro «{{nome}}» — as bombas que ela aciona são definidas lá.',
+    sensorRegido: 'Membro do quadro «{{nome}}» — quais bombas a seguem é definido lá (no automático).',
   },
   legenda: {
     titulo: 'Legenda',

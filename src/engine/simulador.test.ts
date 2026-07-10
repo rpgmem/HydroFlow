@@ -1142,7 +1142,7 @@ describe('um sensor controla várias bombas', () => {
 });
 
 describe('quadro de comandos (MCC)', () => {
-  const quadro = (id: string, canais: CanalQuadro[]): Peca => ({ id, tipo: 'quadro', x: 0, y: 0, props: { canais } });
+  const quadro = (id: string, canais: CanalQuadro[], sensores: string[] = []): Peca => ({ id, tipo: 'quadro', x: 0, y: 0, props: { canais, sensores } });
   const estaLigada = (r: ReturnType<typeof tick>, id: string): boolean | undefined =>
     (r.projeto.pecas.find((p) => p.id === id)!.props as PropsBomba).ligada;
   // Reservatório D no fundo (nível 0 < mín 1) → sensor normal S pede LIGAR.
@@ -1186,13 +1186,13 @@ describe('quadro de comandos (MCC)', () => {
           sensor('S', { bombasAlvo: ['P2'], nivelMinimo: 1, nivelMaximo: 4 }),
           bomba('P1', { ligada: false }),
           bomba('P2', { ligada: false }),
-          quadro('Q', [{ bomba: 'P1', modo: 'auto', sensor: 'S' }]),
+          quadro('Q', [{ bomba: 'P1', modo: 'auto', sensor: 'S' }], ['S']),
         ],
         [criarConexao('S', 'D')],
       ),
     );
     expect(estaLigada(r, 'P1')).toBe(true); // regida pelo quadro
-    expect(estaLigada(r, 'P2')).toBe(false); // vínculo direto de S inativo
+    expect(estaLigada(r, 'P2')).toBe(false); // S é membro do quadro → vínculo direto inativo
   });
 });
 

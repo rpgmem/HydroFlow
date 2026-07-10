@@ -157,7 +157,7 @@ export const en: Dicionario = {
     quadroSemSensor: '— none —',
     quadroRemover: 'Remove this pump from the panel',
     bombaRegida: 'Controlled by panel “{{nome}}” — the mode is set there.',
-    sensorRegido: 'Used by panel “{{nome}}” — the pumps it drives are set there.',
+    sensorRegido: 'Member of panel “{{nome}}” — which pumps follow it is set there (in automatic).',
   },
   legenda: {
     titulo: 'Legend',

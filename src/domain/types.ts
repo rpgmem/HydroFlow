@@ -228,15 +228,20 @@ export interface CanalQuadro {
 }
 
 /**
- * Quadro de comandos (MCC): centraliza o controle de uma ou mais bombas. Uma
- * bomba referenciada por um canal passa a OBEDECER o quadro — o `modoControle`
- * dela é ignorado. O sensor escolhido num canal 'auto' também passa a agir só
- * pelo quadro (seu `bombasAlvo` direto é ignorado). Peças não referenciadas por
- * nenhum quadro mantêm o controle direto de sempre. Liga por `props` (por id),
- * sem conexão física.
+ * Quadro de comandos (MCC): centraliza o controle de bombas e boias/sensores.
+ * Tanto a BOMBA (via `canais`) quanto o SENSOR (via `sensores`) são MEMBROS do
+ * quadro — a associação é escolhida no inspetor de CADA peça (seletor "Quadro").
+ * Cada bomba-membro tem um `modo`; no 'auto' ela segue uma das boias MEMBROS do
+ * quadro (`canal.sensor`). Uma bomba/sensor membro de um quadro OBEDECE o quadro
+ * e perde as opções diretas (o `modoControle` da bomba e o `bombasAlvo` do
+ * sensor ficam inativos). Peças fora de qualquer quadro mantêm o controle direto.
+ * Liga por `props` (por id), sem conexão física.
  */
 export interface PropsQuadro {
+  /** Bombas-membro e seu controle (modo + boia no automático). */
   canais: CanalQuadro[];
+  /** IDs das boias/sensores-membro do quadro (disponíveis para os canais 'auto'). */
+  sensores?: string[];
 }
 
 export type PropsPorTipo =
