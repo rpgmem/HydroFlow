@@ -93,10 +93,10 @@ export function validarGrafo(
     return [...dups];
   };
   for (const id of duplicados(projeto.pecas.map((p) => p.id))) {
-    erros.push({ caminho: `pecas[${id}]`, mensagem: `id de peça duplicado: "${id}"` });
+    erros.push({ caminho: `pecas[${id}]`, mensagem: `id de peça duplicado: "${id}"`, chave: 'validacao.pecaDuplicada', params: { id } });
   }
   for (const id of duplicados(projeto.conexoes.map((c) => c.id))) {
-    erros.push({ caminho: `conexoes[${id}]`, mensagem: `id de conexão duplicado: "${id}"` });
+    erros.push({ caminho: `conexoes[${id}]`, mensagem: `id de conexão duplicado: "${id}"`, chave: 'validacao.conexaoDuplicada', params: { id } });
   }
 
   // ---- Arestas com origem/destino inexistentes -------------------------
@@ -105,12 +105,16 @@ export function validarGrafo(
       erros.push({
         caminho: `conexoes[${c.id}].origem`,
         mensagem: `origem "${c.origem}" não corresponde a nenhuma peça`,
+        chave: 'validacao.origemInexistente',
+        params: { origem: c.origem },
       });
     }
     if (!pecasPorId.has(c.destino)) {
       erros.push({
         caminho: `conexoes[${c.id}].destino`,
         mensagem: `destino "${c.destino}" não corresponde a nenhuma peça`,
+        chave: 'validacao.destinoInexistente',
+        params: { destino: c.destino },
       });
     }
   }
@@ -128,6 +132,8 @@ export function validarGrafo(
     erros.push({
       caminho: `pecas[${p.id}]`,
       mensagem: `peça "${p.id}" (${p.tipo}) está órfã — sem nenhuma conexão`,
+      chave: 'validacao.orfa',
+      params: { id: p.id, tipoKey: p.tipo },
     });
   }
 
@@ -141,6 +147,8 @@ export function validarGrafo(
       erros.push({
         caminho: `pecas[${p.id}].vazaoAlocada`,
         mensagem: `soma de vazaoAlocada (${soma}) excede vazaoFixa (${p.props.vazaoFixa})`,
+        chave: 'validacao.vazaoAlocada',
+        params: { soma, vazaoFixa: p.props.vazaoFixa },
       });
     }
   }
@@ -177,6 +185,8 @@ export function validarGrafo(
         caminho: `ciclo[${scc.join('→')}]`,
         mensagem:
           'ciclo fechado com bomba e sem dreno/saída (moto-perpétuo não é permitido)',
+        chave: 'validacao.motoPerpetuo',
+        params: {},
       });
     }
   }

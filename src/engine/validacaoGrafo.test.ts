@@ -22,6 +22,18 @@ describe('validação de grafo — bloqueios', () => {
     if (!r.ok) expect(r.erros.some((e) => e.mensagem.includes('órfã'))).toBe(true);
   });
 
+  it('anexa chave i18n + params (para a UI traduzir), mantendo a mensagem pt', () => {
+    const orfa = criarPeca('reservatorio', 0, 0, 'R1');
+    const r = validarGrafo(proj([orfa]));
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      const e = r.erros.find((x) => x.chave === 'validacao.orfa');
+      expect(e).toBeDefined();
+      expect(e!.params).toMatchObject({ id: 'R1', tipoKey: 'reservatorio' });
+      expect(e!.mensagem).toContain('órfã'); // fallback pt preservado (motor puro)
+    }
+  });
+
   it('rejeita ids de conexão duplicados', () => {
     const a = criarPeca('reservatorio', 0, 0, 'A');
     const b = criarPeca('reservatorio', 0, 0, 'B');
