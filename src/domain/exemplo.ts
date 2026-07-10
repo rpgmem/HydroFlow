@@ -108,9 +108,9 @@ export function projetoExemplo(): ProjetoSimulacao {
         } as PropsBomba,
         rotulo: 'Bomba',
       },
-      tubo('succao', 'Cano de sucção', 360, 435.1990984222388, { bitola: 'DN110', diametro: 97.8, registro: { aberto: true }, checkValve: true }),
-      tubo('recalque_meio', 'Recalque → meio', 360, 341.61102383716974, { bitola: 'DN60', diametro: 53.4, registro: { aberto: false }, checkValve: true, alturaSaida: 5.5 }),
-      tubo('recalque_sup', 'Recalque → superior', 360, 205.15442934225808, { bitola: 'DN60', diametro: 53.4, registro: { aberto: true }, checkValve: true, alturaSaida: 5.5 }),
+      tubo('succao', 'Cano de sucção', 360, 435.1990984222388, { bitola: 'DN110', diametro: 97.8, registro: { aberto: true }, checkValve: true, comprimento: 4 }),
+      tubo('recalque_meio', 'Recalque → meio', 360, 341.61102383716974, { bitola: 'DN60', diametro: 53.4, registro: { aberto: false }, checkValve: true, alturaSaida: 5.5, comprimento: 16 }),
+      tubo('recalque_sup', 'Recalque → superior', 360, 205.15442934225808, { bitola: 'DN60', diametro: 53.4, registro: { aberto: true }, checkValve: true, alturaSaida: 5.5, comprimento: 25 }),
       {
         id: 'consumo',
         tipo: 'consumo',

@@ -6,6 +6,15 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.26.2] — Comprimentos de tubo no projeto exemplo
+
+### Alterado
+
+- **Projeto exemplo**: comprimentos reais nos tubos da bomba de saída — sucção
+  **4 m**, recalque → superior **25 m**, recalque → meio **16 m**. Com o atrito
+  ligado (padrão do exemplo), a perda de carga passa a reduzir visivelmente a vazão
+  da bomba (ponto de operação), demonstrando melhor o efeito.
+
 ## [1.26.1] — i18n do log de eventos e da validação de grafo
 
 ### Adicionado
