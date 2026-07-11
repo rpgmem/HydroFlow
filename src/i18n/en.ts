@@ -31,6 +31,7 @@ export const en: Dicionario = {
     pauseAntes: 'Pause before returning to editing',
     velocidade: 'Speed:',
     tempo: 't = ',
+    horario: 'Time ',
     maisAcoes: 'More actions',
     legenda: '📖 Legend',
     legendaTitulo: 'Show/hide the shape and color legend',

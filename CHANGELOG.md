@@ -6,6 +6,15 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.39.0] — Relógio de 24 h na simulação
+
+### Adicionado
+
+- **Horário (24 h)** na barra durante a execução, ao lado do contador em segundos:
+  `HH:MM:SS` derivado do tempo de simulação (`tempo % 86400`), começando em
+  **00:00:00** e dando a volta a cada 24 h — casa com o dia real do perfil "diária".
+  Visível no desktop e no mobile.
+
 ## [1.38.1] — Quadro: remove o seletor de "lógica padrão"
 
 ### Alterado
