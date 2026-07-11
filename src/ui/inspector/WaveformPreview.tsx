@@ -5,7 +5,7 @@
  */
 import { useTranslation } from 'react-i18next';
 import type { Gerador } from '../../domain/types';
-import { valorNoTempo } from '../../domain/geradorVazao';
+import { janelaPreview, valorNoTempo } from '../../domain/geradorVazao';
 
 const W = 240;
 const H = 76;
@@ -14,9 +14,7 @@ const N = 160; // amostras
 
 export function WaveformPreview({ gerador, unidade }: { gerador: Gerador; unidade: string }) {
   const { t } = useTranslation();
-  const T = gerador.periodo && gerador.periodo > 0 ? gerador.periodo : 60;
-  // Janela mostrada: ~2,5 períodos para os periódicos; algo curto para o fixo.
-  const janela = gerador.perfil === 'fixo' ? 10 : T * 2.5;
+  const janela = Math.max(1, janelaPreview(gerador));
 
   const ts = Array.from({ length: N + 1 }, (_, i) => (i / N) * janela);
   const ys = ts.map((t2) => valorNoTempo(gerador, t2));

@@ -6,6 +6,26 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.33.0] — Perfis de vazão (Fase 2: transientes + demanda diária)
+
+Continuação do plano de perfis de vazão (issue #42).
+
+### Adicionado
+
+- **Perfis transientes/eventos** (Fonte e Consumo), com preview e ajuda:
+  - **Degrau** (com rampa opcional): muda de nível num instante e permanece.
+  - **Pulso**: um único disparo por uma largura de tempo.
+  - **Exponencial**: aproxima o alvo (partida suave) ou decai à base, com τ.
+  - **Demanda diária (2 picos)**: curva de um dia **real (24 h = 86.400 s)** com
+    pico de manhã e de noite (horários, valores e durações de subida/patamar/
+    descida em horas configuráveis). Use a velocidade x120 para ver o dia todo.
+- O **preview** ajusta a janela de tempo ao perfil (evento, τ, 1 dia, etc.).
+
+### Técnico
+
+- `valorNoTempo` ganhou os casos `degrau`/`pulso`/`exponencial`/`diaria`; novo
+  `janelaPreview(gerador)`; defaults ancorados em `V`. +4 testes de unidade.
+
 ## [1.32.0] — Perfis de vazão no tempo (Fase 1: gerador + preview)
 
 Início do plano de **perfis de vazão** (issue #42). Fonte e Consumo passam a
