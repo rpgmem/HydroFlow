@@ -6,6 +6,23 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.36.0] — Inspetor do quadro: cores, accordion e rótulos do modo
+
+Primeira das melhorias do inspetor do quadro de comandos (issue #49).
+
+### Adicionado
+
+- **Cor por membro**: cada boia/sensor e cada bomba do quadro ganha um tom
+  distinto (borda esquerda + etiqueta colorida). A mesma cor reaparece ao lado da
+  caixa de seleção do sensor no canal da bomba, ligando visualmente quem segue quem.
+- **Blocos recolhíveis (accordion)**: cada membro vira um `<details>` recolhido por
+  padrão, com um resumo (cor + nome + estado atual) — o inspetor fica bem mais curto.
+
+### Alterado
+
+- **Rótulos do modo da bomba**: `Automático (segue a lógica acima)`,
+  `Manual (ligada)` e `Manual (desligada)`.
+
 ## [1.35.2] — Exemplo: níveis iniciais em 2,5
 
 ### Alterado
