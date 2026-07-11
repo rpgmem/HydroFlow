@@ -44,7 +44,7 @@ describe('inspetor em execução — comandos ativos, estrutura travada', () => 
     expect(dis('Sensor reverso (corte por nível baixo)')).toBe(true);
   });
 
-  it('quadro: modo do canal (comando) ativo; lógica (estrutura) travada', () => {
+  it('quadro: modo do canal (comando) ativo; sequência (estrutura) travada', () => {
     const q: PropsQuadro = { canais: [{ bomba: 'P', modo: 'auto' }], sensores: ['S'], logica: 'OU' };
     const pecas: Peca[] = [
       { id: 'P', tipo: 'bomba', rotulo: 'P', x: 0, y: 0, props: { vazaoNominal: 10, sensores: [], ligada: false } },
@@ -53,6 +53,7 @@ describe('inspetor em execução — comandos ativos, estrutura travada', () => 
     ];
     render(<QuadroForm props={q} emExecucao upd={noop} u={u} projeto={proj(pecas)} dispatch={vi.fn()} />);
     expect(dis('Modo')).toBe(false);
-    expect(dis('Lógica padrão entre sensores')).toBe(true);
+    // Editar a sequência de sensores é estrutura → travado na execução.
+    expect(dis('+ adicionar sensor à sequência')).toBe(true);
   });
 });

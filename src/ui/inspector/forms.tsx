@@ -763,21 +763,8 @@ export function QuadroForm({
   }
   return (
     <>
-      {/* Lógica de combinação dos sensores no automático (relevante com 2+). */}
-      {membrosSensor.length > 0 && (
-        <div className="field">
-          <label>{t('form.quadroLogica')}</label>
-          <select
-            value={logica}
-            disabled={emExecucao}
-            aria-label={t('form.quadroLogica')}
-            onChange={(e) => upd({ logica: e.target.value as 'E' | 'OU' })}
-          >
-            <option value="OU">{t('form.quadroLogicaOu')}</option>
-            <option value="E">{t('form.quadroLogicaE')}</option>
-          </select>
-        </div>
-      )}
+      {/* O operador E/OU agora é escolhido por gap na sequência de cada bomba; a
+          `logica` global permanece só como padrão interno de novos gaps/fallback. */}
 
       {/* Sensores-membro: níveis/reverso/histerese/delay editados aqui. */}
       {membrosSensor.map((s) => {
