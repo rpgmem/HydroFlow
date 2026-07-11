@@ -43,14 +43,17 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
         onChange={(e) => dispatch({ tipo: 'SET_NOME', nome: e.target.value })}
       />
 
-      <span className={`badge ${estado.modo}`}>{t(`modo.${estado.modo}`)}</span>
+      {/* Status edição/execução: oculto no mobile (barra enxuta) — ver so-desktop. */}
+      <span className={`badge ${estado.modo} so-desktop`}>{t(`modo.${estado.modo}`)}</span>
 
       {!emExecucao ? (
         <>
           <button className="primary" onClick={() => dispatch({ tipo: 'ENTRAR_EXECUCAO' })}>
             {t('toolbar.executar')}
           </button>
+          {/* Desfazer/refazer: só no desktop (o mobile não edita — paleta oculta). */}
           <button
+            className="so-desktop"
             aria-label={t('toolbar.desfazer')}
             title={t('toolbar.desfazerTitulo')}
             disabled={estado.undoStack.length === 0}
@@ -59,6 +62,7 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
             ↶
           </button>
           <button
+            className="so-desktop"
             aria-label={t('toolbar.refazer')}
             title={t('toolbar.refazerTitulo')}
             disabled={estado.redoStack.length === 0}
@@ -77,7 +81,9 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
             </button>
           )}
           <button onClick={() => dispatch({ tipo: 'RESET' })}>{t('toolbar.reset')}</button>
+          {/* Voltar à edição: só no desktop (o mobile é superfície de simular/inspecionar). */}
           <button
+            className="so-desktop"
             onClick={() => dispatch({ tipo: 'SAIR_EXECUCAO' })}
             disabled={estado.rodando}
             title={estado.rodando ? t('toolbar.pauseAntes') : ''}
@@ -105,10 +111,8 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
 
       <span className="spacer" />
 
-      <Opcoes estado={estado} dispatch={dispatch} tema={tema} onAlternarTema={onAlternarTema} />
-
-      {/* No mobile, as ações secundárias recolhem sob "⋯" (o botão some no
-          desktop, onde elas seguem inline via `display: contents`). */}
+      {/* No mobile, as ações secundárias (⚙ Opções incluído) recolhem sob "⋯"
+          (o botão some no desktop, onde elas seguem inline via `display: contents`). */}
       <button
         className="menu-toggle"
         aria-label={t('toolbar.maisAcoes')}
@@ -118,6 +122,7 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
         ⋯
       </button>
       <div className={`acoes-secundarias${menuAberto ? ' aberto' : ''}`}>
+        <Opcoes estado={estado} dispatch={dispatch} tema={tema} onAlternarTema={onAlternarTema} />
         <button
           className={legendaAberta ? 'ativo' : ''}
           aria-pressed={legendaAberta}

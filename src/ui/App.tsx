@@ -57,6 +57,17 @@ export function App() {
   }, [tema]);
   const wrapRef = useRef<HTMLDivElement>(null);
 
+  // Aviso "edição só no desktop": some sozinho após ~8 s (não fica atrapalhando)
+  // e assim que a simulação começa (ENTRAR_EXECUCAO/Play) — ver render abaixo.
+  useEffect(() => {
+    if (!avisoVisivel) return;
+    const id = window.setTimeout(() => setAvisoVisivel(false), 8000);
+    return () => window.clearTimeout(id);
+  }, [avisoVisivel]);
+  useEffect(() => {
+    if (estado.modo === 'execucao') setAvisoVisivel(false);
+  }, [estado.modo]);
+
   useSimulationLoop(estado.rodando, dispatch);
 
   // Selecionar uma peça abre a gaveta do inspetor (relevante só no mobile).
@@ -200,7 +211,7 @@ export function App() {
             </div>
           )}
           {legendaAberta && <Legenda onFechar={() => setLegendaAberta(false)} />}
-          {avisoVisivel && (
+          {avisoVisivel && estado.modo !== 'execucao' && (
             <div className="aviso-desktop" role="note">
               <span>{t('app.avisoDesktop')}</span>
               <button onClick={() => setAvisoVisivel(false)} aria-label={t('app.fecharAviso')}>

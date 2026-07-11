@@ -6,6 +6,20 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.38.0] — Mobile: barra enxuta e aviso que se recolhe
+
+Terceira melhoria do lote do quadro/mobile (issue #49, PR 3).
+
+### Alterado
+
+- **⚙ Opções no mobile** migra para o menu **⋯** (junto de Legenda/Novo/Imprimir/
+  Carregar); no desktop segue inline.
+- **Barra do mobile mais limpa**: o status **edição/execução**, os botões
+  **desfazer/refazer** e **voltar à edição** ficam ocultos no celular (superfície de
+  simular/inspecionar). No desktop, tudo permanece.
+- **Aviso "edição só no desktop"** some sozinho após **~8 s** e **ao iniciar a
+  simulação** (Executar/Play) — não fica mais atrapalhando.
+
 ## [1.37.0] — Quadro: lógica ordenada por sensor (E/OU por gap)
 
 Segunda melhoria do quadro de comandos (issue #49, PR 2).
