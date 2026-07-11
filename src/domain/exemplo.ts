@@ -71,21 +71,21 @@ export function projetoExemplo(): ProjetoSimulacao {
         raio: 1.6,
         alturaMaxima: 9.5,
         cotaBase: 0,
-        nivel: 7.2,
+        nivel: 2.5,
       } as PropsReservatorio),
       reservatorio('meio', 'C2 Meio (55.000 L)', 480, 340, {
         formato: 'cilindro',
         raio: 1.6,
         alturaMaxima: 6.8387,
         cotaBase: 9.5,
-        nivel: 5.5,
+        nivel: 2.5,
       } as PropsReservatorio),
       reservatorio('superior', 'C1 Superior (55.000 L)', 480, 140, {
         formato: 'cilindro',
         raio: 1.6,
         alturaMaxima: 6.8387,
         cotaBase: 16.3387,
-        nivel: 5.19,
+        nivel: 2.5,
       } as PropsReservatorio),
       // ---- Abastecimento e recalque -----------------------------------------
       {
