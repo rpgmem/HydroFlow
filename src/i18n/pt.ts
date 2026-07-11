@@ -32,6 +32,7 @@ export const pt = {
     pauseAntes: 'Pause antes de voltar à edição',
     velocidade: 'Velocidade:',
     tempo: 't = ',
+    horario: 'Horário ',
     maisAcoes: 'Mais ações',
     legenda: '📖 Legenda',
     legendaTitulo: 'Mostrar/ocultar a legenda de formas e cores',

@@ -25,6 +25,19 @@ interface Props {
 
 const VELOCIDADES: Velocidade[] = [1, 5, 30, 120];
 
+const DIA_SEGUNDOS = 86400; // segundos de um dia real (o perfil "diária" usa isso)
+
+/**
+ * Formata o tempo de simulação (segundos) como um relógio de 24 h (HH:MM:SS),
+ * começando em 00:00:00 e dando a volta a cada 24 h. O contador em segundos segue
+ * acumulando à parte; este é só o "horário do dia" correspondente.
+ */
+function relogio24h(segundos: number): string {
+  const s = Math.floor(((segundos % DIA_SEGUNDOS) + DIA_SEGUNDOS) % DIA_SEGUNDOS);
+  const p = (n: number): string => String(n).padStart(2, '0');
+  return `${p(Math.floor(s / 3600))}:${p(Math.floor((s % 3600) / 60))}:${p(s % 60)}`;
+}
+
 export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAlternarTema, onAlternarLegenda, legendaAberta, alterado }: Props) {
   const { t } = useTranslation();
   const inputFile = useRef<HTMLInputElement>(null);
@@ -105,6 +118,9 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
           ))}
           <span className="telemetry" style={{ marginLeft: 8 }}>
             {t('toolbar.tempo')}<strong>{estado.tempo.toFixed(1)}s</strong>
+          </span>
+          <span className="telemetry" style={{ marginLeft: 8 }}>
+            {t('toolbar.horario')}<strong>{relogio24h(estado.tempo)}</strong>
           </span>
         </>
       )}
