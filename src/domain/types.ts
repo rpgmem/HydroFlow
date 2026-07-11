@@ -170,7 +170,14 @@ export interface PropsBomba {
  * Perfis de vazão no tempo (compartilhados por Fonte e Consumo). A lista cresce
  * por fase de implementação; `fixo` é o padrão. Ver `geradorVazao.ts`.
  */
-export type PerfilVazao = 'fixo' | 'trapezoidal' | 'senoidal';
+export type PerfilVazao =
+  | 'fixo'
+  | 'trapezoidal'
+  | 'senoidal'
+  | 'degrau'
+  | 'pulso'
+  | 'exponencial'
+  | 'diaria';
 
 /**
  * Gerador de vazão no tempo — o mesmo bloco na Fonte (entrada) e no Consumo
@@ -195,6 +202,36 @@ export interface Gerador {
   preset?: string;
   /** senoidal: defasagem em radianos. */
   fase?: number;
+  /** eventos/transientes (pulso/exponencial/diária): nível de base. */
+  base?: number;
+  /** degrau: nível antes/depois, instante da transição (s) e rampa de subida (s; 0 = seco). */
+  v0?: number;
+  v1?: number;
+  instante?: number;
+  rampa?: number;
+  /** pulso: amplitude durante o disparo, instante de início (s) e largura (s). */
+  amplitude?: number;
+  inicio?: number;
+  largura?: number;
+  /** exponencial: alvo, constante de tempo τ (s) e sentido. */
+  alvo?: number;
+  tau?: number;
+  sentido?: 'subida' | 'decaimento';
+  /**
+   * Diária (2 picos, período fixo de 1 dia real = 86.400 s; t=0 = 00:00).
+   * Por pico (manhã `pm*`, noite `pn*`): hora (0–24), valor, e as durações de
+   * subida/patamar/descida em HORAS.
+   */
+  pmHora?: number;
+  pmValor?: number;
+  pmSubida?: number;
+  pmPatamar?: number;
+  pmDescida?: number;
+  pnHora?: number;
+  pnValor?: number;
+  pnSubida?: number;
+  pnPatamar?: number;
+  pnDescida?: number;
 }
 
 export interface PropsFonte {

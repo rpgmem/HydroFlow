@@ -53,6 +53,48 @@ describe('gerador de vazão — valorNoTempo', () => {
     expect(valorNoTempo(g, 7)).toBe(4); // já no patamar alto
   });
 
+  it('degrau: v0 antes do instante, rampa e v1 depois', () => {
+    const g: Gerador = { perfil: 'degrau', v0: 1, v1: 5, instante: 10, rampa: 4 };
+    expect(valorNoTempo(g, 5)).toBe(1); // antes
+    expect(valorNoTempo(g, 12)).toBeCloseTo(3, 9); // meio da rampa (1→5 em 4s: em 2s = 3)
+    expect(valorNoTempo(g, 20)).toBe(5); // depois
+    // rampa 0 = degrau seco
+    expect(valorNoTempo({ perfil: 'degrau', v0: 1, v1: 5, instante: 10, rampa: 0 }, 10)).toBe(5);
+    expect(valorNoTempo({ perfil: 'degrau', v0: 1, v1: 5, instante: 10, rampa: 0 }, 9.9)).toBe(1);
+  });
+
+  it('pulso: base fora, amplitude durante a janela', () => {
+    const g: Gerador = { perfil: 'pulso', base: 0, amplitude: 8, inicio: 10, largura: 5 };
+    expect(valorNoTempo(g, 5)).toBe(0);
+    expect(valorNoTempo(g, 10)).toBe(8);
+    expect(valorNoTempo(g, 14.9)).toBe(8);
+    expect(valorNoTempo(g, 15)).toBe(0); // fim do pulso
+  });
+
+  it('exponencial: subida aproxima o alvo; decaimento volta à base', () => {
+    const sub: Gerador = { perfil: 'exponencial', base: 0, alvo: 10, tau: 5, sentido: 'subida' };
+    expect(valorNoTempo(sub, 0)).toBeCloseTo(0, 9); // parte da base
+    expect(valorNoTempo(sub, 5)).toBeCloseTo(10 * (1 - Math.exp(-1)), 6);
+    expect(valorNoTempo(sub, 1000)).toBeCloseTo(10, 6); // → alvo
+    const dec: Gerador = { perfil: 'exponencial', base: 2, alvo: 10, tau: 5, sentido: 'decaimento' };
+    expect(valorNoTempo(dec, 0)).toBeCloseTo(10, 9); // parte do alvo
+    expect(valorNoTempo(dec, 1000)).toBeCloseTo(2, 6); // → base
+  });
+
+  it('diária: 2 picos num dia real; base fora, pico no horário', () => {
+    const g: Gerador = {
+      perfil: 'diaria', base: 1,
+      pmHora: 7, pmValor: 6, pmSubida: 1, pmPatamar: 2, pmDescida: 1,
+      pnHora: 19, pnValor: 8, pnSubida: 1, pnPatamar: 2, pnDescida: 1,
+    };
+    const h = (hora: number) => valorNoTempo(g, hora * 3600);
+    expect(h(3)).toBe(1); // madrugada → base
+    expect(h(7.5)).toBe(6); // dentro do patamar da manhã
+    expect(h(12)).toBe(1); // meio-dia (entre picos) → base
+    expect(h(20)).toBe(8); // dentro do patamar da noite
+    expect(h(24 + 7.5)).toBe(6); // repete no dia seguinte
+  });
+
   it('paramsPadrao ancora na vazão V e vazaoRef devolve o representativo', () => {
     expect(paramsPadrao('fixo', 12)).toEqual({ perfil: 'fixo', vazao: 12 });
     const sen = paramsPadrao('senoidal', 10);
