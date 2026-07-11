@@ -32,6 +32,17 @@ export const ORDEM_PRESETS = ['quadrada', 'retangular', 'triangular', 'serraSubi
 const periodoOk = (p: number | undefined): number => (p !== undefined && p > 0 ? p : PERIODO_PADRAO);
 const modPos = (t: number, T: number): number => ((t % T) + T) % T;
 
+/** Hash inteiro determinístico → [0,1). Reproduzível (sem `Math.random`). */
+function hash01(semente: number, passo: number): number {
+  let a = (Math.imul(semente | 0, 2654435761) + Math.imul(passo | 0, 40503)) >>> 0;
+  a ^= a >>> 15;
+  a = Math.imul(a, 2246822519);
+  a ^= a >>> 13;
+  a = Math.imul(a, 3266489917);
+  a ^= a >>> 16;
+  return (a >>> 0) / 4294967296;
+}
+
 /** Vazão do gerador no instante `t` (s), na unidade do usuário. Sempre ≥ 0. */
 export function valorNoTempo(g: Gerador, t: number): number {
   const v = calcular(g, t);
@@ -147,6 +158,15 @@ function calcular(g: Gerador, t: number): number {
       const tau = g.tau && g.tau > 0 ? g.tau : 1;
       return base + amp * Math.exp(-Math.max(0, t) / tau) * Math.sin((2 * Math.PI * t) / T);
     }
+
+    case 'aleatoria': {
+      // "Ruído" reproduzível: um valor por `granularidade` s, via PRNG semeado.
+      const min = g.min ?? 0;
+      const max = Math.max(min, g.max ?? min);
+      const gran = g.granularidade && g.granularidade > 0 ? g.granularidade : 5;
+      const passo = Math.floor(Math.max(0, t) / gran);
+      return min + (max - min) * hash01(Math.floor(g.semente ?? 1), passo);
+    }
   }
 }
 
@@ -165,6 +185,8 @@ export function janelaPreview(g: Gerador): number {
       return (g.tau && g.tau > 0 ? g.tau : 30) * 5;
     case 'amortecida':
       return Math.max(periodoOk(g.periodo) * 4, (g.tau && g.tau > 0 ? g.tau : 60) * 3);
+    case 'aleatoria':
+      return (g.granularidade && g.granularidade > 0 ? g.granularidade : 5) * 24;
     default:
       return periodoOk(g.periodo) * 2.5; // periódicos (trapezoidal/senoidal/escalonada)
   }
@@ -185,6 +207,8 @@ export function vazaoRef(g: Gerador): number {
       return Math.max(g.base ?? 0, g.pmValor ?? 0, g.pnValor ?? 0);
     case 'amortecida':
       return (g.base ?? 0) + (g.amplitude ?? 0);
+    case 'aleatoria':
+      return g.max ?? 0;
     default:
       return g.max ?? g.vazao ?? 0; // periódicos (trapezoidal/senoidal/escalonada)
   }
@@ -224,5 +248,7 @@ export function paramsPadrao(perfil: PerfilVazao, V: number): Gerador {
       return { perfil: 'escalonada', min: 0, max: V, periodo: 60, degraus: 4 };
     case 'amortecida':
       return { perfil: 'amortecida', base: 0, amplitude: V, periodo: 30, tau: 60 };
+    case 'aleatoria':
+      return { perfil: 'aleatoria', min: 0, max: V, semente: 1, granularidade: 5 };
   }
 }

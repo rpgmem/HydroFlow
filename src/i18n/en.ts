@@ -161,6 +161,9 @@ export const en: Dicionario = {
     diaPatamar: 'Hold (h)',
     diaDescida: 'Fall (h)',
     degraus: 'Number of steps',
+    grpOutros: 'Other',
+    granularidade: 'Granularity (s per value)',
+    semente: 'Seed',
     saidaAberta: 'Outlet open',
     bombasControladas: 'Controlled pumps',
     semBombas: 'No pumps in the project.',
@@ -211,6 +214,7 @@ export const en: Dicionario = {
     diaria: 'Daily demand (2 peaks)',
     escalonada: 'Stepped rectangular',
     amortecida: 'Damped sinusoidal',
+    aleatoria: 'Random (fixed seed)',
   },
   perfilAjuda: {
     fixo: 'Constant flow over time.',
@@ -222,6 +226,7 @@ export const en: Dicionario = {
     diaria: 'A real 24 h day with a morning and an evening peak; use x120 to watch the day.',
     escalonada: 'Rising staircase of N steps (min→max) per period; then resets.',
     amortecida: 'Sinusoid that decays over time (transient), with time constant τ.',
+    aleatoria: 'Looks like noise but is reproducible: same seed → same sequence.',
   },
   presets: {
     quadrada: 'Square',
