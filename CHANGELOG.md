@@ -6,6 +6,21 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.43.0] — Correção do sinal de fluxo + normalizar renumera conexões
+
+### Corrigido
+
+- **Sinal de vazão em tubo entre junção e terminal**: a telemetria dos "runs de
+  terminais" invertia o sinal, então um tubo **entre uma junção e um consumo**
+  (água indo para o consumo, sentido normal) aparecia como **refluxo** (seta
+  violeta) sem ser. Agora o sinal segue o sentido da seta. A detecção de refluxo
+  REAL (tubos e junções da rede) segue intacta — coberto por teste.
+
+### Alterado
+
+- **Normalizar IDs** (⚙ Opções › Projeto) agora também **renumera as conexões em
+  sequência** (`c_1…c_N`), corrigindo a numeração "pulando". Continua desfazível.
+
 ## [1.42.0] — Projeto exemplo: registros de linha e drenos de limpeza
 
 ### Alterado

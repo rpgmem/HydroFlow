@@ -80,8 +80,8 @@ export const pt = {
     velocidadeRefDica: 'Limite de dimensionamento (padrão <1>3 m/s</1>): acima dela o tubo é sinalizado e define a vazão máx. recomendada.',
     projeto: 'Projeto',
     normalizarIds: 'Normalizar IDs pelos nomes',
-    normalizarDica: 'Reescreve os IDs das peças a partir dos rótulos (minúsculo, sem acento/espaço) e atualiza todas as referências. Entra no desfazer.',
-    normalizarConfirm: 'Reescrever os IDs de todas as peças a partir dos nomes? As referências são atualizadas; dá para desfazer.',
+    normalizarDica: 'Reescreve os IDs das peças a partir dos rótulos (minúsculo, sem acento/espaço), renumera as conexões em sequência (c_1…c_N) e atualiza todas as referências. Entra no desfazer.',
+    normalizarConfirm: 'Reescrever os IDs das peças a partir dos nomes e renumerar as conexões (c_1…c_N)? As referências são atualizadas; dá para desfazer.',
     rotulosDuplicados: 'Há nomes repetidos: {{lista}}. Renomeie para que fiquem únicos antes de normalizar os IDs.',
   },
   inspector: {

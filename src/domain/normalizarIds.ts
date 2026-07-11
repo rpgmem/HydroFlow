@@ -42,8 +42,9 @@ export function rotulosDuplicados(projeto: ProjetoSimulacao): string[] {
 
 /**
  * Devolve um projeto com os ids das peças normalizados (slug do rótulo, ou do id
- * quando sem rótulo) e todas as referências atualizadas. Se nada mudaria, devolve
- * a MESMA referência (para não sujar histórico/estado "alterado").
+ * quando sem rótulo), as conexões renumeradas em sequência (`c_1…c_N`, na ordem
+ * da lista) e todas as referências atualizadas. Se nada mudaria, devolve a MESMA
+ * referência (para não sujar histórico/estado "alterado").
  */
 export function normalizarIds(projeto: ProjetoSimulacao): ProjetoSimulacao {
   const usados = new Set<string>();
@@ -60,14 +61,11 @@ export function normalizarIds(projeto: ProjetoSimulacao): ProjetoSimulacao {
     mapa.set(p.id, id);
   }
 
-  let mudou = false;
-  for (const [velho, novo] of mapa) {
-    if (velho !== novo) {
-      mudou = true;
-      break;
-    }
-  }
-  if (!mudou) return projeto;
+  // Muda se algum id de peça vira outro OU se alguma conexão está fora da
+  // sequência `c_1…c_N` (numeração "pulando").
+  const idsMudaram = [...mapa].some(([velho, novo]) => velho !== novo);
+  const conexoesMudam = projeto.conexoes.some((c, i) => c.id !== `c_${i + 1}`);
+  if (!idsMudaram && !conexoesMudam) return projeto;
 
   const rid = (id: string): string => mapa.get(id) ?? id;
   const pecas: Peca[] = projeto.pecas.map((p): Peca => {
@@ -96,6 +94,13 @@ export function normalizarIds(projeto: ProjetoSimulacao): ProjetoSimulacao {
     }
     return { ...p, id };
   });
-  const conexoes = projeto.conexoes.map((c) => ({ ...c, origem: rid(c.origem), destino: rid(c.destino) }));
+  // Renumera as conexões em sequência (`c_1…c_N`) e remapeia os endpoints. A
+  // conexão não é referenciada por peça alguma, então a renumeração é livre.
+  const conexoes = projeto.conexoes.map((c, i) => ({
+    ...c,
+    id: `c_${i + 1}`,
+    origem: rid(c.origem),
+    destino: rid(c.destino),
+  }));
   return { ...projeto, pecas, conexoes };
 }

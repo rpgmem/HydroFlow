@@ -394,8 +394,12 @@ export function resolverGravidadeComJuncoes(
       if (isReservatorio(idx.porId.get(ar.b)!)) netRes.set(ar.b, (netRes.get(ar.b) ?? 0) - q);
       anotar(ar, q);
     }
-    // telemetria dos runs de terminais (q é a favor do nó; a→b vai do terminal ao nó).
-    for (const { run, q } of runsTerminais) anotar(run, -q);
+    // Telemetria dos runs de terminais. O run vai do terminal (a) ao nó (b), e `q`
+    // é o fluxo FAVOR DO NÓ — ou seja, exatamente o sentido a→b. Então `anotar`
+    // recebe `q` direto (ele já converte para o sinal origem→destino de cada tubo).
+    // Passar -q invertia o sinal: um tubo entre uma junção e um consumo (água indo
+    // para o consumo, sentido normal) aparecia como refluxo (violeta) sem ser.
+    for (const { run, q } of runsTerminais) anotar(run, q);
 
     // --- Finaliza as bombas ACOPLADAS (atrito): a vazão é o ponto de operação na
     // carga JÁ resolvida do nó. Anota o cano de sucção (fora da rede), o run até o
