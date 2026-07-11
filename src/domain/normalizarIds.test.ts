@@ -51,11 +51,12 @@ describe('normalizarIds', () => {
         { id: 'b1', tipo: 'bomba', x: 0, y: 0, rotulo: 'Bomba Recalque', props: { vazaoNominal: 5, sensores: ['s1'] } },
         { id: 'q1', tipo: 'quadro', x: 0, y: 0, rotulo: 'Quadro A', props: { canais: [{ bomba: 'b1', modo: 'auto', sensores: ['s1'] }], sensores: ['s1'] } },
       ],
-      [{ id: 'c1', origem: 's1', destino: 'b1' }],
+      [{ id: 'c99', origem: 's1', destino: 'b1' }],
     );
     const r = normalizarIds(p);
     const ids = r.pecas.map((x) => x.id);
     expect(ids).toEqual(['boia_sup', 'bomba_recalque', 'quadro_a']);
+    expect(r.conexoes[0]!.id).toBe('c_1'); // conexões renumeradas em sequência
     // Referências remapeadas:
     expect((r.pecas[0]!.props as { bombasAlvo: string[] }).bombasAlvo).toEqual(['bomba_recalque']);
     expect((r.pecas[1]!.props as { sensores: string[] }).sensores).toEqual(['boia_sup']);
@@ -74,8 +75,19 @@ describe('normalizarIds', () => {
     expect(normalizarIds(p).pecas.map((x) => x.id)).toEqual(['no_a', 'no_a_2']);
   });
 
+  it('renumera conexões fora de sequência (mesmo sem mudar ids de peça)', () => {
+    const p = proj(
+      [{ id: 'no_a', tipo: 'juncao', x: 0, y: 0, rotulo: 'no_a', props: {} }, { id: 'no_b', tipo: 'juncao', x: 0, y: 0, rotulo: 'no_b', props: {} }],
+      [{ id: 'c_7', origem: 'no_a', destino: 'no_b' }, { id: 'c_2', origem: 'no_b', destino: 'no_a' }],
+    );
+    expect(normalizarIds(p).conexoes.map((c) => c.id)).toEqual(['c_1', 'c_2']);
+  });
+
   it('sem mudanças devolve a MESMA referência (no-op)', () => {
-    const p = proj([{ id: 'no_a', tipo: 'juncao', x: 0, y: 0, rotulo: 'no_a', props: {} }]);
+    const p = proj(
+      [{ id: 'no_a', tipo: 'juncao', x: 0, y: 0, rotulo: 'no_a', props: {} }],
+      [{ id: 'c_1', origem: 'no_a', destino: 'no_a' }],
+    );
     expect(normalizarIds(p)).toBe(p);
   });
 });

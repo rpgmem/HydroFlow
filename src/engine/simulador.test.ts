@@ -397,6 +397,33 @@ describe('terminal na rede de junções', () => {
     expect(saiuSup).toBeCloseTo(consumido + entrouMeio, 6);
   });
 
+  it('tubo entre junção e consumo marca o SENTIDO NORMAL (não é refluxo)', () => {
+    // Consumo puxa da junção POR UM TUBO (como o "registro de consumo" do exemplo):
+    // a água vai J→tubo→consumo, no sentido da seta. A telemetria do run de terminal
+    // invertia o sinal e pintava esse tubo de refluxo (violeta) sem ser — regressão
+    // do sinal, agora corrigida.
+    const r = tick(
+      projeto(
+        [
+          res('R_sup', { cotaBase: 10, nivel: 5 }),
+          juncao('J'),
+          tubo('t_sup'),
+          tubo('t_cons'), // tubo entre a junção e o consumo
+          { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { gerador: { perfil: 'fixo', vazao: 0.05 }, aberto: true } },
+        ],
+        [
+          criarConexao('R_sup', 't_sup'),
+          criarConexao('t_sup', 'J'),
+          criarConexao('J', 't_cons'),
+          criarConexao('t_cons', 'C'),
+        ],
+      ),
+    );
+    expect(r.vazoes['t_cons']).toBeGreaterThan(0); // sentido normal J→consumo (a favor da seta)
+    expect(r.refluxos).not.toContain('t_cons'); // não é refluxo
+    expect(r.vazoes['C']).toBeCloseTo(0.05, 6); // consumo recebe sua demanda
+  });
+
   it('sem refluxo quando o consumo excede o que o ramo alto entrega', () => {
     // Consumo grande: os DOIS ramos alimentam a junção normalmente (nenhum reflui).
     const r = tick(

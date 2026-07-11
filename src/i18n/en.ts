@@ -79,8 +79,8 @@ export const en: Dicionario = {
     velocidadeRefDica: 'Sizing limit (default <1>3 m/s</1>): above it the pipe is flagged and it sets the recommended max flow.',
     projeto: 'Project',
     normalizarIds: 'Normalize IDs from names',
-    normalizarDica: 'Rewrites piece IDs from their labels (lowercase, no accents/spaces) and updates all references. Undoable.',
-    normalizarConfirm: 'Rewrite every piece ID from its name? References are updated; this can be undone.',
+    normalizarDica: 'Rewrites piece IDs from their labels (lowercase, no accents/spaces), renumbers connections sequentially (c_1…c_N) and updates all references. Undoable.',
+    normalizarConfirm: 'Rewrite piece IDs from their names and renumber connections (c_1…c_N)? References are updated; this can be undone.',
     rotulosDuplicados: 'Duplicate names found: {{lista}}. Rename them to be unique before normalizing IDs.',
   },
   inspector: {
