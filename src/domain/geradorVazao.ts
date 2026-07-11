@@ -126,6 +126,27 @@ function calcular(g: Gerador, t: number): number {
       const noite = pico(g.pnHora ?? 19, g.pnValor ?? base, g.pnSubida ?? 2, g.pnPatamar ?? 3, g.pnDescida ?? 2);
       return Math.max(base, manha, noite);
     }
+
+    case 'escalonada': {
+      // Escada crescente de `degraus` níveis (min→max) por período; depois reseta.
+      const min = g.min ?? 0;
+      const max = Math.max(min, g.max ?? min);
+      const T = periodoOk(g.periodo);
+      const N = Math.max(1, Math.round(g.degraus ?? 4));
+      if (N === 1) return max;
+      const p = modPos(t, T) / T;
+      const k = Math.min(N - 1, Math.floor(p * N));
+      return min + ((max - min) * k) / (N - 1);
+    }
+
+    case 'amortecida': {
+      // Senoidal que decai com constante τ (transiente): base + A·e^(−t/τ)·sin.
+      const base = g.base ?? 0;
+      const amp = g.amplitude ?? 0;
+      const T = periodoOk(g.periodo);
+      const tau = g.tau && g.tau > 0 ? g.tau : 1;
+      return base + amp * Math.exp(-Math.max(0, t) / tau) * Math.sin((2 * Math.PI * t) / T);
+    }
   }
 }
 
@@ -142,8 +163,10 @@ export function janelaPreview(g: Gerador): number {
       return ((g.inicio ?? 0) + Math.max(0, g.largura ?? 0)) * 1.6 + 10;
     case 'exponencial':
       return (g.tau && g.tau > 0 ? g.tau : 30) * 5;
+    case 'amortecida':
+      return Math.max(periodoOk(g.periodo) * 4, (g.tau && g.tau > 0 ? g.tau : 60) * 3);
     default:
-      return periodoOk(g.periodo) * 2.5; // periódicos
+      return periodoOk(g.periodo) * 2.5; // periódicos (trapezoidal/senoidal/escalonada)
   }
 }
 
@@ -160,8 +183,10 @@ export function vazaoRef(g: Gerador): number {
       return Math.max(g.base ?? 0, g.alvo ?? 0);
     case 'diaria':
       return Math.max(g.base ?? 0, g.pmValor ?? 0, g.pnValor ?? 0);
+    case 'amortecida':
+      return (g.base ?? 0) + (g.amplitude ?? 0);
     default:
-      return g.max ?? g.vazao ?? 0; // periódicos
+      return g.max ?? g.vazao ?? 0; // periódicos (trapezoidal/senoidal/escalonada)
   }
 }
 
@@ -195,5 +220,9 @@ export function paramsPadrao(perfil: PerfilVazao, V: number): Gerador {
         pmHora: 7, pmValor: V, pmSubida: 2, pmPatamar: 3, pmDescida: 2,
         pnHora: 19, pnValor: V, pnSubida: 2, pnPatamar: 3, pnDescida: 2,
       };
+    case 'escalonada':
+      return { perfil: 'escalonada', min: 0, max: V, periodo: 60, degraus: 4 };
+    case 'amortecida':
+      return { perfil: 'amortecida', base: 0, amplitude: V, periodo: 30, tau: 60 };
   }
 }

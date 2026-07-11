@@ -6,6 +6,22 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.34.0] — Perfis de vazão (Fase 3: escalonada + amortecida)
+
+Continuação do plano de perfis de vazão (issue #42).
+
+### Adicionado
+
+- **Retangular escalonada** (periódico): escada crescente de N degraus (mín→máx)
+  por período; depois reseta.
+- **Senoidal amortecida** (transiente): senoidal que decai ao longo do tempo, com
+  constante de tempo τ (clampada em ≥ 0).
+
+### Técnico
+
+- `valorNoTempo` ganhou `escalonada`/`amortecida`; `janelaPreview`/`vazaoRef`/
+  defaults atualizados; novo parâmetro `degraus`. +2 testes de unidade.
+
 ## [1.33.0] — Perfis de vazão (Fase 2: transientes + demanda diária)
 
 Continuação do plano de perfis de vazão (issue #42).

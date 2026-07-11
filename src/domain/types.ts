@@ -177,7 +177,9 @@ export type PerfilVazao =
   | 'degrau'
   | 'pulso'
   | 'exponencial'
-  | 'diaria';
+  | 'diaria'
+  | 'escalonada'
+  | 'amortecida';
 
 /**
  * Gerador de vazão no tempo — o mesmo bloco na Fonte (entrada) e no Consumo
@@ -202,6 +204,8 @@ export interface Gerador {
   preset?: string;
   /** senoidal: defasagem em radianos. */
   fase?: number;
+  /** escalonada: número de degraus (min→max) por período. */
+  degraus?: number;
   /** eventos/transientes (pulso/exponencial/diária): nível de base. */
   base?: number;
   /** degrau: nível antes/depois, instante da transição (s) e rampa de subida (s; 0 = seco). */
