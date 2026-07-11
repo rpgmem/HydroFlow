@@ -32,10 +32,10 @@ describe('projeto de exemplo (reservatórios empilhados)', () => {
     // Estado inicial de operação: inferior alto (liberado pela boia reversa) e
     // superior abaixo do máximo → a bomba está ligada recalcando, sem rodar a seco.
     const r = rodarTicks(projetoExemplo(), 1);
-    const bomba = r.projeto.pecas.find((x) => x.id === 'bomba')!;
+    const bomba = r.projeto.pecas.find((x) => x.id === 'bomba_recalque')!;
     expect((bomba.props as { ligada?: boolean }).ligada).toBe(true);
-    expect(r.vazoes['succao'] ?? 0).toBeGreaterThan(0);
-    expect(r.bombasASeco).not.toContain('bomba');
+    expect(r.vazoes['cano_de_succao'] ?? 0).toBeGreaterThan(0);
+    expect(r.bombasASeco).not.toContain('bomba_recalque');
   });
 
   it('simula sem gerar níveis inválidos (finitos e não-negativos)', () => {
@@ -50,12 +50,12 @@ describe('projeto de exemplo (reservatórios empilhados)', () => {
     // Proteção da origem: forçando o inferior no mínimo do sensor reverso (2 m),
     // o 'desligar' vence e a bomba para — sem rodar a seco.
     const proj = projetoExemplo();
-    const inf = proj.pecas.find((x) => x.id === 'inferior')!;
+    const inf = proj.pecas.find((x) => x.id === 'inferior_75_000_l')!;
     (inf.props as { nivel?: number }).nivel = 2;
     const r = rodarTicks(proj, 1);
-    const bomba = r.projeto.pecas.find((x) => x.id === 'bomba')!;
+    const bomba = r.projeto.pecas.find((x) => x.id === 'bomba_recalque')!;
     expect((bomba.props as { ligada?: boolean }).ligada).toBe(false);
-    expect(r.vazoes['succao'] ?? 0).toBe(0);
-    expect(r.bombasASeco).not.toContain('bomba');
+    expect(r.vazoes['cano_de_succao'] ?? 0).toBe(0);
+    expect(r.bombasASeco).not.toContain('bomba_recalque');
   });
 });

@@ -77,6 +77,11 @@ export const en: Dicionario = {
     velocidadeRef: 'Reference velocity (m/s)',
     velocidadeRefLabel: 'Reference velocity',
     velocidadeRefDica: 'Sizing limit (default <1>3 m/s</1>): above it the pipe is flagged and it sets the recommended max flow.',
+    projeto: 'Project',
+    normalizarIds: 'Normalize IDs from names',
+    normalizarDica: 'Rewrites piece IDs from their labels (lowercase, no accents/spaces) and updates all references. Undoable.',
+    normalizarConfirm: 'Rewrite every piece ID from its name? References are updated; this can be undone.',
+    rotulosDuplicados: 'Duplicate names found: {{lista}}. Rename them to be unique before normalizing IDs.',
   },
   inspector: {
     titulo: 'Inspector',

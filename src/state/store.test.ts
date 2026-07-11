@@ -209,3 +209,25 @@ describe('controle de velocidade e loop', () => {
     expect(e.tempo).toBe(0);
   });
 });
+
+describe('NORMALIZAR_IDS', () => {
+  it('reescreve ids pelos rótulos, atualiza conexões e é desfazível', () => {
+    const f = { ...criarPeca('fonte', 0, 0, 'f1'), rotulo: 'Minha Fonte' };
+    const r = { ...criarPeca('reservatorio', 100, 0, 'r1'), rotulo: 'Tanque X' };
+    const proj = { ...projetoVazio(), pecas: [f, r], conexoes: [criarConexao('f1', 'r1')] };
+    let e = comEstado(proj);
+    e = reducer(e, { tipo: 'NORMALIZAR_IDS' });
+    expect(e.projeto.pecas.map((p) => p.id)).toEqual(['minha_fonte', 'tanque_x']);
+    expect(e.projeto.conexoes[0]).toMatchObject({ origem: 'minha_fonte', destino: 'tanque_x' });
+    // Desfazer volta aos ids originais.
+    const und = reducer(e, { tipo: 'UNDO' });
+    expect(und.projeto.pecas.map((p) => p.id)).toEqual(['f1', 'r1']);
+  });
+
+  it('é bloqueada em execução (estrutural)', () => {
+    let e = reducer(comEstado(projetoValido()), { tipo: 'ENTRAR_EXECUCAO' });
+    const antes = e.projeto.pecas.map((p) => p.id);
+    e = reducer(e, { tipo: 'NORMALIZAR_IDS' });
+    expect(e.projeto.pecas.map((p) => p.id)).toEqual(antes); // ignorado
+  });
+});

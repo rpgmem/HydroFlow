@@ -145,6 +145,12 @@ body {
 .opcoes-menu .field {
   margin: 4px 0;
 }
+/* Aviso (ex.: rótulos duplicados bloqueando "Normalizar IDs"). */
+.opcoes-aviso {
+  font-size: 12px;
+  line-height: 1.35;
+  color: #f0a4a4;
+}
 .acoes-secundarias {
   display: contents;
 }
