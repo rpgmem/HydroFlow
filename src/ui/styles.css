@@ -658,6 +658,63 @@ button.ativo {
   padding: 2px 7px;
 }
 
+/* Bloco recolhível (accordion) de um membro do quadro — boia/sensor ou bomba.
+   A borda esquerda colorida (cor definida inline) identifica o membro. */
+.quadro-membro {
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--line);
+  border-radius: 8px;
+  padding: 0 8px;
+  margin: 6px 0;
+}
+.quadro-membro > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 0;
+  font-size: 13px;
+  list-style: none;
+  user-select: none;
+}
+.quadro-membro > summary::-webkit-details-marker {
+  display: none;
+}
+.quadro-membro[open] > summary {
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 6px;
+}
+.quadro-membro > summary::after {
+  content: '▸';
+  margin-left: auto;
+  font-size: 11px;
+  opacity: 0.6;
+  transition: transform 0.15s ease;
+}
+.quadro-membro[open] > summary::after {
+  transform: rotate(90deg);
+}
+.quadro-membro > *:last-child {
+  margin-bottom: 8px;
+}
+.membro-nome {
+  font-weight: 600;
+}
+.membro-tag {
+  font-size: 11px;
+  opacity: 0.7;
+  font-weight: 400;
+}
+/* Etiqueta de cor do membro (chip). */
+.membro-chip {
+  flex: none;
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
 .telemetry {
   font-size: 12px;
   color: var(--muted);

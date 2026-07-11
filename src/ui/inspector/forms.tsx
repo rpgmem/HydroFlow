@@ -34,6 +34,10 @@ import { GeradorForm } from './GeradorForm';
 
 const nomePeca = (p: Peca): string => (p.rotulo && p.rotulo.trim() ? p.rotulo : p.id);
 
+// Paleta de cores dos membros do quadro (boias/sensores e bombas). Tons vivos e
+// distinguíveis; reciclada ciclicamente se houver mais membros que cores.
+const CORES_MEMBRO = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+
 /** Quadro de comandos de que a bomba `id` é membro (via canal), ou null. */
 function quadroDaBomba(projeto: ProjetoSimulacao, id: string): Peca | null {
   return projeto.pecas.find((p) => isQuadro(p) && p.props.canais.some((c) => c.bomba === id)) ?? null;
@@ -698,6 +702,20 @@ export function QuadroForm({
       sensor: undefined, // migra do campo único legado
     });
   };
+  // Cor por membro: cada boia/sensor e cada bomba ganha um tom distinto, reusado
+  // como etiqueta ao lado da caixa de seleção do sensor no canal da bomba.
+  const idsMembros = [...membrosSensor.map((s) => s.id), ...canais.map((c) => c.bomba)];
+  const corMembro = (id: string): string =>
+    CORES_MEMBRO[Math.max(0, idsMembros.indexOf(id)) % CORES_MEMBRO.length]!;
+  const chip = (cor: string): React.ReactElement => (
+    <span className="membro-chip" style={{ background: cor }} aria-hidden="true" />
+  );
+  const rotuloModo = (modo: CanalQuadro['modo']): string =>
+    modo === 'auto'
+      ? t('form.quadroModoAuto')
+      : modo === 'manual'
+        ? t('form.quadroModoManual')
+        : t('form.quadroModoDesligado');
 
   // Quadro sem bombas e sem sensores → nada a configurar ainda.
   if (canais.length === 0 && membrosSensor.length === 0) {
@@ -725,9 +743,14 @@ export function QuadroForm({
       {membrosSensor.map((s) => {
         const sp = s.props as PropsSensor;
         const rev = sp.reversa ?? false;
+        const cor = corMembro(s.id);
         return (
-          <div key={s.id} className="quadro-canal">
-            <strong style={{ fontSize: 13 }}>📡 {nomePeca(s)}</strong>
+          <details key={s.id} className="quadro-membro" style={{ borderLeftColor: cor }}>
+            <summary>
+              {chip(cor)}
+              <span className="membro-nome">📡 {nomePeca(s)}</span>
+              {rev && <span className="membro-tag">{t('form.reverso')}</span>}
+            </summary>
             <Switch
               checked={rev}
               disabled={emExecucao}
@@ -759,7 +782,7 @@ export function QuadroForm({
               {t('form.histerese')}
             </Switch>
             <Num label={t('form.delay')} disabled={emExecucao} value={sp.delay} onChange={(v) => updSensor(s.id, { delay: v })} />
-          </div>
+          </details>
         );
       })}
 
@@ -768,9 +791,14 @@ export function QuadroForm({
       {canais.map((c, i) => {
         const seguidos = sensoresDoCanalUI(c);
         const rev = c.revezamento ?? false;
+        const cor = corMembro(c.bomba);
         return (
-        <div key={c.bomba} className="quadro-canal">
-          <strong style={{ fontSize: 13 }}>⚙️ {nomeBomba(c.bomba)}</strong>
+        <details key={c.bomba} className="quadro-membro" style={{ borderLeftColor: cor }}>
+          <summary>
+            {chip(cor)}
+            <span className="membro-nome">⚙️ {nomeBomba(c.bomba)}</span>
+            <span className="membro-tag">{rotuloModo(c.modo)}</span>
+          </summary>
           <div className="field">
             <label>{t('form.quadroModo')}</label>
             {/* O modo (auto/manual/desligado) é um COMANDO — ativo na execução. */}
@@ -800,6 +828,7 @@ export function QuadroForm({
                         aria-label={t('form.quadroSeguirSensor', { nome: nomePeca(s) })}
                         onChange={(e) => alternarSensorCanal(i, s.id, e.target.checked)}
                       />
+                      {chip(corMembro(s.id))}
                       {nomePeca(s)}
                     </label>
                   ))}
@@ -835,7 +864,7 @@ export function QuadroForm({
               </select>
             </div>
           )}
-        </div>
+        </details>
         );
       })}
     </>
