@@ -6,6 +6,12 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.35.2] — Exemplo: níveis iniciais em 2,5
+
+### Alterado
+
+- **Projeto exemplo**: os três reservatórios abrem com **nível inicial 2,5 m**.
+
 ## [1.35.1] — Ajuste do projeto exemplo
 
 ### Alterado
