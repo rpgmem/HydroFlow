@@ -134,18 +134,13 @@ function validarPeca(peca: unknown, idx: number, erros: ErroValidacao[]): void {
         mensagem: 'sensores deve ser um array (pode ser vazio)',
       });
     }
-  } else if (peca.tipo === 'fonte') {
-    if (!isFiniteNumber(props.vazaoFixa)) {
+  } else if (peca.tipo === 'fonte' || peca.tipo === 'consumo') {
+    // Fonte e Consumo compartilham o mesmo `gerador` de vazão no tempo.
+    const g = props.gerador as { perfil?: unknown } | undefined;
+    if (!g || typeof g !== 'object' || typeof g.perfil !== 'string') {
       erros.push({
-        caminho: `${base}.props.vazaoFixa`,
-        mensagem: 'vazaoFixa obrigatória',
-      });
-    }
-  } else if (peca.tipo === 'consumo') {
-    if (!isFiniteNumber(props.vazaoDemanda)) {
-      erros.push({
-        caminho: `${base}.props.vazaoDemanda`,
-        mensagem: 'vazaoDemanda obrigatória',
+        caminho: `${base}.props.gerador`,
+        mensagem: 'gerador { perfil, ... } obrigatório',
       });
     }
   } else if (peca.tipo === 'sensor') {

@@ -32,9 +32,9 @@ describe('inspetor em execução — comandos ativos, estrutura travada', () => 
   });
 
   it('consumo: saída (comando) ativa; vazão (estrutura) travada', () => {
-    render(<ConsumoForm props={{ vazaoDemanda: 5, perfil: 'fixo' }} emExecucao upd={noop} u={u} />);
+    render(<ConsumoForm props={{ gerador: { perfil: 'fixo', vazao: 5 }, aberto: true }} emExecucao upd={noop} u={u} />);
     expect(dis('Saída aberta')).toBe(false);
-    expect(dis('Vazão de saída')).toBe(true);
+    expect(dis('Vazão constante')).toBe(true);
   });
 
   it('sensor: habilitar (comando) ativo; reverso (estrutura) travado', () => {

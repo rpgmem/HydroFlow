@@ -528,6 +528,20 @@ button.ativo {
 .ev-refluxo span:last-child { color: #c084fc; }
 .ev-comando span:last-child { color: #e0863b; } /* comando de operação (âmbar do quadro) */
 
+/* Preview ao vivo da onda de vazão (Fonte/Consumo). */
+.waveform-preview {
+  margin: 4px 0 8px;
+  padding: 4px 6px;
+  background: rgba(56, 189, 248, 0.06);
+  border: 1px solid var(--borda, #26323d);
+  border-radius: 6px;
+}
+.waveform-preview svg { display: block; }
+.waveform-preview .wf-linha { stroke: #38bdf8; stroke-width: 2; }
+.waveform-preview .wf-base { stroke: rgba(148, 163, 184, 0.4); stroke-width: 1; stroke-dasharray: 3 3; }
+.waveform-preview .wf-legenda { display: block; margin-top: 2px; font-size: 11px; }
+.avancado > summary { cursor: pointer; font-size: 12px; opacity: 0.85; margin: 4px 0; }
+
 .inspetor-campos {
   border: 0;
   margin: 0;

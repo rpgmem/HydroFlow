@@ -22,6 +22,7 @@ import {
 } from './hidraulica';
 import { metrosPorComprimento } from '../domain/unidades';
 import { boiaAberta } from './arbitragem';
+import { valorNoTempo } from '../domain/geradorVazao';
 import { cargaM, reservatorioVazio, type FluxoResolvido, type GrafoIndex } from './grafo';
 
 export function calcularTubo(
@@ -213,7 +214,7 @@ export function calcularBomba(
   // consumo estiver aberto e com demanda > 0 — por isso "consumo 0 = a bomba não
   // empurra nada". Empurrar para um reservatório cheio é permitido (transborda).
   const demandaDe = (cons: PecaDe<'consumo'>): number =>
-    cons.props.aberto === false ? 0 : demandaConsumo(cons.props, tempo);
+    cons.props.aberto === false ? 0 : valorNoTempo(cons.props.gerador, tempo);
 
   const abertas = (idx.saida.get(bomba.id) ?? [])
     .map((c) => ({ c, dp: idx.resolverFluxo(c.destino, 'down') }))
@@ -274,11 +275,15 @@ export function calcularFonte(
   idx: GrafoIndex,
   fonte: PecaDe<'fonte'>,
   u: Unidades,
+  tempo: number,
   fluxos: FluxoResolvido[],
   vazoes: Record<string, number>,
 ): number {
   const saidas = idx.saida.get(fonte.id) ?? [];
   if (saidas.length === 0) return 0;
+
+  // Vazão de abastecimento no instante (perfil no tempo; 'fixo' = constante).
+  const vazaoFonte = valorNoTempo(fonte.props.gerador, tempo);
 
   let total = 0;
   for (const c of saidas) {
@@ -286,11 +291,11 @@ export function calcularFonte(
     const dp = idx.resolverFluxo(c.destino, 'down');
     if (!dp.res || !dp.aberto) continue;
     const down = dp.res;
-    // Múltiplos destinos: usa vazaoAlocada; destino único usa vazaoFixa.
+    // Múltiplos destinos: usa vazaoAlocada; destino único usa a vazão da fonte.
     const qAlvo =
       saidas.length > 1
         ? (c.vazaoAlocada ?? 0)
-        : (c.vazaoAlocada ?? fonte.props.vazaoFixa);
+        : (c.vazaoAlocada ?? vazaoFonte);
 
     // Boia da própria fonte: fecha quando o destino está cheio.
     let qUser = qAlvo;
@@ -306,27 +311,6 @@ export function calcularFonte(
     }
   }
   return total;
-}
-
-/**
- * Demanda de um consumo no instante `tempo`, conforme o perfil (na unidade do
- * usuário). Determinístico — sem aleatoriedade — para manter o motor testável.
- */
-export function demandaConsumo(props: PecaDe<'consumo'>['props'], tempo: number): number {
-  const perfil = props.perfil ?? 'fixo';
-  if (perfil === 'fixo') return Math.max(0, props.vazaoDemanda);
-
-  const min = Math.max(0, props.vazaoMin ?? 0);
-  const max = Math.max(min, props.vazaoMax ?? props.vazaoDemanda);
-  const periodo = props.periodo && props.periodo > 0 ? props.periodo : 60;
-
-  if (perfil === 'senoidal') {
-    return min + (max - min) * (0.5 + 0.5 * Math.sin((2 * Math.PI * tempo) / periodo));
-  }
-  // intermitente: onda quadrada (ligado em `max` durante `cicloLigado` do período).
-  const duty = Math.min(1, Math.max(0, props.cicloLigado ?? 0.5));
-  const fase = (((tempo % periodo) + periodo) % periodo) / periodo;
-  return fase < duty ? max : min;
 }
 
 export function calcularConsumo(
@@ -357,7 +341,7 @@ export function calcularConsumo(
   const up = cp.res;
   const kL = metrosPorComprimento(u);
 
-  let q = vazaoParaM3(demandaConsumo(consumo.props, tempo), u);
+  let q = vazaoParaM3(valorNoTempo(consumo.props.gerador, tempo), u);
   // Realismo: a saída é limitada pela CAPACIDADE do cano mais estreito no
   // caminho (Torricelli pelo diâmetro e pela carga). Canos finos estrangulam.
   if (cp.tubos.length > 0) {

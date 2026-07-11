@@ -28,7 +28,8 @@ import { areaTuboM2, vazaoParaM3 } from './geometria';
 import { vazaoBombaOperacao, vazaoGravidadeM3, COMPRIMENTO_PADRAO_M, HW_C_PADRAO } from './hidraulica';
 import { metrosPorComprimento } from '../domain/unidades';
 import { reservatorioVazio, type FluxoResolvido, type GrafoIndex } from './grafo';
-import { demandaConsumo, hfTubosM } from './vazaoPecas';
+import { hfTubosM } from './vazaoPecas';
+import { valorNoTempo } from '../domain/geradorVazao';
 
 /** Bomba acoplada à rede (com atrito): a vazão depende da carga do nó. */
 interface ContribBomba {
@@ -246,12 +247,12 @@ export function resolverGravidadeComJuncoes(
       const noAtar = run.b;
       let q = 0; // m³/s, + = entra no nó
       if (isConsumo(pe)) {
-        const dem = pe.props.aberto === false ? 0 : demandaConsumo(pe.props, tempo);
+        const dem = pe.props.aberto === false ? 0 : valorNoTempo(pe.props.gerador, tempo);
         const qm = vazaoParaM3(Math.max(0, dem), u);
         q = -qm; // consumo RETIRA
         if (qm > 0) demandasTerm.push({ destino: null, vol: qm }); // descarta ao ambiente
       } else if (isFonte(pe)) {
-        q = vazaoParaM3(Math.max(0, pe.props.vazaoFixa), u); // fonte injeta
+        q = vazaoParaM3(Math.max(0, valorNoTempo(pe.props.gerador, tempo)), u); // fonte injeta
         if (q > 0) ofertasTerm.push({ origem: null, vol: q }); // vem do ambiente
       } else if (isBomba(pe)) {
         if (pe.props.ligada) {

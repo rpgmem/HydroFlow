@@ -6,6 +6,33 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.32.0] — Perfis de vazão no tempo (Fase 1: gerador + preview)
+
+Início do plano de **perfis de vazão** (issue #42). Fonte e Consumo passam a
+compartilhar um **gerador de vazão** com preview ao vivo.
+
+### Adicionado
+
+- **Gerador de vazão compartilhado** (Fonte e Consumo): seletor de **perfil**
+  agrupado (Padrão / Periódicos), **preview ao vivo** da onda (SVG), campos
+  contextuais (só os do perfil) e uma linha de ajuda por perfil.
+- **Perfis desta fase**: `fixo` (constante), `trapezoidal` (com presets
+  **Quadrada, Retangular, Triangular, Dente de serra ↑/↓, Trapézio** + frações
+  avançadas) e `senoidal`. Todos determinísticos e clampados em ≥ 0.
+- **Fonte** ganhou perfis no tempo (antes só vazão fixa).
+
+### Alterado
+
+- **Modelo**: `PropsFonte`/`PropsConsumo` agora guardam um `gerador { perfil,
+  params }` no lugar de `vazaoFixa`/`vazaoDemanda`/`perfil`/`vazaoMin`… Sem camada
+  de compatibilidade (decisão do plano). O exemplo foi ajustado ao novo formato
+  (comportamento idêntico); a **vitrine** dos perfis novos virá na última fase.
+
+### Técnico
+
+- Novo `domain/geradorVazao.ts` com `valorNoTempo(gerador, t)` puro, usado pelo
+  motor (`vazaoPecas`/`redeJuncoes`) e pela UI (preview). +8 testes de unidade.
+
 ## [1.31.0] — Polimentos: nome automático, indicador de unidade e avisos
 
 ### Adicionado

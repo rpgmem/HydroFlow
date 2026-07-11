@@ -30,6 +30,7 @@ import { fmtNumero } from '../../i18n';
 import type { Acao } from '../../state/store';
 import { Num, type Upd, type UniLabel } from './campos';
 import { Switch } from '../Switch';
+import { GeradorForm } from './GeradorForm';
 
 const nomePeca = (p: Peca): string => (p.rotulo && p.rotulo.trim() ? p.rotulo : p.id);
 
@@ -472,42 +473,9 @@ export function ConsumoForm({
   u: UniLabel;
 }) {
   const { t } = useTranslation();
-  const perfil = props.perfil ?? 'fixo';
   return (
     <>
-      <div className="field">
-        <label>{t('form.perfilConsumo')}</label>
-        <select
-          value={perfil}
-          disabled={emExecucao}
-          aria-label={t('form.perfilConsumo')}
-          onChange={(e) => upd({ perfil: e.target.value })}
-        >
-          <option value="fixo">{t('form.perfilFixo')}</option>
-          <option value="senoidal">{t('form.perfilSenoidal')}</option>
-          <option value="intermitente">{t('form.perfilIntermitente')}</option>
-        </select>
-      </div>
-
-      {perfil === 'fixo' ? (
-        <Num
-          label={t('form.vazaoSaida')}
-          unidade={u.vazao}
-          value={props.vazaoDemanda}
-          disabled={emExecucao}
-          onChange={(v) => upd({ vazaoDemanda: v })}
-        />
-      ) : (
-        <>
-          <Num label={t('form.vazaoMin')} unidade={u.vazao} value={props.vazaoMin ?? 0} disabled={emExecucao} onChange={(v) => upd({ vazaoMin: v })} />
-          <Num label={t('form.vazaoMax')} unidade={u.vazao} value={props.vazaoMax ?? props.vazaoDemanda} disabled={emExecucao} onChange={(v) => upd({ vazaoMax: v })} />
-          <Num label={t('form.periodo')} value={props.periodo ?? 60} disabled={emExecucao} step={1} onChange={(v) => upd({ periodo: v })} />
-          {perfil === 'intermitente' && (
-            <Num label={t('form.cicloLigado')} value={props.cicloLigado ?? 0.5} disabled={emExecucao} step={0.05} onChange={(v) => upd({ cicloLigado: v })} />
-          )}
-        </>
-      )}
-
+      <GeradorForm gerador={props.gerador} emExecucao={emExecucao} u={u} upd={(g) => upd({ gerador: g })} />
       {/* Abrir/fechar a saída é um COMANDO de operação — ativo também na execução. */}
       <Switch
         checked={props.aberto ?? true}
@@ -521,14 +489,10 @@ export function ConsumoForm({
 }
 
 export function FonteForm({ props, emExecucao, upd, u }: { props: PropsFonte; emExecucao: boolean; upd: Upd; u: UniLabel }) {
-  const { t } = useTranslation();
-  // A boia é uma válvula de NÍVEL que fica no cano/entrada do tanque — por isso
-  // ela é configurada no tubo, não na fonte externa (suprimento infinito). O
-  // motor ainda respeita uma `fonte.boia` de projetos antigos, mas não a expomos
-  // mais aqui para não confundir.
-  return (
-    <Num label={t('form.vazaoFixa')} unidade={u.vazao} value={props.vazaoFixa} disabled={emExecucao} onChange={(v) => upd({ vazaoFixa: v })} />
-  );
+  // A boia é uma válvula de NÍVEL que fica no cano/entrada do tanque — por isso é
+  // configurada no tubo, não na fonte (suprimento externo). Aqui só o gerador de
+  // vazão de abastecimento.
+  return <GeradorForm gerador={props.gerador} emExecucao={emExecucao} u={u} upd={(g) => upd({ gerador: g })} />;
 }
 
 export function SensorForm({

@@ -107,10 +107,10 @@ describe('inspetor — edição de props (Sprint 3/4)', () => {
     render(<App />);
     const id = adicionar('Consumo');
     fireEvent.click(screen.getByTestId(`peca-${id}`));
-    const vazao = screen.getByLabelText('Vazão de saída') as HTMLInputElement;
+    const vazao = screen.getByLabelText('Vazão constante') as HTMLInputElement;
     expect(vazao).toBeInTheDocument();
     fireEvent.change(vazao, { target: { value: '4.5' } });
-    expect((screen.getByLabelText('Vazão de saída') as HTMLInputElement).value).toBe('4.5');
+    expect((screen.getByLabelText('Vazão constante') as HTMLInputElement).value).toBe('4.5');
   });
 
   it('permite escolher o modo de controle da bomba', () => {
@@ -205,7 +205,7 @@ describe('unidades e novo projeto', () => {
     render(<App />);
     const id = adicionar('Fonte');
     fireEvent.click(screen.getByTestId(`peca-${id}`));
-    const label = screen.getByText('Vazão fixa').closest('label')!;
+    const label = screen.getByText('Vazão constante').closest('label')!;
     expect(label.textContent).toContain('(L/s)');
   });
 

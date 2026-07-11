@@ -56,8 +56,8 @@ import {
   calcularFonte,
   calcularTubo,
   coletarCadeiaTubos,
-  demandaConsumo,
 } from './vazaoPecas';
+import { valorNoTempo } from '../domain/geradorVazao';
 import type { Unidades } from '../domain/types';
 
 export interface ResultadoTick {
@@ -115,7 +115,7 @@ function demandaJusante(idx: GrafoIndex, bombaId: string, tempo: number): number
       const d = idx.porId.get(c.destino);
       if (!d) continue;
       if (isConsumo(d)) {
-        soma += d.props.aberto === false ? 0 : demandaConsumo(d.props, tempo);
+        soma += d.props.aberto === false ? 0 : valorNoTempo(d.props.gerador, tempo);
       }
       fila.push(c.destino);
     }
@@ -290,7 +290,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   for (const p of proj.pecas) {
     if (driversResolvidos.has(p.id)) continue;
     if (isBomba(p)) vazoesM3[p.id] = calcularBomba(idx, p, g, u, tempoAtual, fluxos, vazoesM3, consumoInsuficiente, bombasASeco, atrito);
-    else if (isFonte(p)) vazoesM3[p.id] = calcularFonte(idx, p, u, fluxos, vazoesM3);
+    else if (isFonte(p)) vazoesM3[p.id] = calcularFonte(idx, p, u, tempoAtual, fluxos, vazoesM3);
     else if (isConsumo(p)) vazoesM3[p.id] = calcularConsumo(idx, p, g, u, tempoAtual, fluxos, vazoesM3, atrito);
   }
   // Tubos por gravidade / ladrão: só os que ainda não foram atribuídos por um

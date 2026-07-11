@@ -166,31 +166,50 @@ export interface PropsBomba {
   unidadeAtiva?: 1 | 2;
 }
 
+/**
+ * Perfis de vazão no tempo (compartilhados por Fonte e Consumo). A lista cresce
+ * por fase de implementação; `fixo` é o padrão. Ver `geradorVazao.ts`.
+ */
+export type PerfilVazao = 'fixo' | 'trapezoidal' | 'senoidal';
+
+/**
+ * Gerador de vazão no tempo — o mesmo bloco na Fonte (entrada) e no Consumo
+ * (saída). `perfil` escolhe a forma da onda; os demais campos são os parâmetros
+ * daquele perfil (só os relevantes são lidos). Determinístico em função do tempo
+ * de simulação (nada de aleatoriedade). O valor é sempre clampado em ≥ 0.
+ */
+export interface Gerador {
+  perfil: PerfilVazao;
+  /** fixo: vazão constante. */
+  vazao?: number;
+  /** periódicos (trapezoidal/senoidal): faixa da onda e período em segundos. */
+  min?: number;
+  max?: number;
+  periodo?: number;
+  /** trapezoidal: frações do período (subida+alto+descida+baixo, normalizadas). */
+  subida?: number;
+  alto?: number;
+  descida?: number;
+  baixo?: number;
+  /** trapezoidal: rótulo do preset selecionado na UI (ex.: 'quadrada'); só informativo. */
+  preset?: string;
+  /** senoidal: defasagem em radianos. */
+  fase?: number;
+}
+
 export interface PropsFonte {
-  vazaoFixa: number;
+  /** Gerador de vazão de abastecimento no tempo. */
+  gerador: Gerador;
   boia?: NivelControle;
 }
 
 // consumo — ponto de saída/demanda: retira água do reservatório de origem a uma
 // vazão configurável e a descarta (sem destino no grafo). É o oposto da Fonte.
 export interface PropsConsumo {
-  /** Vazão de saída no perfil 'fixo' (limitada pelo que houver disponível). */
-  vazaoDemanda: number;
+  /** Gerador de vazão de demanda no tempo. */
+  gerador: Gerador;
   /** Controle manual on/off da saída. */
   aberto?: boolean;
-  /**
-   * Perfil de consumo ao longo do tempo. 'fixo' = constante; 'senoidal' = varia
-   * suavemente entre min e max; 'intermitente' = liga/desliga (onda quadrada).
-   * Determinístico em função do tempo de simulação.
-   */
-  perfil?: 'fixo' | 'senoidal' | 'intermitente';
-  /** Perfis variáveis: vazão mínima e máxima. */
-  vazaoMin?: number;
-  vazaoMax?: number;
-  /** Período do ciclo, em segundos (perfis variáveis). */
-  periodo?: number;
-  /** Intermitente: fração do período com a saída ligada (0..1). */
-  cicloLigado?: number;
 }
 
 export type PropsSensor = NivelControle & {

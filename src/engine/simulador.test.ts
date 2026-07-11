@@ -54,7 +54,7 @@ function bomba(id: string, over: Partial<PropsBomba> = {}): Peca {
   };
 }
 function fonte(id: string, over: Partial<PropsFonte> = {}): Peca {
-  return { id, tipo: 'fonte', x: 0, y: 0, props: { vazaoFixa: 5, ...over } };
+  return { id, tipo: 'fonte', x: 0, y: 0, props: { gerador: { perfil: 'fixo', vazao: 5 }, ...over } };
 }
 function sensor(id: string, over: Partial<PropsSensor>): Peca {
   return {
@@ -375,7 +375,7 @@ describe('terminal na rede de junções', () => {
           juncao('J'),
           tubo('t_sup'),
           tubo('t_meio'),
-          { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: 0.05, aberto: true } },
+          { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { gerador: { perfil: 'fixo', vazao: 0.05 }, aberto: true } },
         ],
         [
           criarConexao('R_sup', 't_sup'),
@@ -407,7 +407,7 @@ describe('terminal na rede de junções', () => {
           juncao('J'),
           tubo('t_sup'),
           tubo('t_meio'),
-          { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: 100, aberto: true } },
+          { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { gerador: { perfil: 'fixo', vazao: 100 }, aberto: true } },
         ],
         [
           criarConexao('R_sup', 't_sup'),
@@ -435,7 +435,7 @@ describe('terminal na rede de junções', () => {
           juncao('J'),
           tubo('t_sup'),
           tubo('t_meio'),
-          { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: 0.02, aberto: true } },
+          { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { gerador: { perfil: 'fixo', vazao: 0.02 }, aberto: true } },
         ],
         [
           criarConexao('R_sup', 't_sup'),
@@ -464,7 +464,7 @@ describe('terminal na rede de junções', () => {
           juncao('J'),
           tubo('t_sup', { alturaEntrada: 4 }), // tomada alta no lado do R_sup
           tubo('t_meio'),
-          { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: 0.02, aberto: true } },
+          { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { gerador: { perfil: 'fixo', vazao: 0.02 }, aberto: true } },
         ],
         [
           criarConexao('R_sup', 't_sup'),
@@ -496,7 +496,7 @@ describe('terminal na rede de junções', () => {
         juncao('J'),
         tubo('t_sup'),
         tubo('t_meio'),
-        { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: 0.03, aberto: true } },
+        { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { gerador: { perfil: 'fixo', vazao: 0.03 }, aberto: true } },
       ],
       conexoes: [
         criarConexao('R_sup', 't_sup'),
@@ -537,7 +537,7 @@ describe('terminal na rede de junções', () => {
           res('R', { nivel: 0 }),
           juncao('J'),
           tubo('tout'),
-          fonte('F', { vazaoFixa: 3 }),
+          fonte('F', { gerador: { perfil: 'fixo', vazao: 3 } }),
         ],
         [
           criarConexao('F', 'J'),
@@ -899,7 +899,7 @@ describe('bomba', () => {
           res('A', { nivel: 5 }),
           tubo('suc', {}),
           bomba('P', { ligada, vazaoNominal }),
-          { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: demanda, aberto: true } },
+          { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { gerador: { perfil: 'fixo', vazao: demanda }, aberto: true } },
         ],
         [criarConexao('A', 'suc'), criarConexao('suc', 'P'), criarConexao('P', 'C')],
       );
@@ -939,7 +939,7 @@ describe('fonte', () => {
   it('divide a vazão entre destinos conforme vazaoAlocada', () => {
     const r = tick(
       projeto(
-        [fonte('F', { vazaoFixa: 10 }), res('B', {}), res('C', {})],
+        [fonte('F', { gerador: { perfil: 'fixo', vazao: 10 } }), res('B', {}), res('C', {})],
         [
           criarConexao('F', 'B', { vazaoAlocada: 3 }),
           criarConexao('F', 'C', { vazaoAlocada: 7 }),
@@ -956,7 +956,7 @@ describe('fonte', () => {
 
   it('destino único usa vazaoFixa', () => {
     const r = tick(
-      projeto([fonte('F', { vazaoFixa: 8 }), res('B', {})], [criarConexao('F', 'B')]),
+      projeto([fonte('F', { gerador: { perfil: 'fixo', vazao: 8 } }), res('B', {})], [criarConexao('F', 'B')]),
     );
     expect(r.vazoes['F']).toBe(8);
   });
@@ -969,7 +969,7 @@ describe('overflow', () => {
   it('clampa na alturaMaxima e reporta o transbordo sem travar', () => {
     const r = tick(
       projeto(
-        [fonte('F', { vazaoFixa: 100000 }), res('B', { alturaMaxima: 5 })],
+        [fonte('F', { gerador: { perfil: 'fixo', vazao: 100000 } }), res('B', { alturaMaxima: 5 })],
         [criarConexao('F', 'B')],
       ),
     );
@@ -1015,7 +1015,7 @@ describe('boia em tubo alimentado por fonte', () => {
   const cenario = (nivelDestino: number) =>
     projeto(
       [
-        fonte('F', { vazaoFixa: 5 }),
+        fonte('F', { gerador: { perfil: 'fixo', vazao: 5 } }),
         tubo('T', { boia: { nivelMinimo: 0, nivelMaximo: 2 } }),
         res('B', { nivel: nivelDestino }),
       ],
@@ -1236,7 +1236,7 @@ describe('quadro de comandos (MCC)', () => {
           res('A', { nivel: 0 }), // origem vazia → reversa pede DESLIGAR
           sensor('S', { reversa: true, nivelMinimo: 1, nivelMaximo: 4 }),
           bomba('P', { ligada: true }),
-          consumo('C', { vazaoDemanda: 5, aberto: true, perfil: 'fixo' }),
+          consumo('C', { gerador: { perfil: 'fixo', vazao: 5 }, aberto: true }),
           quadro('Q', [{ bomba: 'P', modo: 'auto' }], ['S'], 'E'), // canal SEM sensores
         ],
         [criarConexao('S', 'A'), criarConexao('P', 'C')],
@@ -1254,7 +1254,7 @@ describe('quadro de comandos (MCC)', () => {
           [
             res('A', { nivel: 5 }),
             bomba('P', { ligada: false, vazaoNominal: 5 }),
-            consumo('C', { vazaoDemanda: dem, aberto: true, perfil: 'fixo' }),
+            consumo('C', { gerador: { perfil: 'fixo', vazao: dem }, aberto: true }),
             quadro('Q', [{ bomba: 'P', modo: 'auto' }]), // sem membros
           ],
           [criarConexao('A', 'P'), criarConexao('P', 'C')],
@@ -1288,7 +1288,7 @@ describe('quadro de comandos (MCC)', () => {
           [
             res('A', { nivel: 5 }),
             bomba('P', { ligada: false, vazaoNominal: 5 }),
-            consumo('C', { vazaoDemanda: dem, aberto: true, perfil: 'fixo' }),
+            consumo('C', { gerador: { perfil: 'fixo', vazao: dem }, aberto: true }),
             quadro('Q', [{ bomba: 'P', modo: 'auto' }]),
           ],
           [criarConexao('A', 'P'), criarConexao('P', 'C')],
@@ -1406,7 +1406,7 @@ describe('tubo ladrão', () => {
   it('segura o reservatório perto do nível de ladrão (autolimitante)', () => {
     const p = projeto(
       [
-        fonte('F', { vazaoFixa: 0.02 }),
+        fonte('F', { gerador: { perfil: 'fixo', vazao: 0.02 } }),
         res('A', { nivel: 3, alturaMaxima: 6 }),
         tubo('L', { diametro: 150, ladrao: { nivel: 3 } }),
       ],
@@ -1426,7 +1426,7 @@ describe('consumo', () => {
   it('retira a vazão de demanda do reservatório de origem e descarta', () => {
     const r = tick(
       projeto(
-        [res('A', { nivel: 2 }), { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: 5, aberto: true } }],
+        [res('A', { nivel: 2 }), { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { gerador: { perfil: 'fixo', vazao: 5 }, aberto: true } }],
         [criarConexao('A', 'C')],
       ),
     );
@@ -1439,7 +1439,7 @@ describe('consumo', () => {
   it('não retira nada quando a saída está fechada', () => {
     const r = tick(
       projeto(
-        [res('A', { nivel: 2 }), { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: 5, aberto: false } }],
+        [res('A', { nivel: 2 }), { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { gerador: { perfil: 'fixo', vazao: 5 }, aberto: false } }],
         [criarConexao('A', 'C')],
       ),
     );
@@ -1449,7 +1449,7 @@ describe('consumo', () => {
   it('não drena abaixo de zero (limitado pelo volume disponível)', () => {
     const r = tick(
       projeto(
-        [res('A', { nivel: 0.001 }), { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: 1000, aberto: true } }],
+        [res('A', { nivel: 0.001 }), { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { gerador: { perfil: 'fixo', vazao: 1000 }, aberto: true } }],
         [criarConexao('A', 'C')],
       ),
     );
@@ -1463,7 +1463,7 @@ describe('consumo', () => {
         [
           res('A', { cotaBase: 0, nivel: 1 }),
           tubo('T', { diametro: 5 }), // cano fino: 5 mm
-          { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { vazaoDemanda: 1000, aberto: true } },
+          { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { gerador: { perfil: 'fixo', vazao: 1000 }, aberto: true } },
         ],
         [criarConexao('A', 'T'), criarConexao('T', 'C')],
       ),
@@ -1481,7 +1481,7 @@ describe('consumo', () => {
         [
           res('A', { nivel: 4 }),
           tubo('T', { diametro: 200 }),
-          consumo('C', { vazaoDemanda: 0, aberto: true }),
+          consumo('C', { gerador: { perfil: 'fixo', vazao: 0 }, aberto: true }),
         ],
         [criarConexao('A', 'T'), criarConexao('T', 'C')],
       ),
@@ -1498,7 +1498,7 @@ describe('consumo', () => {
         [
           res('A', { nivel: 4 }),
           tubo('T', { diametro: 200 }),
-          consumo('C', { vazaoDemanda: 5, aberto: false }),
+          consumo('C', { gerador: { perfil: 'fixo', vazao: 5 }, aberto: false }),
         ],
         [criarConexao('A', 'T'), criarConexao('T', 'C')],
       ),
@@ -1515,12 +1515,8 @@ describe('consumo', () => {
           [
             res('A', { nivel: 5 }),
             consumo('C', {
-              vazaoDemanda: 0,
+              gerador: { perfil: 'senoidal', min: 1, max: 3, periodo: 4 },
               aberto: true,
-              perfil: 'senoidal',
-              vazaoMin: 1,
-              vazaoMax: 3,
-              periodo: 4,
             }),
           ],
           [criarConexao('A', 'C')],
@@ -1532,20 +1528,16 @@ describe('consumo', () => {
     expect(mk(3)).toBeCloseTo(1, 6); // mínimo (sin 3π/2)
   });
 
-  it('perfil intermitente liga/desliga conforme o ciclo', () => {
+  it('perfil trapezoidal (retangular) liga/desliga conforme o duty', () => {
     const mk = (t: number) =>
       tick(
         projeto(
           [
             res('A', { nivel: 5 }),
             consumo('C', {
-              vazaoDemanda: 0,
+              // Retangular com duty 30%: alto 0.3, baixo 0.7 (subida/descida 0).
+              gerador: { perfil: 'trapezoidal', min: 0, max: 5, periodo: 10, subida: 0, alto: 0.3, descida: 0, baixo: 0.7 },
               aberto: true,
-              perfil: 'intermitente',
-              vazaoMin: 0,
-              vazaoMax: 5,
-              periodo: 10,
-              cicloLigado: 0.3,
             }),
           ],
           [criarConexao('A', 'C')],
@@ -1731,7 +1723,7 @@ describe('perda de carga (atrito, Hazen-Williams)', () => {
 // ===========================================================================
 describe('rodarTicks', () => {
   it('encadeia estado e acumula tempo', () => {
-    const p = projeto([fonte('F', { vazaoFixa: 10 }), res('B', {})], [criarConexao('F', 'B')]);
+    const p = projeto([fonte('F', { gerador: { perfil: 'fixo', vazao: 10 } }), res('B', {})], [criarConexao('F', 'B')]);
     const r = rodarTicks(p, 5);
     expect(r.tempo).toBeCloseTo(0.5, 9); // 5 · dt(0.1)
     const b = r.projeto.pecas.find((x) => x.id === 'B')!.props as PropsReservatorio;
