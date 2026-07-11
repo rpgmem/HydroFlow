@@ -11,6 +11,7 @@ import { serializarProjeto, type ErroValidacao } from '../domain/schema';
 import { carregarAutosave, limparAutosave, salvarAutosave } from '../persistence/autosave';
 import { useSimulationLoop } from './useSimulationLoop';
 import { Toolbar } from './Toolbar';
+import type { FormatoTempo } from './Opcoes';
 import { Palette } from './Palette';
 import { Canvas } from './Canvas';
 import { Inspector } from './Inspector';
@@ -24,6 +25,17 @@ function carregarTema(): 'escuro' | 'claro' {
     return localStorage.getItem(CHAVE_TEMA) === 'claro' ? 'claro' : 'escuro';
   } catch {
     return 'escuro';
+  }
+}
+
+/** Formato do tempo na barra (preferência do dispositivo, como o tema/idioma). */
+const CHAVE_FORMATO_TEMPO = 'hydroflow:formatoTempo';
+function carregarFormatoTempo(): FormatoTempo {
+  try {
+    const v = localStorage.getItem(CHAVE_FORMATO_TEMPO);
+    return v === 'segundos' || v === 'horario' || v === 'ambos' ? v : 'ambos';
+  } catch {
+    return 'ambos';
   }
 }
 
@@ -55,6 +67,16 @@ export function App() {
       /* localStorage indisponível (modo privado/cota) — ignora. */
     }
   }, [tema]);
+  // Formato do tempo na barra (segundos / horário 24 h / ambos) — preferência do
+  // dispositivo, persistida como o tema.
+  const [formatoTempo, setFormatoTempo] = useState<FormatoTempo>(carregarFormatoTempo);
+  useEffect(() => {
+    try {
+      localStorage.setItem(CHAVE_FORMATO_TEMPO, formatoTempo);
+    } catch {
+      /* localStorage indisponível — ignora. */
+    }
+  }, [formatoTempo]);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   // Aviso "edição só no desktop": some sozinho após ~8 s (não fica atrapalhando)
@@ -166,6 +188,8 @@ export function App() {
         onAlternarLegenda={() => setLegendaAberta((v) => !v)}
         legendaAberta={legendaAberta}
         alterado={alterado}
+        formatoTempo={formatoTempo}
+        onFormatoTempo={setFormatoTempo}
       />
       <div className="body">
         <Palette dispatch={dispatch} desabilitado={emExecucao} pecas={estado.projeto.pecas} />

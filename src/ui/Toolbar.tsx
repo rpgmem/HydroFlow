@@ -8,7 +8,7 @@ import type { Acao, EstadoApp, Velocidade } from '../state/store';
 import { baixarProjeto, carregarArquivo } from '../persistence/arquivo';
 import { projetoVazio } from '../domain/factory';
 import { projetoExemplo } from '../domain/exemplo';
-import { Opcoes } from './Opcoes';
+import { Opcoes, type FormatoTempo } from './Opcoes';
 
 interface Props {
   estado: EstadoApp;
@@ -21,6 +21,8 @@ interface Props {
   legendaAberta: boolean;
   /** Projeto difere do exemplo intocado — revela Salvar e Restaurar exemplo. */
   alterado: boolean;
+  formatoTempo: FormatoTempo;
+  onFormatoTempo: (f: FormatoTempo) => void;
 }
 
 const VELOCIDADES: Velocidade[] = [1, 5, 30, 120];
@@ -38,7 +40,7 @@ function relogio24h(segundos: number): string {
   return `${p(Math.floor(s / 3600))}:${p(Math.floor((s % 3600) / 60))}:${p(s % 60)}`;
 }
 
-export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAlternarTema, onAlternarLegenda, legendaAberta, alterado }: Props) {
+export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAlternarTema, onAlternarLegenda, legendaAberta, alterado, formatoTempo, onFormatoTempo }: Props) {
   const { t } = useTranslation();
   const inputFile = useRef<HTMLInputElement>(null);
   const [menuAberto, setMenuAberto] = useState(false);
@@ -116,12 +118,16 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
               {v}x
             </button>
           ))}
-          <span className="telemetry" style={{ marginLeft: 8 }}>
-            {t('toolbar.tempo')}<strong>{estado.tempo.toFixed(1)}s</strong>
-          </span>
-          <span className="telemetry" style={{ marginLeft: 8 }}>
-            {t('toolbar.horario')}<strong>{relogio24h(estado.tempo)}</strong>
-          </span>
+          {formatoTempo !== 'horario' && (
+            <span className="telemetry" style={{ marginLeft: 8 }}>
+              {t('toolbar.tempo')}<strong>{estado.tempo.toFixed(1)}s</strong>
+            </span>
+          )}
+          {formatoTempo !== 'segundos' && (
+            <span className="telemetry" style={{ marginLeft: 8 }}>
+              {t('toolbar.horario')}<strong>{relogio24h(estado.tempo)}</strong>
+            </span>
+          )}
         </>
       )}
 
@@ -138,7 +144,7 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
         ⋯
       </button>
       <div className={`acoes-secundarias${menuAberto ? ' aberto' : ''}`}>
-        <Opcoes estado={estado} dispatch={dispatch} tema={tema} onAlternarTema={onAlternarTema} />
+        <Opcoes estado={estado} dispatch={dispatch} tema={tema} onAlternarTema={onAlternarTema} formatoTempo={formatoTempo} onFormatoTempo={onFormatoTempo} />
         <button
           className={legendaAberta ? 'ativo' : ''}
           aria-pressed={legendaAberta}
