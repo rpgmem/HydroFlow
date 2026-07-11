@@ -51,9 +51,15 @@ selecioná-la e apague com **Delete** (ou no botão flutuante). O canvas tem
 - **Log de eventos** (📋) — histórico com acionamento de bomba, disparos de
   sensores e alertas (ladrão/transbordo, déficit, rodando a seco).
 - **⚙ Opções** — menu com **idioma** (Português/Inglês), **unidades**
-  (volume/comprimento), **tema** claro/escuro, a **física opcional** (perda de carga
-  por atrito) e a **velocidade de referência** do alerta de dimensionamento (padrão
-  3 m/s).
+  (volume/comprimento), **tema** claro/escuro, **formato do tempo** na simulação
+  (segundos / horário 24 h / ambos), a **física opcional** (perda de carga por
+  atrito), a **velocidade de referência** do alerta de dimensionamento (padrão
+  3 m/s) e a ação **Normalizar IDs pelos nomes**.
+- **Normalizar IDs** (⚙ Opções › Projeto) — o `id` da peça é uma chave estável,
+  **desacoplada** do rótulo (renomear não muda o id). Sob demanda, esta ação
+  reescreve todos os ids como **slug fiel ao rótulo** (minúsculo, sem acento/espaço)
+  e atualiza as referências — é **desfazível** e exige **nomes únicos** (o menu
+  avisa e bloqueia enquanto houver rótulos repetidos).
 - **Idiomas (i18n)** — interface em **Português** (padrão) e **Inglês**, com
   detecção automática do navegador e troca manual em ⚙ Opções (a escolha é
   lembrada). As leis de física e os rótulos do projeto exemplo seguem em Português.

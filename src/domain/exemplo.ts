@@ -29,6 +29,7 @@ import type {
   PropsTubo,
 } from './types';
 import { SCHEMA_VERSION } from './types';
+import { normalizarIds } from './normalizarIds';
 
 type Peca = ProjetoSimulacao['pecas'][number];
 
@@ -55,7 +56,18 @@ function quadro(id: string, rotulo: string, x: number, y: number, props: PropsQu
   return { id, tipo: 'quadro', x, y, portas: [], props, rotulo };
 }
 
+/**
+ * IDs "de autoria" abaixo (inferior, bomba, sensor_sup…) são apelidos legíveis
+ * para montar o grafo; o projeto final passa por `normalizarIds`, que os reescreve
+ * como slug FIEL ao rótulo (ex.: `bomba` → `bomba_recalque`, `sensor_sup` →
+ * `boia_eletronica_c1`) e atualiza todas as referências. Assim o exemplo já sai
+ * com IDs normalizados, dogfooding a ação "Normalizar IDs" das Opções.
+ */
 export function projetoExemplo(): ProjetoSimulacao {
+  return normalizarIds(montarExemplo());
+}
+
+function montarExemplo(): ProjetoSimulacao {
   return {
     nome: 'Reservatórios empilhados',
     versao: SCHEMA_VERSION,

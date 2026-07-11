@@ -6,6 +6,24 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.41.0] — Normalizar IDs pelos nomes (⚙ Opções)
+
+### Adicionado
+
+- **⚙ Opções › Projeto › "Normalizar IDs pelos nomes"**: ação opt-in que reescreve
+  o `id` de cada peça como um **slug fiel ao rótulo** (minúsculo, sem acento/espaço)
+  e atualiza **todas as referências** (conexões, canais/sensores dos quadros,
+  `bombasAlvo`, `sensores`). É **desfazível** e só roda em edição. O `id` continua
+  **desacoplado** do nome (renomear não mexe no id) — a normalização é sob demanda.
+- **Validação de nomes repetidos**: enquanto houver rótulos idênticos, a ação fica
+  **bloqueada** e o menu lista os duplicados a resolver (ids precisam ser únicos).
+
+### Alterado
+
+- **Projeto exemplo**: passa a nascer com os IDs já normalizados pelos nomes
+  (ex.: `bomba` → `bomba_recalque`, `sensor_sup` → `boia_eletronica_c1`),
+  dogfooding a nova ação.
+
 ## [1.40.0] — Formato do tempo configurável em ⚙ Opções
 
 ### Adicionado

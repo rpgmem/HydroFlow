@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import type { Acao, EstadoApp } from '../state/store';
 import type { Unidades } from '../domain/types';
+import { rotulosDuplicados } from '../domain/normalizarIds';
 import { IDIOMAS } from '../i18n';
 import { Switch } from './Switch';
 
@@ -26,6 +27,7 @@ export function Opcoes({ estado, dispatch, tema, onAlternarTema, formatoTempo, o
   const { t, i18n } = useTranslation();
   const [aberto, setAberto] = useState(false);
   const emExecucao = estado.modo === 'execucao';
+  const duplicados = rotulosDuplicados(estado.projeto);
   const u = estado.projeto.unidades;
   const atrito = estado.projeto.configuracaoSimulacao.atrito === true;
   const velRef = estado.projeto.configuracaoSimulacao.velocidadeRef ?? 3;
@@ -139,6 +141,29 @@ export function Opcoes({ estado, dispatch, tema, onAlternarTema, formatoTempo, o
             <p className="telemetry" style={{ margin: '2px 0 0' }}>
               <Trans i18nKey="opcoes.velocidadeRefDica" components={{ 1: <strong /> }} />
             </p>
+
+            <p className="opcoes-sec">{t('opcoes.projeto')}</p>
+            <button
+              type="button"
+              disabled={emExecucao || duplicados.length > 0}
+              aria-label={t('opcoes.normalizarIds')}
+              onClick={() => {
+                if (emExecucao || duplicados.length > 0) return;
+                if (window.confirm(t('opcoes.normalizarConfirm'))) {
+                  dispatch({ tipo: 'NORMALIZAR_IDS' });
+                  setAberto(false);
+                }
+              }}
+            >
+              {t('opcoes.normalizarIds')}
+            </button>
+            {duplicados.length > 0 ? (
+              <p className="opcoes-aviso" role="alert" style={{ margin: '4px 0 0' }}>
+                {t('opcoes.rotulosDuplicados', { lista: duplicados.join(', ') })}
+              </p>
+            ) : (
+              <p className="telemetry" style={{ margin: '2px 0 0' }}>{t('opcoes.normalizarDica')}</p>
+            )}
           </div>
         </>
       )}

@@ -18,6 +18,7 @@ import { validarGrafo } from '../engine/validacaoGrafo';
 import { rodarTicks, type ResultadoTick } from '../engine/simulador';
 import type { Decisao } from '../engine/arbitragem';
 import { novoId, sincronizarContador } from '../domain/factory';
+import { normalizarIds } from '../domain/normalizarIds';
 import {
   isBomba,
   isConsumo,
@@ -107,6 +108,7 @@ export type Acao =
   | { tipo: 'ATUALIZAR_PROPS'; id: string; props: Partial<PropsPorTipo> }
   | { tipo: 'DUPLICAR_PECA'; id: string }
   | { tipo: 'RENOMEAR_PECA'; id: string; rotulo: string }
+  | { tipo: 'NORMALIZAR_IDS' }
   | { tipo: 'SELECIONAR'; id: string | null }
   | { tipo: 'SELECIONAR_CONEXAO'; id: string | null }
   | { tipo: 'SET_NOME'; nome: string }
@@ -183,6 +185,7 @@ const ACOES_ESTRUTURAIS = new Set<Acao['tipo']>([
   'SET_ATRITO',
   'SET_VELOCIDADE_REF',
   'DUPLICAR_PECA',
+  'NORMALIZAR_IDS',
 ]);
 
 function atualizarPeca(
@@ -324,6 +327,7 @@ const ACOES_UNDOAVEIS = new Set<Acao['tipo']>([
   'ATUALIZAR_PROPS',
   'RENOMEAR_PECA',
   'DUPLICAR_PECA',
+  'NORMALIZAR_IDS',
   'SET_NOME',
   'SET_UNIDADES',
   'SET_ATRITO',
@@ -489,6 +493,14 @@ function reducerBase(estado: EstadoApp, acao: Acao): EstadoApp {
           rotulo: acao.rotulo,
         })),
       };
+
+    case 'NORMALIZAR_IDS': {
+      // Reescreve os ids das peças como slug do rótulo (fiel), atualizando todas
+      // as referências. Os ids mudam → limpa a seleção. Sem mudança → no-op.
+      const projeto = normalizarIds(estado.projeto);
+      if (projeto === estado.projeto) return estado;
+      return { ...estado, projeto, selecionada: null, conexaoSelecionada: null };
+    }
 
     case 'SELECIONAR':
       // Selecionar uma peça limpa a seleção de conexão (e vice-versa).
