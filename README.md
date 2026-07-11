@@ -165,11 +165,13 @@ interface NivelControle {
 | `reservatorio` | `formato` (`cilindro`\|`retangular`), `raio?`/`largura?`/`comprimento?`, `alturaMaxima`, `cotaBase`, `nivel?` |
 | `tubo` | `diametro` (**mm**, interno — usado no cálculo de vazão), `bitola?` (DN pré-configurado do catálogo; grava o diâmetro interno tabelado), `checkValve?`, `registro?: {aberto}`, `boia?: NivelControle`, `ladrao?: {nivel}` (dreno de transbordo), `alturaEntrada?`/`alturaSaida?` (altura da conexão em cada ponta, relativa à base; default 0), `comprimento?` (m; usado só com atrito, default 1), `coefC?` (coeficiente C de Hazen-Williams; default 140) |
 | `bomba` | `vazaoNominal`, `alturaNominal?` (altura de recalque; deriva a curva — a altura reduz a vazão), `curva?: {k}` (curva explícita; legado), `sensores: string[]`, `modoControle?` (`auto`\|`ligado`\|`desligado`), `ligada?`, `revezamento?` (dupla alternada: metades "1"/"2" que se revezam a cada acionamento) |
-| `fonte` | `vazaoFixa`, `boia?: NivelControle` |
-| `consumo` | `vazaoDemanda`, `aberto?`, `perfil?` (`fixo`\|`senoidal`\|`intermitente`), `vazaoMin?`/`vazaoMax?`/`periodo?`/`cicloLigado?` (perfil variável; `cicloLigado` = fração do período ligado no perfil intermitente) — ponto de saída/demanda; retira água e descarta |
+| `fonte` | `gerador: Gerador` (perfil de vazão de abastecimento no tempo), `boia?: NivelControle` |
+| `consumo` | `gerador: Gerador` (perfil de demanda no tempo), `aberto?` — ponto de saída/demanda; retira água e descarta |
 | `sensor` | `NivelControle & { bombasAlvo: string[], ativo?: boolean }` — controla **uma ou mais** bombas; `reversa` inverte a lógica (liga no máximo, desliga no mínimo); `ativo` (ausente = true) habilita/desabilita o sensor em operação |
 | `juncao` | `diametro?`/`bitola?` (mm; **estrangula** o fluxo pela junção — reusa o catálogo de bitolas dos tubos). Nó sem volume que **divide/soma** a vazão por gravidade, conservando massa |
 | `quadro` | `canais: {bomba, modo, sensores?, revezamento?, unidade?}[]`, `sensores?: string[]` (boias-membro), `logica?` (`E`\|`OU`) — quadro de comandos (MCC): por bomba, `modo` (`auto`\|`manual`\|`desligado`); no `auto`, quais `sensores` seguir (combinados pela `logica`) e o `revezamento`/`unidade` da bomba dupla. Liga por id (sem conexão física). Uma bomba/sensor regidos por um quadro perdem o controle direto |
+
+`Gerador` = perfil de vazão no tempo (Fonte/Consumo): `perfil` (`fixo`\|`trapezoidal`\|`senoidal`, cresce por fase) + parâmetros do perfil. `fixo` guarda `vazao`; `trapezoidal` guarda `min`/`max`/`periodo` + frações `subida`/`alto`/`descida`/`baixo` (presets: quadrada, retangular, triangular, dente de serra ↑/↓, trapézio); `senoidal` guarda `min`/`max`/`periodo`. A função pura `valorNoTempo(gerador, t)` é determinística e clampa em ≥ 0.
 
 `cotaBase` é a elevação física da base do reservatório — permite **empilhamento**
 e entra no cálculo de carga hidráulica.

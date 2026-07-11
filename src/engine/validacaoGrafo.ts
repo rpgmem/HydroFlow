@@ -15,6 +15,7 @@
  *  - Múltiplos sensores controlando a mesma bomba
  */
 
+import { vazaoRef } from '../domain/geradorVazao';
 import {
   isBomba,
   isFonte,
@@ -166,18 +167,21 @@ export function validarGrafo(
     }
   }
 
-  // ---- Fonte: soma de vazaoAlocada > vazaoFixa -------------------------
+  // ---- Fonte: soma de vazaoAlocada > vazão da fonte --------------------
+  // A fonte pode ter perfil no tempo; usamos a vazão de referência (máx/valor)
+  // como teto para a checagem de alocação entre múltiplos destinos.
   for (const p of projeto.pecas) {
     if (!isFonte(p)) continue;
     const saidas = projeto.conexoes.filter((c) => c.origem === p.id);
     if (saidas.length <= 1) continue; // destino único não exige alocação
     const soma = saidas.reduce((acc, c) => acc + (c.vazaoAlocada ?? 0), 0);
-    if (soma > p.props.vazaoFixa + 1e-9) {
+    const teto = vazaoRef(p.props.gerador);
+    if (soma > teto + 1e-9) {
       erros.push({
         caminho: `pecas[${p.id}].vazaoAlocada`,
-        mensagem: `soma de vazaoAlocada (${soma}) excede vazaoFixa (${p.props.vazaoFixa})`,
+        mensagem: `soma de vazaoAlocada (${soma}) excede a vazão da fonte (${teto})`,
         chave: 'validacao.vazaoAlocada',
-        params: { soma, vazaoFixa: p.props.vazaoFixa },
+        params: { soma, vazaoFixa: teto },
       });
     }
   }

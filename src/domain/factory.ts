@@ -100,9 +100,9 @@ export function criarPeca(
     case 'bomba':
       return { ...base, props: { vazaoNominal: 10, sensores: [], ligada: false } };
     case 'fonte':
-      return { ...base, props: { vazaoFixa: 5 } };
+      return { ...base, props: { gerador: { perfil: 'fixo', vazao: 10 } } };
     case 'consumo':
-      return { ...base, props: { vazaoDemanda: 3, aberto: true } };
+      return { ...base, props: { gerador: { perfil: 'fixo', vazao: 5 }, aberto: true } };
     case 'sensor':
       return { ...base, props: { bombasAlvo: [], nivelMinimo: 1, nivelMaximo: 4 } };
     case 'juncao':

@@ -16,6 +16,7 @@ import i18n from '../i18n';
 import { PecaView } from './PecaView';
 import { tamanhoPeca } from './pecaGeom';
 import { criarConexao } from '../domain/factory';
+import { vazaoRef } from '../domain/geradorVazao';
 import {
   isBomba,
   isConsumo,
@@ -608,15 +609,14 @@ function linhasTooltip(peca: Peca, estado: EstadoApp): string[] {
     if (emExec) linhas.push(t('canvas.tipEstado', { estado: p.ligada ? t('canvas.ligada') : t('canvas.desligada') }));
     linhas.push(linhaVazao());
   } else if (isFonte(peca)) {
-    linhas.push(t('canvas.tipVazaoFixa', { vazao: peca.props.vazaoFixa, unidade: vazL }));
+    const g = peca.props.gerador;
+    const suf = g.perfil === 'fixo' ? '' : ` (${t(`perfis.${g.perfil}`)})`;
+    linhas.push(t('canvas.tipVazaoFixa', { vazao: vazaoRef(g), unidade: vazL, perfil: suf }));
     linhas.push(linhaVazao());
   } else if (isConsumo(peca)) {
     const p = peca.props;
-    const perfilSuf =
-      p.perfil && p.perfil !== 'fixo'
-        ? ` (${t(p.perfil === 'senoidal' ? 'canvas.perfilSenoidal' : 'canvas.perfilIntermitente')})`
-        : '';
-    linhas.push(t('canvas.tipDemanda', { vazao: p.vazaoDemanda, unidade: vazL, perfil: perfilSuf }));
+    const suf = p.gerador.perfil === 'fixo' ? '' : ` (${t(`perfis.${p.gerador.perfil}`)})`;
+    linhas.push(t('canvas.tipDemanda', { vazao: vazaoRef(p.gerador), unidade: vazL, perfil: suf }));
     if (p.aberto === false) linhas.push(t('canvas.tipFechado'));
     linhas.push(linhaVazao());
   } else if (isSensor(peca)) {

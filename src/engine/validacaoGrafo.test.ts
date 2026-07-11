@@ -69,7 +69,7 @@ describe('validação de grafo — bloqueios', () => {
 
   it('rejeita fonte com soma de vazaoAlocada > vazaoFixa', () => {
     const f = criarPeca('fonte', 0, 0, 'F');
-    (f.props as { vazaoFixa: number }).vazaoFixa = 10;
+    (f.props as { gerador: { perfil: 'fixo'; vazao: number } }).gerador = { perfil: 'fixo', vazao: 10 };
     const b = criarPeca('reservatorio', 0, 0, 'B');
     const c = criarPeca('reservatorio', 0, 0, 'C');
     const r = validarGrafo(
@@ -100,7 +100,7 @@ describe('validação de grafo — bloqueios', () => {
 describe('validação de grafo — permitidos', () => {
   it('permite fonte com múltiplos destinos dentro da vazão', () => {
     const f = criarPeca('fonte', 0, 0, 'F');
-    (f.props as { vazaoFixa: number }).vazaoFixa = 10;
+    (f.props as { gerador: { perfil: 'fixo'; vazao: number } }).gerador = { perfil: 'fixo', vazao: 10 };
     const b = criarPeca('reservatorio', 0, 0, 'B');
     const c = criarPeca('reservatorio', 0, 0, 'C');
     const r = validarGrafo(
