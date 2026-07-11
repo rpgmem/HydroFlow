@@ -11,8 +11,8 @@ import { ORDEM_PRESETS, PRESETS_TRAPEZOIDAIS, paramsPadrao, vazaoRef } from '../
 import { Num, type UniLabel } from './campos';
 import { WaveformPreview } from './WaveformPreview';
 
-const PERIODICOS: PerfilVazao[] = ['trapezoidal', 'senoidal'];
-const TRANSIENTES: PerfilVazao[] = ['degrau', 'pulso', 'exponencial', 'diaria'];
+const PERIODICOS: PerfilVazao[] = ['trapezoidal', 'senoidal', 'escalonada'];
+const TRANSIENTES: PerfilVazao[] = ['degrau', 'pulso', 'exponencial', 'diaria', 'amortecida'];
 
 export function GeradorForm({
   gerador,
@@ -105,6 +105,24 @@ export function GeradorForm({
             <Num label={t('form.fracDescida')} value={gerador.descida} disabled={emExecucao} step={0.05} onChange={(v) => set({ descida: v, preset: undefined })} />
             <Num label={t('form.fracBaixo')} value={gerador.baixo} disabled={emExecucao} step={0.05} onChange={(v) => set({ baixo: v, preset: undefined })} />
           </details>
+        </>
+      )}
+
+      {gerador.perfil === 'escalonada' && (
+        <>
+          <Num label={t('form.vazaoMin')} unidade={u.vazao} value={gerador.min} disabled={emExecucao} onChange={(v) => set({ min: v })} />
+          <Num label={t('form.vazaoMax')} unidade={u.vazao} value={gerador.max} disabled={emExecucao} onChange={(v) => set({ max: v })} />
+          <Num label={t('form.periodo')} value={gerador.periodo} disabled={emExecucao} step={1} onChange={(v) => set({ periodo: v })} />
+          <Num label={t('form.degraus')} value={gerador.degraus} disabled={emExecucao} step={1} onChange={(v) => set({ degraus: v })} />
+        </>
+      )}
+
+      {gerador.perfil === 'amortecida' && (
+        <>
+          <Num label={t('form.base')} unidade={u.vazao} value={gerador.base} disabled={emExecucao} onChange={(v) => set({ base: v })} />
+          <Num label={t('form.amplitude')} unidade={u.vazao} value={gerador.amplitude} disabled={emExecucao} onChange={(v) => set({ amplitude: v })} />
+          <Num label={t('form.periodo')} value={gerador.periodo} disabled={emExecucao} step={1} onChange={(v) => set({ periodo: v })} />
+          <Num label={t('form.tau')} value={gerador.tau} disabled={emExecucao} step={1} onChange={(v) => set({ tau: v })} />
         </>
       )}
 

@@ -161,6 +161,7 @@ export const pt = {
     diaSubida: 'Subida (h)',
     diaPatamar: 'Patamar (h)',
     diaDescida: 'Descida (h)',
+    degraus: 'Número de degraus',
     saidaAberta: 'Saída aberta',
     bombasControladas: 'Bombas controladas',
     semBombas: 'Nenhuma bomba no projeto.',
@@ -210,6 +211,8 @@ export const pt = {
     pulso: 'Pulso',
     exponencial: 'Exponencial',
     diaria: 'Demanda diária (2 picos)',
+    escalonada: 'Retangular escalonada',
+    amortecida: 'Senoidal amortecida',
   },
   // Ajuda de 1 linha por perfil.
   perfilAjuda: {
@@ -220,6 +223,8 @@ export const pt = {
     pulso: 'Um único disparo por um tempo (ex.: descarga, teste de hidrante).',
     exponencial: 'Aproxima o alvo (partida suave) ou decai até a base, com constante de tempo τ.',
     diaria: 'Curva de um dia real (24 h) com pico de manhã e de noite; use x120 para ver o dia.',
+    escalonada: 'Escada crescente de N degraus (mín→máx) por período; depois reseta.',
+    amortecida: 'Senoidal que decai ao longo do tempo (transiente), com constante τ.',
   },
   // Presets da forma trapezoidal.
   presets: {

@@ -95,6 +95,26 @@ describe('gerador de vazão — valorNoTempo', () => {
     expect(h(24 + 7.5)).toBe(6); // repete no dia seguinte
   });
 
+  it('escalonada: escada crescente de N degraus por período', () => {
+    const g: Gerador = { perfil: 'escalonada', min: 0, max: 9, periodo: 10, degraus: 4 };
+    // 4 degraus: níveis 0, 3, 6, 9 nas fases [0,.25),[.25,.5),[.5,.75),[.75,1)
+    expect(valorNoTempo(g, 0)).toBeCloseTo(0, 9);
+    expect(valorNoTempo(g, 3)).toBeCloseTo(3, 9);
+    expect(valorNoTempo(g, 6)).toBeCloseTo(6, 9);
+    expect(valorNoTempo(g, 9)).toBeCloseTo(9, 9);
+    expect(valorNoTempo(g, 10)).toBeCloseTo(0, 9); // reseta
+  });
+
+  it('amortecida: oscila e decai; clampa em ≥ 0', () => {
+    const g: Gerador = { perfil: 'amortecida', base: 2, amplitude: 4, periodo: 4, tau: 100 };
+    expect(valorNoTempo(g, 0)).toBeCloseTo(2, 6); // sin 0 → base
+    expect(valorNoTempo(g, 1)).toBeCloseTo(2 + 4 * Math.exp(-1 / 100), 4); // pico ~base+amp
+    // amplitude decai: bem depois, aproxima a base
+    expect(valorNoTempo({ ...g, tau: 1 }, 20)).toBeCloseTo(2, 3);
+    // clamp: base 0, vale negativo → 0
+    expect(valorNoTempo({ perfil: 'amortecida', base: 0, amplitude: 5, periodo: 4, tau: 1000 }, 3)).toBe(0);
+  });
+
   it('paramsPadrao ancora na vazão V e vazaoRef devolve o representativo', () => {
     expect(paramsPadrao('fixo', 12)).toEqual({ perfil: 'fixo', vazao: 12 });
     const sen = paramsPadrao('senoidal', 10);

@@ -160,6 +160,7 @@ export const en: Dicionario = {
     diaSubida: 'Rise (h)',
     diaPatamar: 'Hold (h)',
     diaDescida: 'Fall (h)',
+    degraus: 'Number of steps',
     saidaAberta: 'Outlet open',
     bombasControladas: 'Controlled pumps',
     semBombas: 'No pumps in the project.',
@@ -208,6 +209,8 @@ export const en: Dicionario = {
     pulso: 'Pulse',
     exponencial: 'Exponential',
     diaria: 'Daily demand (2 peaks)',
+    escalonada: 'Stepped rectangular',
+    amortecida: 'Damped sinusoidal',
   },
   perfilAjuda: {
     fixo: 'Constant flow over time.',
@@ -217,6 +220,8 @@ export const en: Dicionario = {
     pulso: 'A single burst for a duration (e.g., flush, hydrant test).',
     exponencial: 'Approaches the target (soft start) or decays to the base, with time constant τ.',
     diaria: 'A real 24 h day with a morning and an evening peak; use x120 to watch the day.',
+    escalonada: 'Rising staircase of N steps (min→max) per period; then resets.',
+    amortecida: 'Sinusoid that decays over time (transient), with time constant τ.',
   },
   presets: {
     quadrada: 'Square',
