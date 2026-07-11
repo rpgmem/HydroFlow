@@ -6,6 +6,16 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.42.0] — Projeto exemplo: registros de linha e drenos de limpeza
+
+### Alterado
+
+- **Projeto exemplo** re-desenhado pelo usuário, mantendo o layout em **6 colunas**
+  (240·360·480·600·720·840): abastecimento agora passa por um **Registro Hidrômetro**
+  (Concessionária → registro → boia → inferior) e a saída por um **Registro Consumo**
+  (União → registro → consumo). Cada reservatório ganhou um **dreno de Limpeza**
+  (registro fechado). IDs das conexões renumerados em sequência (`c_1…c_33`, só estética).
+
 ## [1.41.0] — Normalizar IDs pelos nomes (⚙ Opções)
 
 ### Adicionado
