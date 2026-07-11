@@ -25,7 +25,7 @@ function projetoComQuadro(quadro: PropsQuadro): ProjetoSimulacao {
 }
 
 describe('QuadroForm — controle centralizado (MCC)', () => {
-  it('mostra lógica E/OU, sensores-membro e revezamento por bomba', () => {
+  it('mostra sensores-membro e revezamento por bomba', () => {
     const projeto = projetoComQuadro({
       canais: [{ bomba: 'P', modo: 'auto', sensores: ['S'], revezamento: true }],
       sensores: ['S'],
@@ -43,9 +43,8 @@ describe('QuadroForm — controle centralizado (MCC)', () => {
       />,
     );
 
-    // Lógica padrão entre sensores (valor E).
-    const logica = screen.getByLabelText('Lógica padrão entre sensores') as HTMLSelectElement;
-    expect(logica.value).toBe('E');
+    // O seletor global de "lógica padrão" foi removido — o operador é por gap.
+    expect(screen.queryByLabelText('Lógica padrão entre sensores')).toBeNull();
 
     // Bloco do sensor-membro editável aqui (níveis) — grava no próprio sensor.
     const nivelMin = screen.getByLabelText('Nível mínimo (liga)');

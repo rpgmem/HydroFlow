@@ -6,6 +6,15 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.38.1] — Quadro: remove o seletor de "lógica padrão"
+
+### Alterado
+
+- **Inspetor do quadro**: removido o bloco **"Lógica padrão entre sensores"** —
+  redundante agora que cada gap da sequência tem seu próprio operador **E/OU**. A
+  `logica` global permanece só como padrão interno de novos gaps e fallback do
+  canal sem seleção.
+
 ## [1.38.0] — Mobile: barra enxuta e aviso que se recolhe
 
 Terceira melhoria do lote do quadro/mobile (issue #49, PR 3).
