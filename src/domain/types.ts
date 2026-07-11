@@ -179,7 +179,8 @@ export type PerfilVazao =
   | 'exponencial'
   | 'diaria'
   | 'escalonada'
-  | 'amortecida';
+  | 'amortecida'
+  | 'aleatoria';
 
 /**
  * Gerador de vazão no tempo — o mesmo bloco na Fonte (entrada) e no Consumo
@@ -206,6 +207,9 @@ export interface Gerador {
   fase?: number;
   /** escalonada: número de degraus (min→max) por período. */
   degraus?: number;
+  /** aleatória (PRNG semeado): semente e granularidade (s) de cada novo valor. */
+  semente?: number;
+  granularidade?: number;
   /** eventos/transientes (pulso/exponencial/diária): nível de base. */
   base?: number;
   /** degrau: nível antes/depois, instante da transição (s) e rampa de subida (s; 0 = seco). */

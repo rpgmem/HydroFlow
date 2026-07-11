@@ -60,6 +60,9 @@ export function GeradorForm({
               <option key={p} value={p}>{t(`perfis.${p}`)}</option>
             ))}
           </optgroup>
+          <optgroup label={t('form.grpOutros')}>
+            <option value="aleatoria">{t('perfis.aleatoria')}</option>
+          </optgroup>
         </select>
       </div>
 
@@ -123,6 +126,15 @@ export function GeradorForm({
           <Num label={t('form.amplitude')} unidade={u.vazao} value={gerador.amplitude} disabled={emExecucao} onChange={(v) => set({ amplitude: v })} />
           <Num label={t('form.periodo')} value={gerador.periodo} disabled={emExecucao} step={1} onChange={(v) => set({ periodo: v })} />
           <Num label={t('form.tau')} value={gerador.tau} disabled={emExecucao} step={1} onChange={(v) => set({ tau: v })} />
+        </>
+      )}
+
+      {gerador.perfil === 'aleatoria' && (
+        <>
+          <Num label={t('form.vazaoMin')} unidade={u.vazao} value={gerador.min} disabled={emExecucao} onChange={(v) => set({ min: v })} />
+          <Num label={t('form.vazaoMax')} unidade={u.vazao} value={gerador.max} disabled={emExecucao} onChange={(v) => set({ max: v })} />
+          <Num label={t('form.granularidade')} value={gerador.granularidade} disabled={emExecucao} step={1} onChange={(v) => set({ granularidade: v })} />
+          <Num label={t('form.semente')} value={gerador.semente} disabled={emExecucao} step={1} onChange={(v) => set({ semente: v })} />
         </>
       )}
 

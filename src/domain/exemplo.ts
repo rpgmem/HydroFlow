@@ -127,7 +127,14 @@ export function projetoExemplo(): ProjetoSimulacao {
         y: 273.2486851990984,
         portas: ['entrada'],
         props: {
-          gerador: { perfil: 'senoidal', min: 0, max: 10, periodo: 90 },
+          // Vitrine do perfil "demanda diária": 2 picos num dia real (madrugada
+          // baixa, pico de manhã e de noite). Use a velocidade x120 para ver o dia.
+          gerador: {
+            perfil: 'diaria',
+            base: 2,
+            pmHora: 7, pmValor: 8, pmSubida: 2, pmPatamar: 2, pmDescida: 2,
+            pnHora: 19, pnValor: 10, pnSubida: 2, pnPatamar: 3, pnDescida: 3,
+          },
           aberto: true,
         } as PropsConsumo,
         rotulo: 'Consumo',

@@ -115,6 +115,22 @@ describe('gerador de vazão — valorNoTempo', () => {
     expect(valorNoTempo({ perfil: 'amortecida', base: 0, amplitude: 5, periodo: 4, tau: 1000 }, 3)).toBe(0);
   });
 
+  it('aleatória: determinística (mesma semente → mesma sequência) e dentro da faixa', () => {
+    const g: Gerador = { perfil: 'aleatoria', min: 2, max: 8, semente: 42, granularidade: 5 };
+    // Reprodutível: o mesmo t dá o mesmo valor sempre.
+    expect(valorNoTempo(g, 7)).toBe(valorNoTempo(g, 7));
+    // Constante dentro de um mesmo passo (granularidade 5s → passo [5,10)).
+    expect(valorNoTempo(g, 6)).toBe(valorNoTempo(g, 9));
+    // Semente diferente → sequência diferente (quase sempre).
+    expect(valorNoTempo(g, 7)).not.toBe(valorNoTempo({ ...g, semente: 43 }, 7));
+    // Dentro da faixa [min, max].
+    for (let t = 0; t < 200; t += 5) {
+      const v = valorNoTempo(g, t);
+      expect(v).toBeGreaterThanOrEqual(2);
+      expect(v).toBeLessThanOrEqual(8);
+    }
+  });
+
   it('paramsPadrao ancora na vazão V e vazaoRef devolve o representativo', () => {
     expect(paramsPadrao('fixo', 12)).toEqual({ perfil: 'fixo', vazao: 12 });
     const sen = paramsPadrao('senoidal', 10);

@@ -162,6 +162,9 @@ export const pt = {
     diaPatamar: 'Patamar (h)',
     diaDescida: 'Descida (h)',
     degraus: 'Número de degraus',
+    grpOutros: 'Outros',
+    granularidade: 'Granularidade (s por valor)',
+    semente: 'Semente',
     saidaAberta: 'Saída aberta',
     bombasControladas: 'Bombas controladas',
     semBombas: 'Nenhuma bomba no projeto.',
@@ -213,6 +216,7 @@ export const pt = {
     diaria: 'Demanda diária (2 picos)',
     escalonada: 'Retangular escalonada',
     amortecida: 'Senoidal amortecida',
+    aleatoria: 'Aleatória (semente fixa)',
   },
   // Ajuda de 1 linha por perfil.
   perfilAjuda: {
@@ -225,6 +229,7 @@ export const pt = {
     diaria: 'Curva de um dia real (24 h) com pico de manhã e de noite; use x120 para ver o dia.',
     escalonada: 'Escada crescente de N degraus (mín→máx) por período; depois reseta.',
     amortecida: 'Senoidal que decai ao longo do tempo (transiente), com constante τ.',
+    aleatoria: 'Parece ruído, mas é reproduzível: mesma semente → mesma sequência.',
   },
   // Presets da forma trapezoidal.
   presets: {

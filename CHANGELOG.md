@@ -6,6 +6,28 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.35.0] — Perfis de vazão (Fase 4: vitrine + aleatória)
+
+Conclusão do plano de perfis de vazão (issue #42).
+
+### Adicionado
+
+- **Aleatória (semente fixa)**: parece ruído, mas é **reproduzível** — um valor por
+  `granularidade` de tempo, via PRNG **semeado** (determinístico, sem
+  `Math.random`). Grupo "Outros" no seletor.
+
+### Alterado
+
+- **Projeto exemplo (vitrine)**: o Consumo principal passou a usar o perfil
+  **demanda diária (2 picos)** — madrugada baixa, pico de manhã e de noite. Use a
+  velocidade **x120** para ver o dia inteiro. Demonstra os perfis novos no cenário
+  padrão.
+
+### Técnico
+
+- `valorNoTempo` ganhou `aleatoria` (hash inteiro determinístico); `janelaPreview`/
+  `vazaoRef`/defaults atualizados; parâmetros `semente`/`granularidade`. +1 teste.
+
 ## [1.34.0] — Perfis de vazão (Fase 3: escalonada + amortecida)
 
 Continuação do plano de perfis de vazão (issue #42).
