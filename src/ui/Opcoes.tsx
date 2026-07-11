@@ -10,14 +10,19 @@ import type { Unidades } from '../domain/types';
 import { IDIOMAS } from '../i18n';
 import { Switch } from './Switch';
 
+/** Como o tempo de simulação é mostrado na barra: só segundos, só relógio 24 h, ou ambos. */
+export type FormatoTempo = 'segundos' | 'horario' | 'ambos';
+
 interface Props {
   estado: EstadoApp;
   dispatch: React.Dispatch<Acao>;
   tema: 'escuro' | 'claro';
   onAlternarTema: () => void;
+  formatoTempo: FormatoTempo;
+  onFormatoTempo: (f: FormatoTempo) => void;
 }
 
-export function Opcoes({ estado, dispatch, tema, onAlternarTema }: Props) {
+export function Opcoes({ estado, dispatch, tema, onAlternarTema, formatoTempo, onFormatoTempo }: Props) {
   const { t, i18n } = useTranslation();
   const [aberto, setAberto] = useState(false);
   const emExecucao = estado.modo === 'execucao';
@@ -90,6 +95,18 @@ export function Opcoes({ estado, dispatch, tema, onAlternarTema }: Props) {
             <Switch checked={tema === 'claro'} onChange={onAlternarTema} ariaLabel={t('opcoes.temaClaro')}>
               {t('opcoes.temaClaro')}
             </Switch>
+            <div className="field">
+              <label>{t('opcoes.formatoTempo')}</label>
+              <select
+                aria-label={t('opcoes.formatoTempo')}
+                value={formatoTempo}
+                onChange={(e) => onFormatoTempo(e.target.value as FormatoTempo)}
+              >
+                <option value="segundos">{t('opcoes.formatoSegundos')}</option>
+                <option value="horario">{t('opcoes.formatoHorario')}</option>
+                <option value="ambos">{t('opcoes.formatoAmbos')}</option>
+              </select>
+            </div>
 
             <p className="opcoes-sec">{t('opcoes.fisica')}</p>
             <Switch

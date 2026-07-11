@@ -6,6 +6,15 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.40.0] — Formato do tempo configurável em ⚙ Opções
+
+### Adicionado
+
+- **⚙ Opções › Exibição › "Formato do tempo"**: escolhe como o tempo aparece na
+  barra durante a simulação — **Segundos** (`t = …s`), **Horário (24 h)**
+  (`HH:MM:SS`) ou **Ambos**. Preferência do dispositivo, **persistida** no
+  localStorage (como tema/idioma). Padrão: **Ambos**.
+
 ## [1.39.0] — Relógio de 24 h na simulação
 
 ### Adicionado
