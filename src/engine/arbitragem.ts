@@ -71,22 +71,40 @@ export function arbitrarBomba(
 }
 
 /**
- * Combinação de sensores de um canal do quadro pela lógica escolhida:
- *  - 'OU' (default): basta um pedir ligar (regra padrão `arbitrarBomba`).
- *  - 'E': só liga se TODOS pedirem ligar; qualquer 'desligar' vence.
- * Sem decisões (nenhum sensor), mantém o estado anterior nos dois casos.
+ * Avaliação SEQUENCIAL (esquerda→direita) das decisões dos sensores de um canal,
+ * combinadas pelos operadores E/OU entre pares consecutivos. Expressão PURA: não
+ * há precedência automática de 'desligar' — a proteção fica por conta do usuário
+ * (ex.: uma boia reversa atrás de um `E`).
+ *
+ * Só quem tem opinião ATIVA entra na conta: 'ligar'→true, 'desligar'→false. As
+ * decisões `undefined` (sensor desabilitado) e 'manter' (banda morta, sem opinião)
+ * são puladas — um sensor sem opinião não altera a expressão, então o operador
+ * usado é sempre o que antecede a PRÓXIMA decisão presente. A dobra aplica
+ * ((b0 op0 b1) op1 b2) …, com `operadores[i]` entre a decisão i e a i+1 (faltando,
+ * usa `padrao`). Sem nenhuma opinião ativa → mantém o estado anterior.
+ *
+ * Consequência de projeto: uma boia REVERSA de proteção só corta a bomba se estiver
+ * ligada por um `E` (ex.: «nível-baixo E origem-com-água»); atrás de um `OU` seu
+ * 'desligar' não vence — é o preço da expressão pura (a proteção é escolha do usuário).
  */
-export function combinarSensores(
-  decisoes: Decisao[],
-  logica: 'E' | 'OU',
+export function avaliarSequencia(
+  decisoes: (Decisao | undefined)[],
+  operadores: ('E' | 'OU')[],
+  padrao: 'E' | 'OU',
   estadoAnterior: boolean,
 ): boolean {
-  if (decisoes.length === 0) return estadoAnterior;
-  if (logica === 'E') {
-    if (decisoes.includes('desligar')) return false; // um veta → desliga
-    return decisoes.every((d) => d === 'ligar') ? true : estadoAnterior;
-  }
-  return arbitrarBomba(decisoes, estadoAnterior); // 'OU'
+  let acc: boolean | undefined;
+  decisoes.forEach((d, i) => {
+    if (d === undefined || d === 'manter') return; // sem opinião ativa → não influencia
+    const b = d === 'ligar';
+    if (acc === undefined) {
+      acc = b;
+      return;
+    }
+    const op = operadores[i - 1] ?? padrao;
+    acc = op === 'E' ? acc && b : acc || b;
+  });
+  return acc ?? estadoAnterior;
 }
 
 /**

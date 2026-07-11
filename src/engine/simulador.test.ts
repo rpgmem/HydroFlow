@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { tick, rodarTicks } from './simulador';
 import { areaTuboM2, vazaoMaxRecomendadaM3, velocidadeTuboMs } from './geometria';
-import { arbitrarBomba, avaliarSensor } from './arbitragem';
+import { arbitrarBomba, avaliarSensor, avaliarSequencia } from './arbitragem';
 import {
   criarConexao,
   projetoVazio,
@@ -1217,13 +1217,59 @@ describe('quadro de comandos (MCC)', () => {
       ),
     );
 
-  it('lógica E: só liga quando TODOS os sensores pedem ligar', () => {
+  it('lógica E: um desligar ativo derruba; banda morta (manter) é neutra', () => {
     expect(estaLigada(doisSensores('E', 0), 'P')).toBe(true); // ambos pedem ligar
-    expect(estaLigada(doisSensores('E', 3), 'P')).toBe(false); // S2 em banda morta → não liga
+    expect(estaLigada(doisSensores('E', 5), 'P')).toBe(false); // S2 pede desligar → E derruba
+    // S2 em banda morta (manter) não tem opinião ativa → não conta: S1 ligar vence.
+    expect(estaLigada(doisSensores('E', 3), 'P')).toBe(true);
   });
 
   it('lógica OU: basta um sensor pedir ligar', () => {
-    expect(estaLigada(doisSensores('OU', 3), 'P')).toBe(true); // S1 pede ligar
+    expect(estaLigada(doisSensores('OU', 3), 'P')).toBe(true); // S1 pede ligar (S2 neutro)
+  });
+
+  // Três sensores com operadores por gap: S1 sempre pede ligar (D1 no fundo),
+  // S2 idem (D2 no fundo), S3 pede desligar (D3 cheio). Só a ORDEM dos operadores
+  // muda o resultado → prova a avaliação sequencial esquerda→direita.
+  const tresSensores = (operadores: ('E' | 'OU')[]) =>
+    tick(
+      projeto(
+        [
+          res('D1', { nivel: 0 }),
+          res('D2', { nivel: 0 }),
+          res('D3', { nivel: 5 }),
+          sensor('S1', { bombasAlvo: [], nivelMinimo: 1, nivelMaximo: 4 }),
+          sensor('S2', { bombasAlvo: [], nivelMinimo: 1, nivelMaximo: 4 }),
+          sensor('S3', { bombasAlvo: [], nivelMinimo: 1, nivelMaximo: 4 }),
+          bomba('P', { ligada: false }),
+          {
+            id: 'Q',
+            tipo: 'quadro',
+            x: 0,
+            y: 0,
+            props: {
+              canais: [{ bomba: 'P', modo: 'auto', sensores: ['S1', 'S2', 'S3'], operadores }],
+              sensores: ['S1', 'S2', 'S3'],
+            },
+          } as Peca,
+        ],
+        [criarConexao('S1', 'D1'), criarConexao('S2', 'D2'), criarConexao('S3', 'D3')],
+      ),
+    );
+
+  it('avaliação sequencial: a ordem dos operadores importa (E→OU vs OU→E)', () => {
+    // b = [ligar, ligar, desligar] = [T, T, F]:
+    //  ['E','OU']  = (T E T) OU F = T  → liga
+    //  ['OU','E']  = (T OU T) E F = F  → não liga
+    expect(estaLigada(tresSensores(['E', 'OU']), 'P')).toBe(true);
+    expect(estaLigada(tresSensores(['OU', 'E']), 'P')).toBe(false);
+  });
+
+  it('desligar é expressão pura (sem precedência) — atrás de OU não vence', () => {
+    // ['OU','OU'] = T OU T OU F = T → o desligar do S3 NÃO derruba a bomba.
+    expect(estaLigada(tresSensores(['OU', 'OU']), 'P')).toBe(true);
+    // ['E','E'] = T E T E F = F → aí sim o desligar (atrás de E) segura.
+    expect(estaLigada(tresSensores(['E', 'E']), 'P')).toBe(false);
   });
 
   it('boia-membro sem seleção no canal é seguida (reversa protege a origem)', () => {
@@ -1560,6 +1606,28 @@ describe('arbitragem de bombas', () => {
     expect(arbitrarBomba(['ligar', 'ligar'], false)).toBe(true); // OR
     expect(arbitrarBomba(['manter'], true)).toBe(true); // mantém estado
     expect(arbitrarBomba([], false)).toBe(false);
+  });
+
+  it('avaliarSequencia: dobra esquerda→direita, expressão pura', () => {
+    // As 4 combinações de [T,T,F] com dois operadores.
+    const seq = (ops: ('E' | 'OU')[]) => avaliarSequencia(['ligar', 'ligar', 'desligar'], ops, 'OU', false);
+    expect(seq(['E', 'E'])).toBe(false); // T E T E F
+    expect(seq(['E', 'OU'])).toBe(true); // (T E T) OU F
+    expect(seq(['OU', 'E'])).toBe(false); // (T OU T) E F
+    expect(seq(['OU', 'OU'])).toBe(true); // T OU T OU F
+  });
+
+  it('avaliarSequencia: sem decisão (undefined) é pulada, mantendo o operador seguinte', () => {
+    // Meio ausente: usa o operador que antecede a PRÓXIMA decisão presente.
+    expect(avaliarSequencia(['ligar', undefined, 'desligar'], ['E', 'OU'], 'E', false)).toBe(true); // T OU F
+    expect(avaliarSequencia(['ligar', undefined, 'desligar'], ['E', 'E'], 'OU', false)).toBe(false); // T E F
+  });
+
+  it('avaliarSequencia: operador faltante cai no padrão; vazio mantém estado', () => {
+    expect(avaliarSequencia(['ligar', 'desligar'], [], 'E', false)).toBe(false); // T E F
+    expect(avaliarSequencia(['ligar', 'desligar'], [], 'OU', false)).toBe(true); // T OU F
+    expect(avaliarSequencia([], [], 'OU', true)).toBe(true); // ninguém decide → mantém
+    expect(avaliarSequencia(['manter', 'manter'], ['OU'], 'OU', true)).toBe(true); // manter = estado anterior
   });
 
   it('sensor pede ligar abaixo do mínimo e desligar acima do máximo', () => {

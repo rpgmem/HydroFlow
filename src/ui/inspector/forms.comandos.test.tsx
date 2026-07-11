@@ -53,6 +53,6 @@ describe('inspetor em execução — comandos ativos, estrutura travada', () => 
     ];
     render(<QuadroForm props={q} emExecucao upd={noop} u={u} projeto={proj(pecas)} dispatch={vi.fn()} />);
     expect(dis('Modo')).toBe(false);
-    expect(dis('Lógica entre os sensores')).toBe(true);
+    expect(dis('Lógica padrão entre sensores')).toBe(true);
   });
 });

@@ -297,10 +297,18 @@ export interface CanalQuadro {
   bomba: string;
   modo: 'auto' | 'manual' | 'desligado';
   /**
-   * Boias/sensores-membro que esta bomba segue no 'auto' (multi-seleção),
-   * combinados pela `logica` do quadro. Vazio = sem sensor (liga por demanda).
+   * Boias/sensores-membro que esta bomba segue no 'auto', em ORDEM. A avaliação é
+   * sequencial (esquerda→direita) combinando pares consecutivos pelos `operadores`.
+   * Vazio = sem sensor (liga por demanda).
    */
   sensores?: string[];
+  /**
+   * Operador E/OU entre cada par de sensores CONSECUTIVOS de `sensores`. Tamanho =
+   * `sensores.length - 1` (`operadores[i]` liga o sensor i ao i+1). Ausente/curto:
+   * usa a `logica` global do quadro como padrão. Ex.: sensores [S1,S2,S3] com
+   * operadores ['OU','E'] = ((S1 OU S2) E S3).
+   */
+  operadores?: ('E' | 'OU')[];
   /** @deprecated Boia única de saves antigos (1.27.x). Lido como `sensores: [sensor]`. */
   sensor?: string;
   /** Bomba dupla: o quadro liga/desliga o revezamento desta bomba. */
@@ -335,6 +343,16 @@ export interface PropsQuadro {
 /** Sensores-membro que um canal segue no 'auto' (normaliza o legado `sensor`). */
 export function sensoresDoCanal(c: CanalQuadro): string[] {
   return c.sensores ?? (c.sensor ? [c.sensor] : []);
+}
+
+/**
+ * Operadores E/OU entre os sensores consecutivos de um canal, normalizados ao
+ * tamanho `sensores.length - 1`. Falta preenche com o `padrao` (lógica global).
+ */
+export function operadoresDoCanal(c: CanalQuadro, padrao: 'E' | 'OU'): ('E' | 'OU')[] {
+  const n = sensoresDoCanal(c).length;
+  const ops = c.operadores ?? [];
+  return Array.from({ length: Math.max(0, n - 1) }, (_, i) => ops[i] ?? padrao);
 }
 
 export type PropsPorTipo =
