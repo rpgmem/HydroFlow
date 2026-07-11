@@ -860,6 +860,16 @@ button.ativo {
     text-align: left;
     white-space: nowrap;
   }
+  /* ⚙ Opções recolhido no menu ⋯: ocupa a largura toda da gaveta. */
+  .acoes-secundarias.aberto .opcoes {
+    width: 100%;
+  }
+
+  /* Barra enxuta no mobile: status edição/execução, desfazer/refazer e voltar-à-
+     edição não aparecem (o celular é superfície de simular/inspecionar). */
+  .so-desktop {
+    display: none !important;
+  }
 
   /* Dica de "arrastar para conectar" não se aplica ao toque; o aviso cobre. */
   .hint {
