@@ -28,17 +28,14 @@ describe('projeto de exemplo (reservatórios empilhados)', () => {
     }
   });
 
-  it('a fonte reabastece o reservatório inferior (bomba desligada pelo sensor reverso)', () => {
-    const nivel = (proj: ReturnType<typeof projetoExemplo>, id: string): number => {
-      const p = proj.pecas.find((x) => x.id === id)!;
-      return isReservatorio(p) ? (p.props.nivel ?? 0) : 0;
-    };
-    const inicial = projetoExemplo();
-    const infAntes = nivel(inicial, 'inferior'); // 2 m — no mínimo do sensor reverso
-    const r = rodarTicks(inicial, 600); // ~60 s de simulação
-    // O sensor reverso do inferior desliga a bomba (inferior no mínimo); a fonte
-    // enche o inferior, então o nível SOBE.
-    expect(nivel(r.projeto, 'inferior')).toBeGreaterThan(infAntes);
+  it('a bomba de recalque liga no nível inicial (recalca para o superior)', () => {
+    // Estado inicial de operação: inferior alto (liberado pela boia reversa) e
+    // superior abaixo do máximo → a bomba está ligada recalcando, sem rodar a seco.
+    const r = rodarTicks(projetoExemplo(), 1);
+    const bomba = r.projeto.pecas.find((x) => x.id === 'bomba')!;
+    expect((bomba.props as { ligada?: boolean }).ligada).toBe(true);
+    expect(r.vazoes['succao'] ?? 0).toBeGreaterThan(0);
+    expect(r.bombasASeco).not.toContain('bomba');
   });
 
   it('simula sem gerar níveis inválidos (finitos e não-negativos)', () => {
@@ -49,11 +46,14 @@ describe('projeto de exemplo (reservatórios empilhados)', () => {
     }
   });
 
-  it('o sensor reverso do inferior desliga a bomba no nível inicial', () => {
-    const r = rodarTicks(projetoExemplo(), 1);
+  it('o sensor reverso do inferior desliga a bomba quando a sucção esvazia', () => {
+    // Proteção da origem: forçando o inferior no mínimo do sensor reverso (2 m),
+    // o 'desligar' vence e a bomba para — sem rodar a seco.
+    const proj = projetoExemplo();
+    const inf = proj.pecas.find((x) => x.id === 'inferior')!;
+    (inf.props as { nivel?: number }).nivel = 2;
+    const r = rodarTicks(proj, 1);
     const bomba = r.projeto.pecas.find((x) => x.id === 'bomba')!;
-    // inferior = 2 = mínimo do sensor reverso → 'desligar' vence o pedido do
-    // sensor do superior → a bomba fica parada (protegida), sem "rodar a seco".
     expect((bomba.props as { ligada?: boolean }).ligada).toBe(false);
     expect(r.vazoes['succao'] ?? 0).toBe(0);
     expect(r.bombasASeco).not.toContain('bomba');

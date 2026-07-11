@@ -71,21 +71,21 @@ export function projetoExemplo(): ProjetoSimulacao {
         raio: 1.6,
         alturaMaxima: 9.5,
         cotaBase: 0,
-        nivel: 2,
+        nivel: 7.2,
       } as PropsReservatorio),
       reservatorio('meio', 'C2 Meio (55.000 L)', 480, 340, {
         formato: 'cilindro',
         raio: 1.6,
         alturaMaxima: 6.8387,
         cotaBase: 9.5,
-        nivel: 2,
+        nivel: 5.5,
       } as PropsReservatorio),
       reservatorio('superior', 'C1 Superior (55.000 L)', 480, 140, {
         formato: 'cilindro',
         raio: 1.6,
         alturaMaxima: 6.8387,
         cotaBase: 16.3387,
-        nivel: 2,
+        nivel: 5.19,
       } as PropsReservatorio),
       // ---- Abastecimento e recalque -----------------------------------------
       {
@@ -94,7 +94,7 @@ export function projetoExemplo(): ProjetoSimulacao {
         x: 240,
         y: 577,
         portas: ['saida'],
-        props: { gerador: { perfil: 'fixo', vazao: 10 } } as PropsFonte,
+        props: { gerador: { perfil: 'senoidal', min: 2, max: 10, periodo: 60 } } as PropsFonte,
         rotulo: 'Concessionária',
       },
       {
@@ -118,7 +118,7 @@ export function projetoExemplo(): ProjetoSimulacao {
       },
       tubo('succao', 'Cano de sucção', 360, 435.1990984222388, { bitola: 'DN110', diametro: 97.8, registro: { aberto: true }, checkValve: true, comprimento: 4 }),
       tubo('recalque_meio', 'Recalque → C2', 360, 341.61102383716974, { bitola: 'DN60', diametro: 53.4, registro: { aberto: false }, checkValve: true, alturaSaida: 5.5, comprimento: 16 }),
-      tubo('recalque_sup', 'Recalque → C1', 360, 205.15442934225808, { bitola: 'DN60', diametro: 53.4, registro: { aberto: true }, checkValve: true, alturaSaida: 5.5, comprimento: 25 }),
+      tubo('recalque_sup', 'Recalque → C1', 360, 205.15442934225808, { bitola: 'DN60', diametro: 53.4, registro: { aberto: true }, checkValve: true, alturaSaida: 5.5, comprimento: 23 }),
       // ---- Consumo (saída principal) ----------------------------------------
       {
         id: 'consumo',
@@ -132,8 +132,8 @@ export function projetoExemplo(): ProjetoSimulacao {
           gerador: {
             perfil: 'diaria',
             base: 2,
-            pmHora: 7, pmValor: 8, pmSubida: 2, pmPatamar: 2, pmDescida: 2,
-            pnHora: 19, pnValor: 10, pnSubida: 2, pnPatamar: 3, pnDescida: 3,
+            pmHora: 7, pmValor: 5.5, pmSubida: 1, pmPatamar: 1, pmDescida: 1.5,
+            pnHora: 19, pnValor: 7, pnSubida: 2, pnPatamar: 3, pnDescida: 1.2,
           },
           aberto: true,
         } as PropsConsumo,
@@ -148,7 +148,7 @@ export function projetoExemplo(): ProjetoSimulacao {
         x: 600,
         y: 120,
         portas: ['sonda'],
-        props: { bombasAlvo: ['bomba'], nivelMinimo: 3, nivelMaximo: 5.5, histerese: true, delay: 10 } as PropsSensor,
+        props: { bombasAlvo: ['bomba'], nivelMinimo: 4.5, nivelMaximo: 5.5, histerese: true, delay: 10 } as PropsSensor,
         rotulo: 'Boia Eletrônica (C1)',
       },
       {
@@ -163,7 +163,7 @@ export function projetoExemplo(): ProjetoSimulacao {
         rotulo: 'Boia Eletrônica (inferior)',
       },
       // ---- Boia manual + bypass + ladrões -----------------------------------
-      tubo('boia_manual', 'Boia Manual', 360, 578, { bitola: 'DN110', diametro: 97.8, registro: { aberto: true }, boia: { nivelMinimo: 6, nivelMaximo: 8.5 }, alturaSaida: 8.5 }),
+      tubo('boia_manual', 'Boia Manual', 360, 578, { bitola: 'DN110', diametro: 97.8, registro: { aberto: true }, boia: { nivelMinimo: 7, nivelMaximo: 8.5 }, alturaSaida: 8.5, comprimento: 0 }),
       tubo('bypass', 'bypass Boia Manual', 600, 240, { bitola: 'DN32', diametro: 27.8, registro: { aberto: true }, boia: { nivelMinimo: 4, nivelMaximo: 5.5 }, alturaEntrada: 2, alturaSaida: 6 }),
       tubo('ladrao_sup', 'Ladrão (C1)', 360, 140, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true }, ladrao: { nivel: 6.5 } }),
       tubo('ladrao_meio', 'Ladrão (C2)', 360, 265.7996038521959, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true }, ladrao: { nivel: 6.5 } }),
@@ -175,7 +175,7 @@ export function projetoExemplo(): ProjetoSimulacao {
         x: 720,
         y: 531.7205108940645,
         portas: ['entrada', 'saida'],
-        props: { vazaoNominal: 10, sensores: ['sensor_meio'], ligada: true } as PropsBomba,
+        props: { vazaoNominal: 10, sensores: ['sensor_meio'], ligada: false } as PropsBomba,
         rotulo: 'Bomba Incêndio',
       },
       {
@@ -196,7 +196,7 @@ export function projetoExemplo(): ProjetoSimulacao {
         x: 600,
         y: 351.55522163786617,
         portas: ['sonda'],
-        props: { bombasAlvo: ['bomba_incendio'], nivelMinimo: 4, nivelMaximo: 5 } as PropsSensor,
+        props: { bombasAlvo: ['bomba_incendio'], nivelMinimo: 4.6, nivelMaximo: 5.5 } as PropsSensor,
         rotulo: 'Boia Eletrônica (C2)',
       },
       // Linha de limpeza/interligação: cavalete de incêndio → interligação

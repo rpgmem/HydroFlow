@@ -6,6 +6,16 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.35.1] — Ajuste do projeto exemplo
+
+### Alterado
+
+- **Projeto exemplo** re-tunado (cenário do usuário): **Concessionária** agora é
+  uma fonte **senoidal** (2–10 L/s); **Consumo** com demanda diária re-ajustada;
+  níveis iniciais de operação (inferior 7,2 · C2 5,5 · C1 5,19); limiares das
+  boias C1/C2 e da boia manual revistos; `Recalque → C1` com 23 m; Bomba Incêndio
+  inicia desligada. O exemplo abre com a Bomba Recalque **em operação**.
+
 ## [1.35.0] — Perfis de vazão (Fase 4: vitrine + aleatória)
 
 Conclusão do plano de perfis de vazão (issue #42).
