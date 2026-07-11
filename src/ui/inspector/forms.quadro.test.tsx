@@ -43,8 +43,8 @@ describe('QuadroForm — controle centralizado (MCC)', () => {
       />,
     );
 
-    // Lógica entre sensores (valor E).
-    const logica = screen.getByLabelText('Lógica entre os sensores') as HTMLSelectElement;
+    // Lógica padrão entre sensores (valor E).
+    const logica = screen.getByLabelText('Lógica padrão entre sensores') as HTMLSelectElement;
     expect(logica.value).toBe('E');
 
     // Bloco do sensor-membro editável aqui (níveis) — grava no próprio sensor.
@@ -52,9 +52,8 @@ describe('QuadroForm — controle centralizado (MCC)', () => {
     fireEvent.change(nivelMin, { target: { value: '2' } });
     expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ tipo: 'ATUALIZAR_PROPS', id: 'S' }));
 
-    // Multi-seleção de sensores por bomba (checkbox marcado).
-    const seguir = screen.getByLabelText('Seguir Boia S') as HTMLInputElement;
-    expect(seguir.checked).toBe(true);
+    // Sensor-membro presente na sequência do canal (botão de remover disponível).
+    expect(screen.getByLabelText('Tirar Boia S da sequência')).toBeTruthy();
 
     // Revezamento controlado pelo quadro + seletor de unidade (revezamento ligado).
     expect(screen.getByLabelText('Bomba dupla (revezamento)')).toBeTruthy();

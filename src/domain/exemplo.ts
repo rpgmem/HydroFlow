@@ -208,7 +208,10 @@ export function projetoExemplo(): ProjetoSimulacao {
       juncao('uniao', 'União', 720, 272.99501400177576, { bitola: 'DN160', diametro: 147.0 }),
       // ---- Quadros de comandos (MCC) ----------------------------------------
       quadro('quadro_recalque', 'Quadro Recalque', 240, 140, {
-        canais: [{ bomba: 'bomba', modo: 'auto', sensores: ['sensor_sup', 'sensor_inf'], revezamento: true }],
+        // «nível-do-superior-baixo (sensor_sup) E origem-com-água (sensor_inf reverso)»
+        // — o operador E deixa a boia reversa PROTEGER a origem (desligar vence só
+        // atrás de um E, pois a avaliação é expressão pura).
+        canais: [{ bomba: 'bomba', modo: 'auto', sensores: ['sensor_sup', 'sensor_inf'], operadores: ['E'], revezamento: true }],
         sensores: ['sensor_sup', 'sensor_inf', 'sensor_meio'],
       } as PropsQuadro),
       quadro('quadro_incendio', 'Quadro Incêndio', 840, 560, {

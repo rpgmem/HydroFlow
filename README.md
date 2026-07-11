@@ -169,7 +169,7 @@ interface NivelControle {
 | `consumo` | `gerador: Gerador` (perfil de demanda no tempo), `aberto?` — ponto de saída/demanda; retira água e descarta |
 | `sensor` | `NivelControle & { bombasAlvo: string[], ativo?: boolean }` — controla **uma ou mais** bombas; `reversa` inverte a lógica (liga no máximo, desliga no mínimo); `ativo` (ausente = true) habilita/desabilita o sensor em operação |
 | `juncao` | `diametro?`/`bitola?` (mm; **estrangula** o fluxo pela junção — reusa o catálogo de bitolas dos tubos). Nó sem volume que **divide/soma** a vazão por gravidade, conservando massa |
-| `quadro` | `canais: {bomba, modo, sensores?, revezamento?, unidade?}[]`, `sensores?: string[]` (boias-membro), `logica?` (`E`\|`OU`) — quadro de comandos (MCC): por bomba, `modo` (`auto`\|`manual`\|`desligado`); no `auto`, quais `sensores` seguir (combinados pela `logica`) e o `revezamento`/`unidade` da bomba dupla. Liga por id (sem conexão física). Uma bomba/sensor regidos por um quadro perdem o controle direto |
+| `quadro` | `canais: {bomba, modo, sensores?, operadores?, revezamento?, unidade?}[]`, `sensores?: string[]` (boias-membro), `logica?` (`E`\|`OU`) — quadro de comandos (MCC): por bomba, `modo` (`auto`\|`manual`\|`desligado`); no `auto`, a **sequência ordenada** de `sensores` avaliada de cima para baixo, com `operadores` (E/OU por gap, tamanho = nº de sensores − 1; `logica` é o padrão), e o `revezamento`/`unidade` da bomba dupla. Avaliação é expressão pura (sem precedência de `desligar`). Liga por id (sem conexão física). Uma bomba/sensor regidos por um quadro perdem o controle direto |
 
 `Gerador` = perfil de vazão no tempo (Fonte/Consumo): `perfil` + parâmetros do perfil. Perfis: `fixo` (`vazao`); **periódicos** `trapezoidal` (`min`/`max`/`periodo` + frações `subida`/`alto`/`descida`/`baixo` — presets: quadrada, retangular, triangular, dente de serra ↑/↓, trapézio) e `senoidal` (`min`/`max`/`periodo`); **transientes/eventos** `degrau` (`v0`/`v1`/`instante`/`rampa`), `pulso` (`base`/`amplitude`/`inicio`/`largura`), `exponencial` (`base`/`alvo`/`tau`/`sentido`), `diaria` (2 picos num dia real de 86.400 s: `base` + `pm*`/`pn*` com hora/valor/subida/patamar/descida), `escalonada` (`min`/`max`/`periodo`/`degraus`), `amortecida` (`base`/`amplitude`/`periodo`/`tau`) e `aleatoria` (`min`/`max`/`semente`/`granularidade` — PRNG semeado, reproduzível). A função pura `valorNoTempo(gerador, t)` é determinística e clampa em ≥ 0.
 
@@ -239,8 +239,14 @@ realistas (vazões em L/s enchendo tanques de milhares de litros) em segundos.
   cada uma pertence a no máximo um quadro e, enquanto regida, seu controle direto
   (o `modoControle` da bomba, o `bombasAlvo` do sensor) fica inativo. Liga por id,
   sem conexão física — o quadro **não usa setas**. Recursos do automático:
-  - **Vários sensores por bomba** (multi-seleção), combinados pela **lógica** do
-    quadro: **OU** (basta um pedir) ou **E** (todos precisam pedir).
+  - **Sequência ordenada de sensores por bomba**, avaliada **de cima para baixo**
+    (= esquerda→direita), com um **operador E/OU independente entre cada par**
+    (`operadores`) — qualquer combinação sequencial, ex.: «S1 OU S2 E S3» =
+    ((S1 OU S2) E S3). Reordena por **arrastar-e-soltar** ou **▲▼**. A **lógica**
+    global do quadro é o **operador padrão** de novos gaps. A avaliação é
+    **expressão pura**: `desligar` não tem precedência automática (uma boia
+    **reversa** de proteção só corta a bomba atrás de um **E**); sensores em
+    **banda morta** são neutros.
   - Os **ajustes do sensor** (níveis, reverso, histerese, delay) são editados **no
     quadro** enquanto ele for membro.
   - **Revezamento** de bomba dupla delegado ao quadro: alterna a cada acionamento

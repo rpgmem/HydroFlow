@@ -154,7 +154,7 @@ function validarPeca(peca: unknown, idx: number, erros: ErroValidacao[]): void {
     if (!Array.isArray(props.canais)) {
       erros.push({
         caminho: `${base}.props.canais`,
-        mensagem: 'canais (lista de {bomba, modo, sensores?, revezamento?, unidade?}) obrigatória',
+        mensagem: 'canais (lista de {bomba, modo, sensores?, operadores?, revezamento?, unidade?}) obrigatória',
       });
     }
   }

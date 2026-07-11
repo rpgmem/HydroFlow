@@ -32,6 +32,7 @@ import {
   isReservatorio,
   isSensor,
   isTubo,
+  operadoresDoCanal,
   sensoresDoCanal,
   type CanalQuadro,
   type PecaDe,
@@ -47,7 +48,7 @@ import {
 } from './geometria';
 import { COMPRIMENTO_PADRAO_M } from './hidraulica';
 import { metrosPorComprimento } from '../domain/unidades';
-import { arbitrarBomba, avaliarSensor, boiaAberta, combinarSensores, type Decisao } from './arbitragem';
+import { arbitrarBomba, avaliarSensor, avaliarSequencia, boiaAberta, type Decisao } from './arbitragem';
 import { resolverGravidadeComJuncoes } from './redeJuncoes';
 import { GrafoIndex, type FluxoResolvido } from './grafo';
 import {
@@ -217,8 +218,13 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
         if (ids.length === 0) {
           agora = demandaJusante(idx, p.id, tempoAtual) > 1e-9;
         } else {
-          const decisoes = ids.map((id) => sensores[id]).filter((d): d is Decisao => d !== undefined);
-          agora = combinarSensores(decisoes, logica, antes);
+          // Sequência ordenada: cada gap tem seu operador (default = lógica global).
+          // No fallback "segue todos os membros" não há operadores explícitos, logo
+          // todos os gaps caem no padrão `logica` (compatível com o comportamento
+          // anterior). Decisões `undefined` (sensor inativo) são puladas.
+          const decisoes = ids.map((id) => sensores[id]);
+          const operadores = marcados.length > 0 ? operadoresDoCanal(canal, logica) : [];
+          agora = avaliarSequencia(decisoes, operadores, logica, antes);
         }
       }
     } else {

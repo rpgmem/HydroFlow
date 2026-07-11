@@ -6,6 +6,31 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 os sprints da especificação técnica; as seguintes acompanham a evolução
 incremental por funcionalidade.
 
+## [1.37.0] — Quadro: lógica ordenada por sensor (E/OU por gap)
+
+Segunda melhoria do quadro de comandos (issue #49, PR 2).
+
+### Adicionado
+
+- **Sequência ordenada de sensores por bomba**: no automático, os sensores de um
+  canal viram uma **lista ordenada**, avaliada **de cima para baixo** (=
+  esquerda→direita). Entre cada par consecutivo há um **operador E/OU independente**
+  (`CanalQuadro.operadores`), permitindo qualquer combinação sequencial —
+  ex.: «S1 OU S2 E S3» = ((S1 OU S2) E S3).
+- **Reordenar**: **arrastar-e-soltar** (desktop) e botões **▲▼** (reserva
+  acessível/mobile); adicionar/retirar sensores da sequência pelo inspetor.
+
+### Alterado
+
+- **Avaliação é expressão PURA**: não há mais precedência automática de `desligar`.
+  Uma boia **reversa** de proteção só corta a bomba se estiver ligada por um **E**
+  (ex.: «nível-baixo E origem-com-água»). Sensores em **banda morta (manter)** são
+  **neutros** — não interferem na expressão.
+- A **lógica global** do quadro passa a ser o **operador padrão** de novos gaps.
+- **Projeto exemplo**: o Quadro Recalque agora usa explicitamente
+  `sensor_sup **E** sensor_inf(reverso)` — a proteção da origem segue funcionando
+  sob a nova semântica.
+
 ## [1.36.0] — Inspetor do quadro: cores, accordion e rótulos do modo
 
 Primeira das melhorias do inspetor do quadro de comandos (issue #49).

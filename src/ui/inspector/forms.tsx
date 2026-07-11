@@ -7,6 +7,7 @@ import {
   isBomba,
   isQuadro,
   isSensor,
+  operadoresDoCanal,
   sensoresDoCanal,
   type CanalQuadro,
   type NivelControle,
@@ -28,6 +29,7 @@ import { labelVolume, m3PorVolume } from '../../domain/unidades';
 import { CATALOGO_TUBOS, CATEGORIAS_TUBO, bitolaPorDn, rotuloBitola } from '../../domain/tubosCatalogo';
 import { fmtNumero } from '../../i18n';
 import type { Acao } from '../../state/store';
+import { useState } from 'react';
 import { Num, type Upd, type UniLabel } from './campos';
 import { Switch } from '../Switch';
 import { GeradorForm } from './GeradorForm';
@@ -676,6 +678,9 @@ export function QuadroForm({
   dispatch: React.Dispatch<Acao>;
 }) {
   const { t } = useTranslation();
+  // Arraste-e-solte a sequência de sensores dentro de um canal (desktop). Guarda
+  // qual item (canal + posição) está sendo arrastado; ▲▼ são a reserva acessível.
+  const [arrastando, setArrastando] = useState<{ canal: number; pos: number } | null>(null);
   // Sensores-membro deste quadro (escolhidos no inspetor de cada sensor). Aqui é
   // onde TODOS os ajustes deles (níveis, reverso, histerese, delay) são feitos —
   // gravados de volta nas props do próprio sensor via `dispatch` (cross-piece).
@@ -693,14 +698,49 @@ export function QuadroForm({
     return b ? nomePeca(b) : id;
   };
   const sensoresDoCanalUI = (c: CanalQuadro): string[] => c.sensores ?? (c.sensor ? [c.sensor] : []);
-  const alternarSensorCanal = (i: number, sid: string, marcado: boolean): void => {
+  // Grava a sequência ordenada de sensores + os operadores dos gaps, sempre
+  // normalizados ao tamanho `n-1` (padrão = lógica global). Migra o legado `sensor`.
+  const gravarSequencia = (i: number, sensores: string[], operadores: ('E' | 'OU')[]): void =>
+    atualiza(i, {
+      sensores,
+      operadores: Array.from({ length: Math.max(0, sensores.length - 1) }, (_, k) => operadores[k] ?? logica),
+      sensor: undefined,
+    });
+  const adicionarSensorCanal = (i: number, sid: string): void => {
     const c = canais[i];
     if (!c) return;
     const atuais = sensoresDoCanalUI(c);
-    atualiza(i, {
-      sensores: marcado ? [...atuais, sid] : atuais.filter((x) => x !== sid),
-      sensor: undefined, // migra do campo único legado
-    });
+    if (atuais.includes(sid)) return;
+    gravarSequencia(i, [...atuais, sid], [...operadoresDoCanal(c, logica), logica]);
+  };
+  const removerSensorCanal = (i: number, sid: string): void => {
+    const c = canais[i];
+    if (!c) return;
+    const atuais = sensoresDoCanalUI(c);
+    const pos = atuais.indexOf(sid);
+    if (pos < 0) return;
+    // Remove o operador adjacente ao sensor retirado (o gap antes dele, ou o
+    // primeiro se ele era o primeiro) para manter o alinhamento posicional.
+    const ops = operadoresDoCanal(c, logica).filter((_, k) => k !== (pos > 0 ? pos - 1 : 0));
+    gravarSequencia(i, atuais.filter((x) => x !== sid), ops);
+  };
+  const moverSensorCanal = (i: number, de: number, para: number): void => {
+    const c = canais[i];
+    if (!c) return;
+    const atuais = sensoresDoCanalUI(c);
+    if (para < 0 || para >= atuais.length || de === para) return;
+    const novos = [...atuais];
+    const [m] = novos.splice(de, 1);
+    novos.splice(para, 0, m!);
+    // Operadores ficam presos à POSIÇÃO do gap (não ao par); re-normaliza no tamanho.
+    gravarSequencia(i, novos, operadoresDoCanal(c, logica));
+  };
+  const definirOperador = (i: number, gap: number, valor: 'E' | 'OU'): void => {
+    const c = canais[i];
+    if (!c) return;
+    const ops = operadoresDoCanal(c, logica);
+    ops[gap] = valor;
+    atualiza(i, { operadores: ops });
   };
   // Cor por membro: cada boia/sensor e cada bomba ganha um tom distinto, reusado
   // como etiqueta ao lado da caixa de seleção do sensor no canal da bomba.
@@ -790,6 +830,8 @@ export function QuadroForm({
       {canais.length > 0 && <label>{t('form.quadroCanais')}</label>}
       {canais.map((c, i) => {
         const seguidos = sensoresDoCanalUI(c);
+        const operadores = operadoresDoCanal(c, logica);
+        const disponiveis = membrosSensor.filter((s) => !seguidos.includes(s.id));
         const rev = c.revezamento ?? false;
         const cor = corMembro(c.bomba);
         return (
@@ -819,20 +861,86 @@ export function QuadroForm({
                 <p className="telemetry" style={{ margin: 0 }}>{t('form.quadroSemSensor')}</p>
               ) : (
                 <>
-                  {membrosSensor.map((s) => (
-                    <label className="checkbox" key={s.id}>
-                      <input
-                        type="checkbox"
-                        checked={seguidos.includes(s.id)}
-                        disabled={emExecucao}
-                        aria-label={t('form.quadroSeguirSensor', { nome: nomePeca(s) })}
-                        onChange={(e) => alternarSensorCanal(i, s.id, e.target.checked)}
-                      />
-                      {chip(corMembro(s.id))}
-                      {nomePeca(s)}
-                    </label>
-                  ))}
-                  {/* Nenhum marcado = segue TODOS os membros (o motor faz esse
+                  {/* Sequência ORDENADA dos sensores seguidos. Entre pares
+                      consecutivos, um operador E/OU independente. Avaliação
+                      esquerda→direita (= de cima para baixo). */}
+                  <ol className="quadro-seq">
+                    {seguidos.map((sid, pos) => {
+                      const s = membrosSensor.find((m) => m.id === sid);
+                      return (
+                        <li key={sid}>
+                          {pos > 0 && (
+                            <select
+                              className="op-select"
+                              value={operadores[pos - 1]}
+                              disabled={emExecucao}
+                              aria-label={t('form.quadroOperador', { n: pos })}
+                              onChange={(e) => definirOperador(i, pos - 1, e.target.value as 'E' | 'OU')}
+                            >
+                              <option value="E">{t('form.opE')}</option>
+                              <option value="OU">{t('form.opOu')}</option>
+                            </select>
+                          )}
+                          <div
+                            className="seq-item"
+                            draggable={!emExecucao}
+                            onDragStart={() => setArrastando({ canal: i, pos })}
+                            onDragOver={(e) => {
+                              if (arrastando?.canal === i) e.preventDefault();
+                            }}
+                            onDrop={() => {
+                              if (arrastando?.canal === i) moverSensorCanal(i, arrastando.pos, pos);
+                              setArrastando(null);
+                            }}
+                            onDragEnd={() => setArrastando(null)}
+                          >
+                            <span className="arraste" aria-hidden="true" title={t('form.quadroArrastar')}>⋮⋮</span>
+                            {chip(corMembro(sid))}
+                            <span className="seq-nome">{s ? nomePeca(s) : sid}</span>
+                            <span className="seq-botoes">
+                              <button
+                                type="button"
+                                disabled={emExecucao || pos === 0}
+                                aria-label={t('form.quadroSubir', { nome: s ? nomePeca(s) : sid })}
+                                onClick={() => moverSensorCanal(i, pos, pos - 1)}
+                              >▲</button>
+                              <button
+                                type="button"
+                                disabled={emExecucao || pos === seguidos.length - 1}
+                                aria-label={t('form.quadroDescer', { nome: s ? nomePeca(s) : sid })}
+                                onClick={() => moverSensorCanal(i, pos, pos + 1)}
+                              >▼</button>
+                              <button
+                                type="button"
+                                className="danger"
+                                disabled={emExecucao}
+                                aria-label={t('form.quadroTirarSensor', { nome: s ? nomePeca(s) : sid })}
+                                onClick={() => removerSensorCanal(i, sid)}
+                              >×</button>
+                            </span>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                  {/* Adicionar um membro ainda fora da sequência (vai ao fim). */}
+                  {disponiveis.length > 0 && (
+                    <select
+                      className="add-sensor"
+                      value=""
+                      disabled={emExecucao}
+                      aria-label={t('form.quadroAdicionarSensor')}
+                      onChange={(e) => {
+                        if (e.target.value) adicionarSensorCanal(i, e.target.value);
+                      }}
+                    >
+                      <option value="">{t('form.quadroAdicionarSensor')}</option>
+                      {disponiveis.map((s) => (
+                        <option key={s.id} value={s.id}>{nomePeca(s)}</option>
+                      ))}
+                    </select>
+                  )}
+                  {/* Nenhum na sequência = segue TODOS os membros (o motor faz esse
                       fallback, para uma boia-membro nunca ser ignorada). */}
                   {seguidos.length === 0 && (
                     <p className="telemetry" style={{ margin: 0 }}>{t('form.quadroSensoresTodos')}</p>
