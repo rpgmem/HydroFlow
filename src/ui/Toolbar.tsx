@@ -18,6 +18,7 @@ interface Props {
   onAlternarTema: () => void;
   onAlternarLegenda: () => void;
   legendaAberta: boolean;
+  onAbrirAjuda: () => void;
   /** Projeto difere do exemplo intocado — revela Salvar e Restaurar exemplo. */
   alterado: boolean;
   formatoTempo: FormatoTempo;
@@ -38,7 +39,7 @@ function relogio24h(segundos: number): string {
   return `${p(Math.floor(s / 3600))}:${p(Math.floor((s % 3600) / 60))}:${p(s % 60)}`;
 }
 
-export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAlternarTema, onAlternarLegenda, legendaAberta, alterado, formatoTempo, onFormatoTempo }: Props) {
+export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAlternarTema, onAlternarLegenda, legendaAberta, onAbrirAjuda, alterado, formatoTempo, onFormatoTempo }: Props) {
   const { t } = useTranslation();
   const inputFile = useRef<HTMLInputElement>(null);
   const [menuAberto, setMenuAberto] = useState(false);
@@ -154,6 +155,18 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
         >
           {t('toolbar.legenda')}
         </button>
+        {/* Ajuda: só na edição e só no desktop (barra enxuta no mobile). */}
+        {!emExecucao && (
+          <button
+            className="so-desktop"
+            onClick={() => {
+              setMenuAberto(false);
+              onAbrirAjuda();
+            }}
+          >
+            {t('ajuda.botao')}
+          </button>
+        )}
         {!emExecucao && (
           <button
             onClick={() => {
