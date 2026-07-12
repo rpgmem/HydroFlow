@@ -2,6 +2,15 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
+## [1.45.1] — TypeScript 6
+
+### Alterado
+
+- **TypeScript atualizado para 6.0.x** (`^6.0.3`). `typecheck`, `lint`, testes (237)
+  e `build` seguem verdes. O **7.x** ainda não entra porque o `@typescript-eslint`
+  8.x exige `typescript < 6.1.0` (o parser não suporta o port nativo) — quando o
+  typescript-eslint liberar o 7, a subida deve ser direta.
+
 ## [1.45.0] — Página de Ajuda
 
 ### Adicionado
