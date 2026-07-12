@@ -2,6 +2,16 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
+## [1.45.0] — Página de Ajuda
+
+### Adicionado
+
+- **Ajuda** (botão na barra, só na edição e no desktop) — modal com **como usar**,
+  **interface e conexões** (portas/ponto ciano, referência de sensor/quadro,
+  navegação, log/legenda, mobile), **peças e regras**, **física simplificada**
+  (fórmulas + constantes do código), **opções** e **dados técnicos/persistência**.
+  i18n pt/en.
+
 ## [1.44.0] — Números na bomba + revezamento só no quadro
 
 ### Alterado

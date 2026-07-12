@@ -15,6 +15,7 @@ import { Palette } from './Palette';
 import { Canvas } from './Canvas';
 import { Inspector } from './Inspector';
 import { Legenda } from './Legenda';
+import { Ajuda } from './Ajuda';
 
 /** Chave de persistência do tema (preferência do dispositivo, mesma família das outras). */
 const CHAVE_TEMA = 'hydroflow:tema';
@@ -51,6 +52,7 @@ export function App() {
   const [avisoVisivel, setAvisoVisivel] = useState(true);
   const [logAberto, setLogAberto] = useState(false);
   const [legendaAberta, setLegendaAberta] = useState(false);
+  const [ajudaAberta, setAjudaAberta] = useState(false);
   // Tema de exibição: escuro é o padrão; claro é opcional e usado na impressão.
   // Preferência do DISPOSITIVO — persistida no localStorage (como o idioma), não no arquivo do projeto. Sobrevive à recarga.
   const [tema, setTema] = useState<'escuro' | 'claro'>(carregarTema);
@@ -176,6 +178,7 @@ export function App() {
         onAlternarTema={() => setTema((t) => (t === 'claro' ? 'escuro' : 'claro'))}
         onAlternarLegenda={() => setLegendaAberta((v) => !v)}
         legendaAberta={legendaAberta}
+        onAbrirAjuda={() => setAjudaAberta(true)}
         alterado={alterado}
         formatoTempo={formatoTempo}
         onFormatoTempo={setFormatoTempo}
@@ -224,6 +227,7 @@ export function App() {
             </div>
           )}
           {legendaAberta && <Legenda onFechar={() => setLegendaAberta(false)} />}
+          {ajudaAberta && <Ajuda onFechar={() => setAjudaAberta(false)} />}
           {avisoVisivel && estado.modo !== 'execucao' && (
             <div className="aviso-desktop" role="note">
               <span>{t('app.avisoDesktop')}</span>
