@@ -382,15 +382,19 @@ export function BombaForm({ props, emExecucao, upd, u, projeto, pecaId, dispatch
         </div>
       )}
       {/* Bomba dupla em revezamento: rodízio de desgaste entre duas metades
-          (mesma vazão e tubulação). Padrão = bomba única. */}
-      <Switch
-        checked={props.revezamento ?? false}
-        disabled={emExecucao}
-        ariaLabel={t('form.revezamentoLabel')}
-        onChange={(v) => upd({ revezamento: v })}
-      >
-        {t('form.revezamento')}
-      </Switch>
+          (mesma vazão e tubulação). Padrão = bomba única. Quando a bomba é regida
+          por um quadro, o revezamento é controlado LÁ (canal.revezamento) — o
+          toggle direto some para não confundir (o quadro é a fonte da verdade). */}
+      {!regidaPor && (
+        <Switch
+          checked={props.revezamento ?? false}
+          disabled={emExecucao}
+          ariaLabel={t('form.revezamentoLabel')}
+          onChange={(v) => upd({ revezamento: v })}
+        >
+          {t('form.revezamento')}
+        </Switch>
+      )}
     </>
   );
 }

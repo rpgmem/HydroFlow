@@ -37,6 +37,8 @@ interface Props {
   temaClaro?: boolean;
   /** Decisão corrente do sensor ('ligar'|'desligar'|'manter'), se em execução. */
   sensorEstado?: string;
+  /** Bomba: revezamento EFETIVO (do quadro se regida; senão o da própria bomba). */
+  revezamentoEfetivo?: boolean;
   onSelect: () => void;
   onMove: (x: number, y: number) => void;
   onStartConnection: (id: string) => void;
@@ -83,6 +85,7 @@ export function PecaView({
   consumoInsuficiente,
   temaClaro,
   sensorEstado,
+  revezamentoEfetivo,
   onSelect,
   onMove,
   onStartConnection,
@@ -126,7 +129,7 @@ export function PecaView({
       {isReservatorio(peca) ? (
         <Reservatorio props={peca.props} w={w} h={h} borda={borda} larguraBorda={larguraBorda} overflow={overflow} />
       ) : isBomba(peca) ? (
-        <BombaView props={peca.props} w={w} borda={borda} larguraBorda={larguraBorda} aSeco={aSeco} />
+        <BombaView props={peca.props} w={w} borda={borda} larguraBorda={larguraBorda} aSeco={aSeco} revezamento={revezamentoEfetivo ?? peca.props.revezamento ?? false} />
       ) : isTubo(peca) ? (
         <TuboView
           props={peca.props}
@@ -311,26 +314,37 @@ function BombaView({
   borda,
   larguraBorda,
   aSeco,
+  revezamento,
 }: {
   props: PropsBomba;
   w: number;
   borda: string;
   larguraBorda: number;
   aSeco: boolean;
+  /** Revezamento EFETIVO (do quadro se regida; senão o da própria bomba). */
+  revezamento: boolean;
 }) {
   const r = w / 2;
-  if (!props.revezamento) {
-    return <Circle radius={r} fill={aSeco ? '#5b2b2b' : COR.bomba} stroke={borda} strokeWidth={larguraBorda} />;
-  }
   const ligada = props.ligada ?? false;
   const ativa = props.unidadeAtiva === 2 ? 2 : 1;
-  // Metade acende só quando é a ativa E a bomba está ligada; a seco pinta de vermelho escuro (está tentando rodar sem água).
-  const corMetade = (n: 1 | 2): string =>
-    ativa === n && ligada ? (aSeco ? '#8a3535' : '#38bdf8') : COR.bomba;
-  // O número da unidade ATIVA fica em branco vivo e maior; a inativa apaga — deixa claro QUAL metade está rodando (além da cor da metade).
-  const ativoAgora = (n: 1 | 2): boolean => ativa === n && ligada;
-  const corNum = (n: 1 | 2): string => (ativoAgora(n) ? '#ffffff' : '#5f6f7d');
+  // Unidade que está de fato rodando agora (bomba única = sempre a "1").
+  const ativoAgora = (n: 1 | 2): boolean => ligada && (revezamento ? ativa === n : n === 1);
+  // Número: BRANCO vivo e maior quando essa unidade roda; senão apagado mas
+  // LEGÍVEL — aparece no editor também (antes a bomba única não exibia número).
+  const corNum = (n: 1 | 2): string => (ativoAgora(n) ? '#ffffff' : '#93a7b8');
   const tamNum = (n: 1 | 2): number => (ativoAgora(n) ? 14 : 11);
+
+  if (!revezamento) {
+    // Bomba única: círculo + número "1" centralizado (identifica a unidade).
+    return (
+      <>
+        <Circle radius={r} fill={aSeco ? '#5b2b2b' : COR.bomba} stroke={borda} strokeWidth={larguraBorda} />
+        <Text text="1" fontSize={tamNum(1)} fontStyle="bold" fill={corNum(1)} x={-r} y={-tamNum(1) / 2} width={w} align="center" />
+      </>
+    );
+  }
+  // Metade acende só quando é a ativa E a bomba está ligada; a seco pinta de vermelho escuro (está tentando rodar sem água).
+  const corMetade = (n: 1 | 2): string => (ativoAgora(n) ? (aSeco ? '#8a3535' : '#38bdf8') : COR.bomba);
   return (
     <>
       {/* Metade esquerda = unidade 1; direita = unidade 2. Os dois wedges de 180°
