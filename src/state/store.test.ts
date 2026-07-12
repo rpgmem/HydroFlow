@@ -6,7 +6,7 @@ import {
   projetoVazio,
   _resetContadorIds,
 } from '../domain/factory';
-import type { ProjetoSimulacao, PropsReservatorio, PropsTubo } from '../domain/types';
+import type { Peca, ProjetoSimulacao, PropsReservatorio, PropsTubo } from '../domain/types';
 
 beforeEach(() => _resetContadorIds());
 
@@ -229,5 +229,31 @@ describe('NORMALIZAR_IDS', () => {
     const antes = e.projeto.pecas.map((p) => p.id);
     e = reducer(e, { tipo: 'NORMALIZAR_IDS' });
     expect(e.projeto.pecas.map((p) => p.id)).toEqual(antes); // ignorado
+  });
+});
+
+describe('auto-preenche comprimento do tubo na conexão (coerência)', () => {
+  const resA: Peca = { id: 'A', tipo: 'reservatorio', x: 0, y: 0, cota: 0, props: { formato: 'retangular', largura: 10, comprimento: 10, alturaMaxima: 5, nivel: 0 } };
+  const resB: Peca = { id: 'B', tipo: 'reservatorio', x: 0, y: 0, cota: 20, props: { formato: 'retangular', largura: 10, comprimento: 10, alturaMaxima: 5, nivel: 0 } };
+  const tuboT = (over: Partial<PropsTubo> = {}): Peca => ({ id: 'T', tipo: 'tubo', x: 0, y: 0, props: { diametro: 100, ...over } });
+  const compT = (e: EstadoApp): number | undefined => (e.projeto.pecas.find((p) => p.id === 'T')!.props as PropsTubo).comprimento;
+
+  it('preenche com o desnível quando as DUAS pontas ficam conhecidas', () => {
+    let e = comEstado({ ...projetoVazio(), pecas: [resA, resB, tuboT()], conexoes: [] });
+    e = reducer(e, { tipo: 'ADD_CONEXAO', conexao: criarConexao('A', 'T') });
+    expect(compT(e)).toBeUndefined(); // só uma ponta conhecida → ainda não
+    e = reducer(e, { tipo: 'ADD_CONEXAO', conexao: criarConexao('T', 'B') });
+    expect(compT(e)).toBeCloseTo(20); // desnível 20 m
+  });
+  it('não sobrescreve um comprimento já informado', () => {
+    let e = comEstado({ ...projetoVazio(), pecas: [resA, resB, tuboT({ comprimento: 3 })], conexoes: [criarConexao('A', 'T')] });
+    e = reducer(e, { tipo: 'ADD_CONEXAO', conexao: criarConexao('T', 'B') });
+    expect(compT(e)).toBe(3);
+  });
+  it('não preenche quando uma ponta é junção (desnível indefinido)', () => {
+    const J: Peca = { id: 'J', tipo: 'juncao', x: 0, y: 0, props: {} };
+    let e = comEstado({ ...projetoVazio(), pecas: [resA, J, tuboT()], conexoes: [criarConexao('A', 'T')] });
+    e = reducer(e, { tipo: 'ADD_CONEXAO', conexao: criarConexao('T', 'J') });
+    expect(compT(e)).toBeUndefined();
   });
 });

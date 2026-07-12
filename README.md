@@ -201,6 +201,8 @@ Executada apenas na transição **edição → execução** (não incrementalmen
 
 **Avisos de coerência (não bloqueiam):** na edição, um painel âmbar sinaliza incoerências de dimensionamento — o `comprimento` de um tubo **menor que o desnível** entre suas pontas (com atrito ligado) e uma **tomada acima do topo** do reservatório conectado. O inspetor do tubo mostra o **desnível entre as pontas** e oferece **usá-lo como comprimento mínimo**. Só considera pontas de elevação conhecida (reservatório/bomba); junção/ambiente não disparam.
 
+**Comprimento sugerido na conexão:** ao ligar um tubo de modo que as **duas pontas** fiquem com elevação conhecida, se o `comprimento` ainda estiver em branco ele é **preenchido com o desnível** (mínimo coerente). Nunca sobrescreve um valor já informado.
+
 ## Modos de operação
 
 - **`edicao`** — grafo mutável (add/remove peça, conexão, mover no canvas).

@@ -12,6 +12,8 @@
 
 import type { ErroValidacao } from '../domain/schema';
 import { validarGrafo } from '../engine/validacaoGrafo';
+import { GrafoIndex } from '../engine/grafo';
+import { desnivelTuboM } from '../engine/coerencia';
 import { rodarTicks, type ResultadoTick } from '../engine/simulador';
 import type { Decisao } from '../engine/arbitragem';
 import { novoId, sincronizarContador } from '../domain/factory';
@@ -330,6 +332,27 @@ function eventoDeComando(estado: EstadoApp, id: string, patch: Partial<PropsPorT
   return null;
 }
 
+/**
+ * Ao criar uma conexão, se um tubo envolvido ficou com AMBAS as pontas de
+ * elevação conhecida (reservatório/bomba) e ainda está SEM `comprimento`,
+ * preenche-o com o desnível entre as pontas (mínimo coerente; o usuário ajusta).
+ * Nunca sobrescreve um comprimento já informado; se o desnível for indefinido
+ * (junção/ambiente) ou ~0, não faz nada.
+ */
+function autoPreencherComprimento(projeto: ProjetoSimulacao, conexao: Conexao): ProjetoSimulacao {
+  const idx = new GrafoIndex(projeto);
+  const tocados = new Set([conexao.origem, conexao.destino]);
+  let mudou = false;
+  const pecas = projeto.pecas.map((p) => {
+    if (!isTubo(p) || !tocados.has(p.id) || p.props.comprimento !== undefined) return p;
+    const desn = desnivelTuboM(idx, p);
+    if (desn === undefined || desn <= 0.1) return p;
+    mudou = true;
+    return { ...p, props: { ...p.props, comprimento: Math.ceil(desn * 10) / 10 } };
+  });
+  return mudou ? { ...projeto, pecas } : projeto;
+}
+
 /** Ações de EDIÇÃO que alteram o projeto e devem entrar no histórico (undo). */
 const ACOES_UNDOAVEIS = new Set<Acao['tipo']>([
   'ADD_PECA',
@@ -438,14 +461,15 @@ function reducerBase(estado: EstadoApp, acao: Acao): EstadoApp {
         })),
       };
 
-    case 'ADD_CONEXAO':
-      return {
-        ...estado,
-        projeto: {
-          ...estado.projeto,
-          conexoes: [...estado.projeto.conexoes, acao.conexao],
-        },
+    case 'ADD_CONEXAO': {
+      // Preenche o comprimento do tubo com o desnível entre as pontas quando a
+      // ligação completa uma extremidade de elevação conhecida (só se em branco).
+      const comConexao: ProjetoSimulacao = {
+        ...estado.projeto,
+        conexoes: [...estado.projeto.conexoes, acao.conexao],
       };
+      return { ...estado, projeto: autoPreencherComprimento(comConexao, acao.conexao) };
+    }
 
     case 'REMOVER_CONEXAO':
       return {

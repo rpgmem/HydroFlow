@@ -2,6 +2,17 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
+## [1.60.0] — Comprimento sugerido do tubo na conexão
+
+### Adicionado
+
+- Ao criar uma conexão que deixa **ambas as pontas** de um tubo com elevação
+  conhecida (reservatório/bomba), se o `comprimento` estiver em branco ele é
+  **preenchido automaticamente com o desnível** entre as pontas (mínimo coerente,
+  arredondado para cima). **Nunca sobrescreve** um comprimento já informado; se o
+  desnível for indefinido (junção/ambiente) ou ~0, não faz nada. Reusa
+  `coerencia.desnivelTuboM`.
+
 ## [1.59.0] — Avisos de coerência de tubos (comprimento/tomada) + ajuda no inspetor
 
 ### Adicionado
