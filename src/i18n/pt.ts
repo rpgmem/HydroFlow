@@ -370,6 +370,7 @@ export const pt = {
     tipNivel: 'Nível: {{nivel}} / {{max}} {{unidade}}',
     tipCotaBase: 'Cota base: {{cota}} {{unidade}}',
     tipCarga: 'Carga: {{carga}} {{unidade}}',
+    terreno: 'terreno (cota 0)',
     tipLadrao: 'Ladrão em {{nivel}} {{unidade}}',
     tipRegistro: 'Registro: {{estado}}',
     aberto: 'aberto',

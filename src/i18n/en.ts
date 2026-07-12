@@ -365,6 +365,7 @@ export const en: Dicionario = {
     tipNivel: 'Level: {{nivel}} / {{max}} {{unidade}}',
     tipCotaBase: 'Base elevation: {{cota}} {{unidade}}',
     tipCarga: 'Head: {{carga}} {{unidade}}',
+    terreno: 'ground (elev. 0)',
     tipLadrao: 'Overflow at {{nivel}} {{unidade}}',
     tipRegistro: 'Valve: {{estado}}',
     aberto: 'open',
