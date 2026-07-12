@@ -163,6 +163,13 @@ export interface PropsBomba {
    */
   alturaNominal?: number;
   /**
+   * Modelo do catálogo (`bombasCatalogo.ts`) — apenas um PRESET de UI (como a
+   * `bitola` do tubo): selecionar preenche `vazaoNominal`, `alturaNominal` e
+   * `npshRequerido`. O motor lê essas props, não o modelo. Editar as specs na
+   * mão limpa o modelo (→ "Personalizado"). Ausente = personalizado.
+   */
+  modeloBomba?: string;
+  /**
    * NPSH requerido (m) — a carga mínima de sucção que a bomba exige para não
    * cavitar (dado de catálogo). Informado, LIGA o alerta de cavitação: quando o
    * NPSH disponível na sucção cai abaixo deste valor, a bomba fica destacada e
