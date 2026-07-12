@@ -27,7 +27,7 @@ npm run typecheck  # tsc --noEmit
 npm run build      # build de produção
 ```
 
-A aplicação abre com um projeto de exemplo: três reservatórios cilíndricos empilhados. Uma fonte enche o inferior por uma boia mecânica; uma **bomba em revezamento** (com altura nominal de recalque) puxa do inferior e recalca para o meio e o superior; do superior e do meio a água escoa por gravidade até um ponto de **consumo senoidal**. Sensores eletrônicos comandam a bomba — um normal no superior e um **reverso** no inferior (proteção contra rodar a seco) — e há ainda um **sistema secundário de incêndio** (bomba + hidrantes) alimentado pelo reservatório do meio. Clique em **▶ Executar** para validar o grafo e entrar em modo de simulação; depois **▶ Play**.
+A aplicação abre com um projeto de exemplo: três reservatórios cilíndricos empilhados. Uma **concessionária** (fonte senoidal) enche o inferior passando por um **registro de hidrômetro** e uma boia; uma **bomba em revezamento** (com altura nominal de recalque) puxa do inferior e recalca — por uma junção divisora — para o superior (e, com o registro aberto, também para o meio); do superior e do meio a água escoa por gravidade, por uma junção de união e um **registro de consumo**, até um ponto de **consumo com demanda diária** (2 picos num dia real de 86.400 s). Cada tanque tem um **ladrão** de transbordo e um **dreno de limpeza** (registro fechado). Dois **quadros de comandos** centralizam o controle: um comanda a Bomba Recalque (auto: nível-baixo do superior **E** origem-com-água pela boia reversa do inferior — proteção contra rodar a seco — com revezamento) e outro a **Bomba Incêndio** do sistema secundário (bomba + hidrantes) alimentado pelo reservatório do meio. Clique em **▶ Executar** para validar o grafo e entrar em modo de simulação; depois **▶ Play**.
 
 **Interação no editor:** clique numa peça para selecioná-la (e editar/renomear no inspetor); **arraste do ponto ciano (saída)** de uma peça até outra para criar uma conexão — conexões nunca são criadas por acaso. Clique numa linha para selecioná-la e apague com **Delete** (ou no botão flutuante). O canvas tem **pan** (arrastar o fundo) e **zoom** (roda do mouse / pinça / botões `+`/`−`).
 
@@ -35,16 +35,17 @@ A aplicação abre com um projeto de exemplo: três reservatórios cilíndricos 
 
 - **Log de eventos** (📋) — histórico com acionamento de bomba, disparos de sensores e alertas (ladrão/transbordo, déficit, rodando a seco);
 - **⚙ Opções** — menu com **idioma** (Português/Inglês), **unidades** (volume/comprimento), **tema** claro/escuro, **formato do tempo** na simulação (segundos / horário 24 h / ambos), a **física opcional** (perda de carga por atrito), a **velocidade de referência** do alerta de dimensionamento (padrão 3 m/s) e a ação **Normalizar IDs pelos nomes**;
-- **Normalizar IDs** (⚙ Opções › Projeto) — o `id` da peça é uma chave estável, **desacoplada** do rótulo (renomear não muda o id). Sob demanda, esta ação 0reescreve todos os ids como **slug fiel ao rótulo** (minúsculo, sem acento/espaço) e atualiza as referências — é **desfazível** e exige **nomes únicos** (o menu avisa e bloqueia enquanto houver rótulos repetidos);
+- **Normalizar IDs** (⚙ Opções › Projeto) — o `id` da peça é uma chave estável, **desacoplada** do rótulo (renomear não muda o id). Sob demanda, esta ação reescreve todos os ids como **slug fiel ao rótulo** (minúsculo, sem acento/espaço), **renumera as conexões** em sequência (`c_1…c_N`) e atualiza as referências — é **desfazível** e exige **nomes únicos** (o menu avisa e bloqueia enquanto houver rótulos repetidos);
 - **Ajuda** — botão na barra (só na edição, no desktop) que abre um modal com como usar, interface/conexões, peças e regras, a física simplificada (fórmulas + constantes), as opções e os dados técnicos/persistência;
 - **Idiomas (i18n)** — interface em **Português** (padrão) e **Inglês**, com detecção automática do navegador e troca manual em ⚙ Opções (a escolha é lembrada). As leis de física e os rótulos do projeto exemplo seguem em Português;
 - **Desfazer/refazer** (`Ctrl+Z` / `Ctrl+Shift+Z` e botões ↶/↷) e **duplicar peça** (`Ctrl+D` / ⧉ no inspetor);
-- **Autosave local** (localStorage) — preserva o trabalho entre recarregamentos **♻ Restaurar exemplo** volta ao projeto de demonstração e limpa o autosave;
+- **Autosave local** (localStorage) — preserva o trabalho entre recarregamentos; **♻ Restaurar exemplo** volta ao projeto de demonstração e limpa o autosave;
 - **Ajudas de edição** — **snap à grade** ao arrastar, **tooltip** ao passar o cursor sobre uma peça e **minimapa** (aparece só em diagramas grandes);
 - **Legenda** (formas/cores das peças) e **sparkline** de histórico do nível no inspetor do reservatório;
-- **Tema** — escuro (padrão) ou claro, alternável na barra (`☀ Claro`/`🌙 Escuro`);
+- **Tema** — escuro (padrão) ou claro, alternável em **⚙ Opções › Exibição**;
+- **Relógio** — na simulação, além do contador em segundos, um **horário 24 h** (`HH:MM:SS`) que dá a volta a cada dia; o que aparece é configurável em ⚙ Opções (segundos / horário / ambos);
 - **Imprimir** (🖨) — enquadra todo o diagrama, aplica fundo branco com rótulos escuros e envia para impressão, restaurando a vista ao terminar;
-- **Mobile** — em telas pequenas a interface fica em modo **ver e simular** (a edição de grafo permanece exclusiva do desktop); as ações secundárias (Novo, Tema, Imprimir, Salvar, Carregar) recolhem sob um botão **⋯** para poupar espaço da barra.
+- **Mobile** — em telas pequenas a interface fica em modo **ver e simular** (a edição de grafo permanece exclusiva do desktop): as ações secundárias (⚙ Opções, Legenda, Novo, Imprimir, Salvar, Carregar) recolhem sob um botão **⋯**; o status edição/execução, desfazer/refazer, "voltar à edição" e a Ajuda ficam ocultos; e os botões de velocidade viram um **seletor** compacto.
 
 ## Arquitetura
 
@@ -56,6 +57,8 @@ src/
 │   ├── factory.ts      # fábricas de peças/projeto com defaults
 │   ├── unidades.ts     # conversões de unidade (m³/L, m/cm…)
 │   ├── tubosCatalogo.ts # catálogo de bitolas comerciais (DN → diâmetro)
+│   ├── geradorVazao.ts  # perfis de vazão no tempo (valorNoTempo)
+│   ├── normalizarIds.ts # slug de ids pelos rótulos + renumeração de conexões
 │   └── exemplo.ts      # projeto de demonstração
 ├── engine/         # motor de simulação (puro, sem UI)
 │   ├── geometria.ts       # relação nível↔volume (seção constante)
@@ -74,7 +77,7 @@ src/
 │   └── autosave.ts     # persistência automática em localStorage
 └── ui/             # componentes React + konva
     ├── App.tsx, Toolbar.tsx, Palette.tsx, Canvas.tsx, PecaView.tsx, Inspector.tsx
-    ├── Opcoes.tsx, Legenda.tsx, Sparkline.tsx  # menu de opções, legenda, sparkline
+    ├── Opcoes.tsx, Legenda.tsx, Ajuda.tsx, Sparkline.tsx  # opções, legenda, ajuda, sparkline
     ├── pecaGeom.ts # geometria das peças + snap à grade (GRADE)
     ├── inspector/  # formulários por tipo (forms.tsx) + campos compartilhados
     └── useSimulationLoop.ts
@@ -101,8 +104,8 @@ interface ProjetoSimulacao {
 }
 
 interface Peca {
-  id: string;                           // uuid (identidade estável)
-  tipo: 'reservatorio' | 'tubo' | 'bomba' | 'fonte' | 'consumo' | 'sensor' | 'juncao';
+  id: string;                           // chave estável, separada do rótulo
+  tipo: 'reservatorio' | 'tubo' | 'bomba' | 'fonte' | 'consumo' | 'sensor' | 'juncao' | 'quadro';
   rotulo?: string;                      // nome amigável exibido (editável); default = id
   x: number; y: number;                 // posição no canvas
   rotacao?: number;                     // tubo/bomba
