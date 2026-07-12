@@ -528,6 +528,14 @@ button.ativo {
   line-height: 1.5;
   margin: 4px 0;
 }
+.ajuda-corpo a {
+  color: var(--accent, #38bdf8);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.ajuda-corpo a:hover {
+  text-decoration: none;
+}
 
 .leg-sec {
   margin: 8px 10px 2px;

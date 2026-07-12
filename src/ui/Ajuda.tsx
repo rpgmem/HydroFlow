@@ -2,8 +2,12 @@
  * Página de Ajuda: como usar o simulador, as regras principais das peças, a
  * física simplificada e os dados técnicos relevantes. Modal centralizado com
  * backdrop e conteúdo rolável — todo o texto vem do i18n (pt/en).
+ *
+ * Termos físicos ganham LINK (Wikipedia). O `href` é por idioma (vem do i18n:
+ * pt → pt.wikipedia, en → en.wikipedia); o texto do link fica marcado com
+ * `<0>…</0>`/`<1>…</1>` no i18n e casado aqui pela ordem em LINKS.
  */
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 
 // Cada seção é um título + uma lista de itens (chaves i18n). Manter a ORDEM das
 // chaves em sincronia com pt.ts/en.ts.
@@ -33,6 +37,7 @@ const SECOES: { titulo: string; itens: string[] }[] = [
     itens: [
       'ajuda.fisica1',
       'ajuda.fisica2',
+      'ajuda.fisicaVasos',
       'ajuda.fisicaJuncao',
       'ajuda.fisicaBomba',
       'ajuda.fisicaTransbordo',
@@ -53,6 +58,18 @@ const SECOES: { titulo: string; itens: string[] }[] = [
   },
 ];
 
+// Itens que contêm links: chave → chaves i18n dos `href` (na ordem dos <0>,<1>…).
+const LINKS: Record<string, string[]> = {
+  'ajuda.fisica1': ['ajuda.linkVazao', 'ajuda.linkTorricelli'],
+  'ajuda.fisica2': ['ajuda.linkContinuidade'],
+  'ajuda.fisicaVasos': ['ajuda.linkVasos'],
+  'ajuda.fisicaJuncao': ['ajuda.linkGaussSeidel', 'ajuda.linkConservacaoMassa'],
+  'ajuda.fisicaBomba': ['ajuda.linkBomba'],
+  'ajuda.fisica3': ['ajuda.linkPerdaCarga', 'ajuda.linkHazenWilliams'],
+  'ajuda.fisica4': ['ajuda.linkValvulaRetencao'],
+  'ajuda.fisica6': ['ajuda.linkG'],
+};
+
 export function Ajuda({ onFechar }: { onFechar: () => void }) {
   const { t } = useTranslation();
   return (
@@ -66,13 +83,29 @@ export function Ajuda({ onFechar }: { onFechar: () => void }) {
           </button>
         </div>
         <div className="ajuda-corpo">
-          <p className="ajuda-intro">{t('ajuda.intro')}</p>
+          <p className="ajuda-intro">
+            <Trans
+              i18nKey="ajuda.intro"
+              components={[<a key="cfd" href={t('ajuda.linkCFD')} target="_blank" rel="noreferrer" />]}
+            />
+          </p>
           {SECOES.map((s) => (
             <section key={s.titulo}>
               <h3>{t(s.titulo)}</h3>
               <ul>
                 {s.itens.map((k) => (
-                  <li key={k}>{t(k)}</li>
+                  <li key={k}>
+                    {LINKS[k] ? (
+                      <Trans
+                        i18nKey={k}
+                        components={LINKS[k].map((lk, i) => (
+                          <a key={i} href={t(lk)} target="_blank" rel="noreferrer" />
+                        ))}
+                      />
+                    ) : (
+                      t(k)
+                    )}
+                  </li>
                 ))}
               </ul>
             </section>
