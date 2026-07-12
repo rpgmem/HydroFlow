@@ -161,6 +161,14 @@ export interface PropsBomba {
    * precedência sobre `curva`. Ausente = bomba ideal (ignora a altura).
    */
   alturaNominal?: number;
+  /**
+   * NPSH requerido (m) — a carga mínima de sucção que a bomba exige para não
+   * cavitar (dado de catálogo). Informado, LIGA o alerta de cavitação: quando o
+   * NPSH disponível na sucção cai abaixo deste valor, a bomba fica destacada e
+   * o log registra o risco. Usa a `cota` da bomba (elevação) na carga de sucção.
+   * Em branco = sem checagem.
+   */
+  npshRequerido?: number;
   /** IDs dos sensores eletrônicos que controlam esta bomba. */
   sensores: string[];
   /**

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pressaoHidrostaticaKPa, PRESSAO_ATM_KPA, muAgua, reynolds, regimeReynolds, sobrepressaoGolpeKPa, fatorAtritoDW } from './fisica';
+import { pressaoHidrostaticaKPa, PRESSAO_ATM_KPA, muAgua, reynolds, regimeReynolds, sobrepressaoGolpeKPa, fatorAtritoDW, pvaporAguaKPa, npshDisponivelM } from './fisica';
 import { velocidadeTuboMs } from './geometria';
 import {
   exibirPressao,
@@ -89,6 +89,31 @@ describe('fator de atrito de Darcy (fatorAtritoDW)', () => {
   });
   it('Re ≤ 0 → 0', () => {
     expect(fatorAtritoDW(0, 0.0015, 100)).toBe(0);
+  });
+});
+
+describe('pressão de vapor da água (pvaporAguaKPa)', () => {
+  it('≈ 2,34 kPa a 20 °C', () => {
+    expect(pvaporAguaKPa(20)).toBeCloseTo(2.34, 1);
+  });
+  it('cresce com a temperatura (a água ferve mais fácil quente)', () => {
+    expect(pvaporAguaKPa(80)).toBeGreaterThan(pvaporAguaKPa(20));
+    expect(pvaporAguaKPa(100)).toBeGreaterThan(pvaporAguaKPa(80));
+  });
+});
+
+describe('NPSH disponível (npshDisponivelM)', () => {
+  it('≈ 10,1 m ao nível do mar com sucção neutra (20 °C)', () => {
+    // (P_atm − P_vapor)/(ρ·g) ≈ (101,325 − 2,34)·1000 / (1000·9,81) ≈ 10,1 m
+    expect(npshDisponivelM(0, pvaporAguaKPa(20))).toBeCloseTo(10.09, 1);
+  });
+  it('soma a carga de sucção: fonte afogada aumenta o NPSH', () => {
+    const neutro = npshDisponivelM(0, pvaporAguaKPa(20));
+    expect(npshDisponivelM(5, pvaporAguaKPa(20))).toBeCloseTo(neutro + 5, 6);
+    expect(npshDisponivelM(-7, pvaporAguaKPa(20))).toBeCloseTo(neutro - 7, 6);
+  });
+  it('água mais quente (mais vapor) reduz o NPSH disponível', () => {
+    expect(npshDisponivelM(0, pvaporAguaKPa(80))).toBeLessThan(npshDisponivelM(0, pvaporAguaKPa(20)));
   });
 });
 

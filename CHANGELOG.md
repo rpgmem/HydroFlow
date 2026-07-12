@@ -2,6 +2,29 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
+## [1.55.0] — NPSH / cavitação (alerta)
+
+Sétima etapa da fundação de física avançada ([#65](https://github.com/rpgmem/HydroFlow/issues/65)).
+
+### Adicionado
+
+- **Alerta de cavitação (NPSH)** — para cada bomba com `npshRequerido` informado,
+  o motor compara o **NPSH disponível** na sucção — `(P_atm − P_vapor)/(ρ·g) +
+  carga_sucção` (carga de sucção = `cota + nivel` da fonte − `cota` da bomba −
+  perdas por atrito na sucção) — com o requerido. Abaixo disso a bomba fica
+  **âmbar** no canvas e o log registra o risco. Opt-in por bomba (em branco = sem
+  checagem).
+- `src/engine/fisica.ts` ganha `pvaporAguaKPa(T)` (pressão de vapor da água por
+  **Tetens**, cresce com a temperatura) e `npshDisponivelM(...)`.
+- **Domínio:** `PropsBomba.npshRequerido?` (m). Usa a `cota` universal da bomba.
+- **UI:** campo **NPSH requerido** no inspetor da bomba; item na Legenda; item na
+  Ajuda e no README com links (NPSH, pressão de vapor).
+
+### Notas
+
+- É só um **alerta** — não altera a física (o motor é quase-estático). O caminho
+  de vazão fica inalterado.
+
 ## [1.54.0] — Darcy-Weisbach (modelo de atrito alternativo)
 
 Sexta etapa da fundação de física avançada ([#65](https://github.com/rpgmem/HydroFlow/issues/65)).

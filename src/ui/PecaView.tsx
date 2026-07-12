@@ -37,6 +37,8 @@ interface Props {
   tuboVeloz: boolean;
   /** Tubo com risco de golpe de aríete (sobrepressão de Joukowsky acima do teto). */
   golpeAriete: boolean;
+  /** Bomba com risco de cavitação (NPSH disponível abaixo do requerido) neste tick. */
+  cavitando: boolean;
   /** Consumo cuja demanda excede a vazão da bomba (déficit) neste tick. */
   consumoInsuficiente: boolean;
   /** Modo impressão: rótulos em cor escura (legíveis sobre fundo branco). */
@@ -90,6 +92,7 @@ export function PecaView({
   ladraoAtivo,
   tuboVeloz,
   golpeAriete,
+  cavitando,
   consumoInsuficiente,
   temaClaro,
   sensorEstado,
@@ -137,7 +140,7 @@ export function PecaView({
       {isReservatorio(peca) ? (
         <Reservatorio props={peca.props} w={w} h={h} borda={borda} larguraBorda={larguraBorda} overflow={overflow} />
       ) : isBomba(peca) ? (
-        <BombaView props={peca.props} w={w} borda={borda} larguraBorda={larguraBorda} aSeco={aSeco} revezamento={revezamentoEfetivo ?? peca.props.revezamento ?? false} />
+        <BombaView props={peca.props} w={w} borda={borda} larguraBorda={larguraBorda} aSeco={aSeco} cavitando={cavitando} revezamento={revezamentoEfetivo ?? peca.props.revezamento ?? false} />
       ) : isTubo(peca) ? (
         <TuboView
           props={peca.props}
@@ -327,6 +330,7 @@ function BombaView({
   borda,
   larguraBorda,
   aSeco,
+  cavitando,
   revezamento,
 }: {
   props: PropsBomba;
@@ -334,6 +338,8 @@ function BombaView({
   borda: string;
   larguraBorda: number;
   aSeco: boolean;
+  /** Risco de cavitação (NPSH disponível < requerido): destaca a bomba em âmbar. */
+  cavitando: boolean;
   /** Revezamento EFETIVO (do quadro se regida; senão o da própria bomba). */
   revezamento: boolean;
 }) {
@@ -351,13 +357,13 @@ function BombaView({
     // Bomba única: círculo + número "1" centralizado (identifica a unidade).
     return (
       <>
-        <Circle radius={r} fill={aSeco ? '#5b2b2b' : COR.bomba} stroke={borda} strokeWidth={larguraBorda} />
+        <Circle radius={r} fill={aSeco ? '#5b2b2b' : cavitando ? '#8a5a00' : COR.bomba} stroke={borda} strokeWidth={larguraBorda} />
         <Text text="1" fontSize={tamNum(1)} fontStyle="bold" fill={corNum(1)} x={-r} y={-tamNum(1) / 2} width={w} align="center" />
       </>
     );
   }
   // Metade acende só quando é a ativa E a bomba está ligada; a seco pinta de vermelho escuro (está tentando rodar sem água).
-  const corMetade = (n: 1 | 2): string => (ativoAgora(n) ? (aSeco ? '#8a3535' : '#38bdf8') : COR.bomba);
+  const corMetade = (n: 1 | 2): string => (ativoAgora(n) ? (aSeco ? '#8a3535' : cavitando ? '#c68a00' : '#38bdf8') : COR.bomba);
   return (
     <>
       {/* Metade esquerda = unidade 1; direita = unidade 2. Os dois wedges de 180°

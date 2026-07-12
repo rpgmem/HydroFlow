@@ -45,17 +45,26 @@ import {
   VELOCIDADE_MAX_RECOMENDADA_MS,
 } from './geometria';
 import { COMPRIMENTO_PADRAO_M } from './hidraulica';
-import { sobrepressaoGolpeKPa, LIMITE_GOLPE_PADRAO_KPA, muAgua, TEMPERATURA_PADRAO_C } from './fisica';
+import {
+  sobrepressaoGolpeKPa,
+  LIMITE_GOLPE_PADRAO_KPA,
+  muAgua,
+  TEMPERATURA_PADRAO_C,
+  pvaporAguaKPa,
+  npshDisponivelM,
+  PRESSAO_ATM_KPA,
+} from './fisica';
 import { metrosPorComprimento, UNIDADES_CANONICAS } from '../domain/unidades';
 import { arbitrarBomba, avaliarSensor, avaliarSequencia, boiaAberta, type Decisao } from './arbitragem';
 import { resolverGravidadeComJuncoes } from './redeJuncoes';
-import { GrafoIndex, type FluxoResolvido } from './grafo';
+import { GrafoIndex, cargaM, reservatorioVazio, type FluxoResolvido } from './grafo';
 import {
   calcularBomba,
   calcularConsumo,
   calcularFonte,
   calcularTubo,
   coletarCadeiaTubos,
+  hfTubosM,
 } from './vazaoPecas';
 import { valorNoTempo } from '../domain/geradorVazao';
 import type { Unidades } from '../domain/types';
@@ -77,6 +86,8 @@ export interface ResultadoTick {
   tubosVelozes: string[];
   /** Tubos com RISCO de golpe de aríete: a sobrepressão de Joukowsky numa parada súbita passaria do teto de pressão. */
   golpeAriete: string[];
+  /** Bombas com RISCO de cavitação: o NPSH disponível na sucção caiu abaixo do NPSH requerido. */
+  cavitacao: string[];
   /** Tubos com fluxo contrário à seta (refluxo) neste tick — inesperado. */
   refluxos: string[];
   /** Consumos cuja demanda excede a vazão da bomba que os alimenta (déficit). */
@@ -347,6 +358,30 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     if (sobrepressaoGolpeKPa(v) > teto) golpeAriete.push(p.id);
   }
 
+  // Risco de cavitação (NPSH): para cada bomba LIGADA com NPSH requerido
+  // informado, o NPSH disponível na sucção — pressão atmosférica menos a de
+  // vapor da água na temperatura, mais a carga de sucção (cota + nível da fonte
+  // − cota da bomba − perdas por atrito na sucção) — precisa superar o exigido
+  // pela bomba. Abaixo disso, a pressão na entrada cai à de vapor e a água
+  // "ferve" (cavitação). Só um aviso — não altera a física.
+  const pvapor = pvaporAguaKPa(proj.configuracaoSimulacao.temperaturaC ?? TEMPERATURA_PADRAO_C);
+  const cavitacao: string[] = [];
+  for (const p of proj.pecas) {
+    if (!isBomba(p) || !p.props.ligada) continue;
+    const npshReq = p.props.npshRequerido;
+    if (npshReq === undefined) continue; // sem requisito → sem checagem
+    const upPath = idx.resolverFluxo(p.id, 'up');
+    if (!upPath.res || !upPath.aberto) continue; // sem sucção alcançável
+    if (reservatorioVazio(upPath.res)) continue; // origem vazia = roda a seco (outro alerta)
+    const kL = metrosPorComprimento(u);
+    const hUp = cargaM(upPath.res, kL); // (cota + nível) da fonte, em m
+    const cotaBombaM = (p.cota ?? 0) * kL;
+    const qSuc = Math.abs(vazoesM3[p.id] ?? 0); // vazão pela sucção
+    const perdasSuc = atrito ? hfTubosM(idx, upPath.tubos, qSuc, u, g, modeloAtrito, muPas) : 0;
+    const cargaSuccaoM = hUp - cotaBombaM - perdasSuc;
+    if (npshDisponivelM(cargaSuccaoM, pvapor, PRESSAO_ATM_KPA, g) < npshReq) cavitacao.push(p.id);
+  }
+
   // Boias fechadas neste tick (para a UI colorir) — estado calculado no passo 2b.
   const boiasFechadas: string[] = [];
   for (const p of proj.pecas) {
@@ -371,6 +406,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     ladroesAtivos,
     tubosVelozes,
     golpeAriete,
+    cavitacao,
     refluxos,
     consumoInsuficiente,
     sensores,
@@ -452,6 +488,7 @@ export function rodarTicks(
     ladroesAtivos: [],
     tubosVelozes: [],
     golpeAriete: [],
+    cavitacao: [],
     refluxos: [],
     consumoInsuficiente: [],
     sensores: {},
