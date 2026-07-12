@@ -2,6 +2,20 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
+## [1.51.0] — Número de Reynolds e temperatura da água
+
+Quarta etapa da fundação de física avançada ([#65](https://github.com/rpgmem/HydroFlow/issues/65)).
+
+### Adicionado
+
+- **Número de Reynolds** no inspetor do tubo (durante a execução): `Re = ρ·v·D/μ`
+  com o **regime** (laminar < 2000 / transição / turbulento > 4000).
+- **Temperatura da água** configurável em ⚙ Opções (padrão **20 °C**, exibível em
+  **°C / °F / K**) — afeta a **viscosidade** `μ(T)` do Reynolds (e, adiante, a
+  pressão de vapor do NPSH). Armazenamento canônico em °C.
+- `src/engine/fisica.ts` ganha `muAgua(T)` (correlação empírica), `reynolds()` e
+  `regimeReynolds()`. Ajuda e README com o item de Reynolds (link).
+
 ## [1.50.0] — Pressão hidrostática (Stevin) e unidade de pressão
 
 Terceira etapa da fundação de física avançada ([#65](https://github.com/rpgmem/HydroFlow/issues/65)).

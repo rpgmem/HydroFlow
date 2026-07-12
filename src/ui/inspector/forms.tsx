@@ -23,9 +23,9 @@ import {
   type Unidades,
 } from '../../domain/types';
 import { Trans, useTranslation } from 'react-i18next';
-import { vazaoDeM3, vazaoMaxRecomendadaM3, volumeMaximoM3 } from '../../engine/geometria';
+import { vazaoDeM3, vazaoMaxRecomendadaM3, velocidadeTuboMs, volumeMaximoM3 } from '../../engine/geometria';
 import { labelVolume, m3PorVolume, UNIDADES_CANONICAS, exibirPressao, labelPressao } from '../../domain/unidades';
-import { pressaoHidrostaticaKPa } from '../../engine/fisica';
+import { pressaoHidrostaticaKPa, reynolds, regimeReynolds, muAgua } from '../../engine/fisica';
 import { CATALOGO_TUBOS, CATEGORIAS_TUBO, bitolaPorDn, rotuloBitola } from '../../domain/tubosCatalogo';
 import { fmtNumero } from '../../i18n';
 import type { Acao } from '../../state/store';
@@ -124,6 +124,8 @@ export function TuboForm({
   unidades,
   atrito,
   velRef,
+  vazao,
+  temperaturaC,
 }: {
   props: PropsTubo;
   emExecucao: boolean;
@@ -132,6 +134,10 @@ export function TuboForm({
   unidades: Unidades;
   atrito: boolean;
   velRef: number;
+  /** Vazão corrente do tubo (SI, m³/s) — só na execução; para o Reynolds. */
+  vazao?: number;
+  /** Temperatura da água (°C) — para a viscosidade no Reynolds. */
+  temperaturaC: number;
 }) {
   const { t, i18n } = useTranslation();
   const temBoia = props.boia !== undefined;
@@ -139,6 +145,9 @@ export function TuboForm({
   // Vazão máxima recomendada = área × velocidade de referência (configurável em ⚙ Opções, padrão 3 m/s). Acima disso o tubo é sinalizado na simulação.
   const vazaoMaxRec =
     props.diametro > 0 ? vazaoDeM3(vazaoMaxRecomendadaM3(props.diametro, velRef), unidades) : 0;
+  // Número de Reynolds (só na execução, com fluxo): Re = ρ·v·D/μ(T).
+  const vMs = vazao !== undefined && props.diametro > 0 ? velocidadeTuboMs(vazao, props.diametro) : 0;
+  const re = emExecucao && vMs > 1e-6 ? reynolds(vMs, props.diametro, muAgua(temperaturaC)) : null;
   return (
     <>
       {/* Bitola pré-configurada: seleciona o DN e grava o diâmetro INTERNO tabelado (usado no cálculo de vazão). "Personalizado" libera o mm. */}
@@ -180,6 +189,16 @@ export function TuboForm({
           <Trans
             i18nKey="form.vazaoMaxRec"
             values={{ vazao: vazaoMaxRec.toFixed(2), unidade: u.vazao, vel: fmtNumero(velRef, i18n.language) }}
+            components={{ 1: <strong /> }}
+          />
+        </p>
+      )}
+      {/* Número de Reynolds e regime (só na execução, com fluxo). */}
+      {re !== null && (
+        <p className="telemetry" style={{ marginTop: -4 }}>
+          <Trans
+            i18nKey="form.reynolds"
+            values={{ re: Math.round(re).toLocaleString(i18n.language), regime: t(`form.regime_${regimeReynolds(re)}`) }}
             components={{ 1: <strong /> }}
           />
         </p>
