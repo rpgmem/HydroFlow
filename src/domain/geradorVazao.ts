@@ -1,12 +1,8 @@
 /**
- * Gerador de vazão no tempo — a matemática pura dos perfis `f(t)` usados pela
- * Fonte (entrada) e pelo Consumo (saída). Determinístico (sem `Math.random`);
- * o valor é sempre clampado em ≥ 0. Compartilhado entre o motor (vazão real) e a
- * UI (preview ao vivo), por isso vive no domínio, sem dependências de engine/UI.
+ * Gerador de vazão no tempo — a matemática pura dos perfis `f(t)` usados pela Fonte (entrada) e pelo Consumo (saída). Determinístico (sem `Math.random`);
+ * o valor é sempre clampado em ≥ 0. Compartilhado entre o motor (vazão real) e a UI (preview ao vivo), por isso vive no domínio, sem dependências de engine/UI.
  *
- * Fase 1: `fixo`, `trapezoidal` (com presets: quadrada, retangular, triangular,
- * dente de serra ↑/↓, trapézio) e `senoidal`. As demais formas entram nas fases
- * seguintes (ver issue do plano).
+ * `fixo`, `trapezoidal` (com presets: quadrada, retangular, triangular, dente de serra ↑/↓, trapézio) e `senoidal`. As demais formas entram posteriormente.
  */
 import type { Gerador, PerfilVazao } from './types';
 
@@ -220,8 +216,7 @@ export function geradorFixo(vazao: number): Gerador {
 }
 
 /**
- * Parâmetros padrão de um perfil, ancorados na vazão atual `V` (regra: ao trocar
- * de perfil, a peça já nasce com uma onda "de verdade", não zerada).
+ * Parâmetros padrão de um perfil, ancorados na vazão atual `V` (regra: ao trocar de perfil, a peça já nasce com uma onda "de verdade", não zerada).
  */
 export function paramsPadrao(perfil: PerfilVazao, V: number): Gerador {
   switch (perfil) {

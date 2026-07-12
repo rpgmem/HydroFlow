@@ -1,38 +1,30 @@
 /**
  * HydroFlow — Leis de vazão (hidráulica).
  *
- * Concentra o cálculo de vazão por gravidade num único ponto, para o resto do
- * motor (`calcularTubo`, `calcularConsumo`, rede de junções) apenas CHAMAR sem
+ * Concentra o cálculo de vazão por gravidade num único ponto, para o resto do motor (`calcularTubo`, `calcularConsumo`, rede de junções) apenas CHAMAR sem
  * repetir a escolha do modelo. Hoje há dois modelos:
  *  - Torricelli puro:  Q = A·√(2g·Δh)   (padrão; sem perda de carga)
- *  - Hazen-Williams:   Δh = v²/2g + hf(Q), com
- *                      hf = 10,67 · L · Q^1,85 / (C^1,85 · D^4,87)  (só com atrito)
+ *  - Hazen-Williams:   Δh = v²/2g + hf(Q), com hf = 10,67 · L · Q^1,85 / (C^1,85 · D^4,87)  (só com atrito)
  *
  * Toda a matemática é em SI (m, m³/s, s). Nenhuma dependência de DOM/estado.
  *
- * As raízes das leis com atrito (que não têm forma fechada) são resolvidas por
- * `raizCrescente` — Newton salvaguardado, ~5–8 avaliações em vez das ~50 de uma
+ * As raízes das leis com atrito (que não têm forma fechada) são resolvidas por `raizCrescente` — Newton salvaguardado, ~5–8 avaliações em vez das ~50 de uma
  * bisseção pura. É o caminho quente quando a opção de atrito está ligada.
  */
 
 /** Coeficiente C de Hazen-Williams padrão (plástico/PVC liso). */
 export const HW_C_PADRAO = 140;
-/** Comprimento assumido (m) quando o tubo não informa `comprimento` e o atrito
- *  está ligado. Mantém o modelo utilizável sem exigir preencher tudo. */
+/** Comprimento assumido (m) quando o tubo não informa `comprimento` e o atrito está ligado. Mantém o modelo utilizável sem exigir preencher tudo. */
 export const COMPRIMENTO_PADRAO_M = 1;
 /** Expoente da vazão em Hazen-Williams (hf ∝ Q^1,85). */
 const HW_EXP = 1.85;
 
 /**
- * Raiz de uma função ESTRITAMENTE CRESCENTE `f` em `[lo, hi]`, com
- * `f(lo) ≤ 0 ≤ f(hi)`, por **Newton salvaguardado**: dá o passo de Newton quando
- * ele cai dentro do intervalo corrente e usa bisseção caso contrário. Converge em
- * ~5–8 avaliações onde a bisseção pura levava ~50 — o ganho quente do modo atrito.
+ * Raiz de uma função ESTRITAMENTE CRESCENTE `f` em `[lo, hi]`, com `f(lo) ≤ 0 ≤ f(hi)`, por **Newton salvaguardado**: dá o passo de Newton quando
+ * ele cai dentro do intervalo corrente e usa bisseção caso contrário. Converge em ~5–8 avaliações onde a bisseção pura levava ~50 — o ganho quente do modo atrito.
  *
- * `df` é a derivada de `f`; pode ser **aproximada** — se estiver ruim, o passo de
- * Newton sai do intervalo e a bisseção assume: só afeta a velocidade, nunca a
- * correção. `f` é sempre avaliada ANTES de `df` no mesmo `x`, o que deixa o
- * chamador memoizar termos caros (`Math.pow`, perda de carga) entre as duas.
+ * `df` é a derivada de `f`; pode ser **aproximada** — se estiver ruim, o passo de Newton sai do intervalo e a bisseção assume: só afeta a velocidade, nunca a
+ * correção. `f` é sempre avaliada ANTES de `df` no mesmo `x`, o que deixa o chamador memoizar termos caros (`Math.pow`, perda de carga) entre as duas.
  */
 function raizCrescente(
   f: (x: number) => number,
@@ -61,8 +53,7 @@ function raizCrescente(
  * Vazão (m³/s) por gravidade dada a carga disponível `deltaHm` (m).
  *
  * Sem atrito (ou sem comprimento/C/diâmetro válidos) devolve o Torricelli puro.
- * Com atrito, resolve `Δh = v²/2g + hf(Q)` (Hazen-Williams) por Newton
- * salvaguardado — o atrito só REDUZ a vazão frente ao Torricelli (o limite
+ * Com atrito, resolve `Δh = v²/2g + hf(Q)` (Hazen-Williams) por Newton salvaguardado — o atrito só REDUZ a vazão frente ao Torricelli (o limite
  * superior). `diametroMM` em milímetros; `comprimentoM` em metros.
  */
 export function vazaoGravidadeM3(
@@ -114,18 +105,13 @@ export function hfHazenWilliamsM(
 }
 
 /**
- * Ponto de operação de uma bomba com curva linear, considerando a perda de carga
- * do sistema. Resolve a vazão `x` que satisfaz
- *   `x = base − kEff·(estáticaM + hfM(x))`,
- * ou seja, o encontro da curva da bomba com a curva do sistema (altura estática +
- * atrito). `hfM(x)` devolve a perda de atrito (m) na vazão `x`. Com `hfM ≡ 0`
- * recai no modelo sem atrito (`base − kEff·estática`). Unidades de `base`/`x`
- * livres, desde que `kEff` esteja em (unidade de vazão)/m.
+ * Ponto de operação de uma bomba com curva linear, considerando a perda de carga do sistema. Resolve a vazão `x` que satisfaz
+ *   `x = base − kEff·(estáticaM + hfM(x))`, ou seja, o encontro da curva da bomba com a curva do sistema (altura estática +
+ * atrito). `hfM(x)` devolve a perda de atrito (m) na vazão `x`. Com `hfM ≡ 0` recai no modelo sem atrito (`base − kEff·estática`).
+ * Unidades de `base`/`x` livres, desde que `kEff` esteja em (unidade de vazão)/m.
  *
- * Resolvido por Newton salvaguardado. A derivada usa `hf ∝ x^1,85` (Hazen-
- * Williams), então `d(hf)/dx = 1,85·hf(x)/x` — só uma avaliação de `hfM` por passo.
- * Se o `hfM` não seguir essa lei, a derivada fica aproximada e a bisseção assume
- * (correção preservada; só a velocidade muda).
+ * Resolvido por Newton salvaguardado. A derivada usa `hf ∝ x^1,85` (Hazen-Williams), então `d(hf)/dx = 1,85·hf(x)/x` — só uma avaliação de `hfM` por passo.
+ * Se o `hfM` não seguir essa lei, a derivada fica aproximada e a bisseção assume (correção preservada; só a velocidade muda).
  */
 export function vazaoBombaOperacao(
   base: number,

@@ -1,7 +1,6 @@
 /**
  * Dicionário de textos em Português (pt-BR) — idioma de origem do HydroFlow.
- * As chaves são agrupadas por área da UI. Interpolação no formato do i18next:
- * `{{var}}`. O `en.ts` espelha estas chaves; ao adicionar um texto, adicione a
+ * As chaves são agrupadas por área da UI. Interpolação no formato do i18next: `{{var}}`. O `en.ts` espelha estas chaves; ao adicionar um texto, adicione a
  * chave AQUI e a tradução lá.
  */
 export const pt = {
@@ -329,8 +328,7 @@ export const pt = {
     min: 'mín',
     max: 'máx',
   },
-  // Log de eventos da execução. `{{nome}}` é o RÓTULO da peça (dado do projeto,
-  // não traduzido); os demais parâmetros são valores/estado.
+  // Log de eventos da execução. `{{nome}}` é o RÓTULO da peça (dado do projeto, não traduzido); os demais parâmetros são valores/estado.
   log: {
     bombaLigou: '{{nome}} ligou',
     bombaLigouUnidade: '{{nome}} ligou (unidade {{unidade}})',
@@ -357,8 +355,7 @@ export const pt = {
     cmdQuadroManual: '🎛️ {{nome}}: {{bomba}} em manual/ligada (comando)',
     cmdQuadroDesligado: '🎛️ {{nome}}: {{bomba}} desligada (comando)',
   },
-  // Mensagens da validação de grafo (edição→execução). `{{tipo}}` é resolvido do
-  // tipo da peça (traduzível); ids/origem/destino são dados do projeto.
+  // Mensagens da validação de grafo (edição→execução). `{{tipo}}` é resolvido do tipo da peça (traduzível); ids/origem/destino são dados do projeto.
   validacao: {
     pecaDuplicada: 'id de peça duplicado: "{{id}}"',
     conexaoDuplicada: 'id de conexão duplicado: "{{id}}"',

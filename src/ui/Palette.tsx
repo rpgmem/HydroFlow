@@ -1,5 +1,5 @@
 /**
- * Paleta de peças (Sprint 3). Cada botão adiciona uma peça nova ao canvas.
+ * Paleta de peças. Cada botão adiciona uma peça nova ao canvas.
  * Desabilitada em execução (grafo estruturalmente imutável).
  */
 import { useTranslation } from 'react-i18next';

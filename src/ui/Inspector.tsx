@@ -1,6 +1,5 @@
 /**
- * Inspetor de propriedades (Sprint 3/4). Escolhe o formulário conforme o tipo da
- * peça selecionada (os formulários vivem em `inspector/forms.tsx`) e mostra a
+ * Inspetor de propriedades. Escolhe o formulário conforme o tipo da peça selecionada (os formulários vivem em `inspector/forms.tsx`) e mostra a
  * telemetria corrente + o sparkline. Em execução, os campos ficam somente-leitura.
  */
 import { useTranslation } from 'react-i18next';
@@ -88,10 +87,8 @@ export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatc
         />
       )}
 
-      {/* Em execução, só os COMANDOS de operação ficam ativos (registro, modo da
-          bomba/quadro, saída de consumo, sensor on/off); o resto é bloqueado
-          campo a campo (via `disabled={emExecucao}`), não pelo fieldset. Assim o
-          operador comanda a simulação sem alterar a estrutura/dimensionamento. */}
+      {/* Em execução, só os COMANDOS de operação ficam ativos (registro, modo da bomba/quadro, saída de consumo, sensor on/off); o resto é bloqueado
+          campo a campo (via `disabled={emExecucao}`), não pelo fieldset. Assim o operador comanda a simulação sem alterar a estrutura/dimensionamento. */}
       <fieldset className="inspetor-campos">
         <div className="field">
           <label>{t('inspector.nome')}</label>

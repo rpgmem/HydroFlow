@@ -1,8 +1,7 @@
 /**
- * Loop de simulação (Sprint 4, seção 7).
+ * Loop de simulação.
  *
- * Aciona `requestAnimationFrame` enquanto a simulação está rodando, despachando
- * um `TICK` por frame. O controle de velocidade (N ticks/frame) é aplicado
+ * Aciona `requestAnimationFrame` enquanto a simulação está rodando, despachando um `TICK` por frame. O controle de velocidade (N ticks/frame) é aplicado
  * dentro do reducer, então aqui só precisamos disparar um TICK por quadro.
  */
 import { useEffect, useRef } from 'react';

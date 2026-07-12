@@ -1,8 +1,7 @@
 /**
- * HydroFlow — Fábricas de peças e projeto (Sprint 1/3)
+ * HydroFlow — Fábricas de peças e projeto
  *
- * Cria entidades com defaults sãos. A geração de id é injetável para manter os
- * testes determinísticos (o motor não pode usar Date.now()/Math.random()).
+ * Cria entidades com defaults sãos. A geração de id é injetável para manter os testes determinísticos (o motor não pode usar Date.now()/Math.random()).
  */
 
 import {
@@ -26,10 +25,8 @@ export function _resetContadorIds(): void {
 }
 
 /**
- * Avança o contador para além do maior sufixo numérico presente nos ids do
- * projeto. Deve ser chamado ao carregar/iniciar um projeto para que os ids
- * gerados depois (ex.: ao adicionar peças/conexões) NUNCA colidam com os que já
- * existem — foi essa colisão que gerava conexões com id duplicado.
+ * Avança o contador para além do maior sufixo numérico presente nos ids do projeto. Deve ser chamado ao carregar/iniciar um projeto para que os ids
+ * gerados depois (ex.: ao adicionar peças/conexões) NUNCA colidam com os que já existem — foi essa colisão que gerava conexões com id duplicado.
  */
 export function sincronizarContador(projeto: ProjetoSimulacao): void {
   let maior = contador;

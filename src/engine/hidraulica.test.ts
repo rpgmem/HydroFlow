@@ -2,10 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { vazaoGravidadeM3, vazaoBombaOperacao, hfHazenWilliamsM } from './hidraulica';
 import { areaTuboM2 } from './geometria';
 
-// As leis com atrito não têm forma fechada e são resolvidas por Newton
-// salvaguardado. Aqui garantimos que a raiz devolvida REALMENTE satisfaz a
-// equação (resíduo ~0) e mantém as propriedades físicas, em vez de fixar números
-// mágicos — assim a troca de solver (bisseção → Newton) fica protegida.
+// As leis com atrito não têm forma fechada e são resolvidas por Newton salvaguardado. Aqui garantimos que a raiz devolvida REALMENTE satisfaz a
+// equação (resíduo ~0) e mantém as propriedades físicas, em vez de fixar números mágicos — assim a troca de solver (bisseção → Newton) fica protegida.
 
 describe('vazaoGravidadeM3 (Hazen-Williams)', () => {
   const g = 9.81;

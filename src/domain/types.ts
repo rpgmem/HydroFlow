@@ -1,9 +1,8 @@
 /**
- * HydroFlow — Modelo de Domínio (Sprint 1)
+ * HydroFlow — Modelo de Domínio
  *
  * Tipos TypeScript de todas as entidades do simulador hidráulico.
- * A tipagem forte modela as relações ricas entre peças, portas e conexões,
- * e serve de contrato único entre o motor de simulação (puro) e a UI.
+ * A tipagem forte modela as relações ricas entre peças, portas e conexões, e serve de contrato único entre o motor de simulação (puro) e a UI.
  *
  * Ver README.md (seção "Schema") para a documentação de cada campo.
  */
@@ -34,22 +33,19 @@ export interface ConfiguracaoSimulacao {
   /** Aceleração da gravidade (padrão 9.81 m/s²). */
   g: number;
   /**
-   * Liga a perda de carga por atrito (Hazen-Williams) nos escoamentos por
-   * gravidade. Padrão (ausente/false) = Torricelli puro, como antes. Quando
+   * Liga a perda de carga por atrito (Hazen-Williams) nos escoamentos por gravidade. Padrão (ausente/false) = Torricelli puro, como antes. Quando
    * ligado, cada tubo usa seu `comprimento` e `coefC` (C de Hazen-Williams).
    */
   atrito?: boolean;
   /**
    * Velocidade de referência de escoamento (m/s) — limite de dimensionamento.
-   * Acima dela um tubo é sinalizado como subdimensionado; também define a "vazão
-   * máxima recomendada". Ausente → `VELOCIDADE_MAX_RECOMENDADA_MS` (3 m/s).
+   * Acima dela um tubo é sinalizado como subdimensionado; também define a "vazão máxima recomendada". Ausente → `VELOCIDADE_MAX_RECOMENDADA_MS` (3 m/s).
    */
   velocidadeRef?: number;
 }
 
 /**
- * Controle de nível compartilhado por sensores eletrônicos, boias de fonte
- * e boias mecânicas de tubo. `histerese` e `delay` só têm efeito no sensor
+ * Controle de nível compartilhado por sensores eletrônicos, boias de fonte e boias mecânicas de tubo. `histerese` e `delay` só têm efeito no sensor
  * eletrônico (a boia mecânica é instantânea, sem histerese/delay).
  */
 export interface NivelControle {
@@ -60,17 +56,14 @@ export interface NivelControle {
   /** Só sensor eletrônico: tempo mínimo (s) entre liga/desliga. */
   delay?: number;
   /**
-   * Só sensor: lógica REVERSA (corte por nível baixo). Em vez de LIGAR no mínimo
-   * e DESLIGAR no máximo, o sensor reverso DESLIGA a bomba no nível mínimo e a
-   * libera (LIGAR) no máximo. Aplicado a um reservatório de origem, protege-o de
-   * esvaziar / desliga a bomba de um reservatório para hidrantes quando ele baixa.
+   * Só sensor: lógica REVERSA (corte por nível baixo). Em vez de LIGAR no mínimo e DESLIGAR no máximo, o sensor reverso DESLIGA a bomba no nível mínimo e a
+   * libera (LIGAR) no máximo. Aplicado a um reservatório de origem, protege-o de esvaziar / desliga a bomba de um reservatório para hidrantes quando ele baixa.
    * A bomba respeita os sensores normais e reversos ao mesmo tempo (desligar vence).
    */
   reversa?: boolean;
   /**
    * Só boia de tubo: estado atual aberta/fechada (mutável durante a execução).
-   * Persistido entre ticks para dar HISTERESE real — entre mín. e máx. a boia
-   * mantém o estado anterior, evitando chaveamento rápido (chatter).
+   * Persistido entre ticks para dar HISTERESE real — entre mín. e máx. a boia mantém o estado anterior, evitando chaveamento rápido (chatter).
    */
   aberta?: boolean;
 }
@@ -95,16 +88,13 @@ export interface PropsTubo {
   /** Diâmetro interno em MILÍMETROS (fonte da verdade para o cálculo de vazão). */
   diametro: number;
   /**
-   * Rótulo da bitola pré-configurada selecionada (ex.: 'DN110'), do catálogo em
-   * `tubosCatalogo.ts`. Apenas informativo/UI: selecionar um preset grava
+   * Rótulo da bitola pré-configurada selecionada (ex.: 'DN110'), do catálogo em `tubosCatalogo.ts`. Apenas informativo/UI: selecionar um preset grava
    * `diametro = internoMm`. Ausente = diâmetro "Personalizado".
    */
   bitola?: string;
   /**
-   * Altura em que o tubo toca cada reservatório, relativa à BASE dele (unidade
-   * de comprimento). Default 0 = conexão no fundo. Uma tomada em altura só escoa
-   * a água ACIMA dela (bocal lateral): `alturaEntrada` é a ponta ligada ao
-   * reservatório de origem; `alturaSaida`, a ligada ao destino.
+   * Altura em que o tubo toca cada reservatório, relativa à BASE dele (unidade de comprimento). Default 0 = conexão no fundo. Uma tomada em altura só escoa
+   * a água ACIMA dela (bocal lateral): `alturaEntrada` é a ponta ligada ao reservatório de origem; `alturaSaida`, a ligada ao destino.
    */
   alturaEntrada?: number;
   alturaSaida?: number;
@@ -115,18 +105,15 @@ export interface PropsTubo {
   /** Válvula mecânica embutida na aresta (sem histerese/delay). */
   boia?: NivelControle;
   /**
-   * Tubo ladrão (dreno de transbordo): só escoa o excedente quando o nível do
-   * reservatório de origem passa de `nivel` (na unidade de comprimento).
+   * Tubo ladrão (dreno de transbordo): só escoa o excedente quando o nível do reservatório de origem passa de `nivel` (na unidade de comprimento).
    */
   ladrao?: { nivel: number };
   /**
-   * Comprimento do tubo (unidade de comprimento) — usado só quando o atrito está
-   * ligado (Hazen-Williams). Ausente → assume `COMPRIMENTO_PADRAO_M` (1 m).
+   * Comprimento do tubo (unidade de comprimento) — usado só quando o atrito está ligado (Hazen-Williams). Ausente → assume `COMPRIMENTO_PADRAO_M` (1 m).
    */
   comprimento?: number;
   /**
-   * Coeficiente C de Hazen-Williams (rugosidade). Ausente → `HW_C_PADRAO` (140,
-   * plástico/PVC). Ex.: ~130 cimento, ~100 ferro fundido usado.
+   * Coeficiente C de Hazen-Williams (rugosidade). Ausente → `HW_C_PADRAO` (140, plástico/PVC). Ex.: ~130 cimento, ~100 ferro fundido usado.
    */
   coefC?: number;
 }
@@ -136,10 +123,8 @@ export interface PropsBomba {
   /** Curva simplificada (explícita): vazao = vazaoNominal - k·Δh. */
   curva?: { k: number };
   /**
-   * Altura nominal de recalque (m) — a "plaquinha" da bomba. Quando informada, a
-   * curva é DERIVADA automaticamente: a bomba entrega `vazaoNominal` a 0 m e zera
-   * nesta altura (Q = vazaoNominal·(1 − Δh/alturaNominal)). Assim, entre dois
-   * reservatórios, a altura real da instalação reduz a vazão sozinha. Tem
+   * Altura nominal de recalque (m) — a "plaquinha" da bomba. Quando informada, a curva é DERIVADA automaticamente: a bomba entrega `vazaoNominal` a 0 m e zera
+   * nesta altura (Q = vazaoNominal·(1 − Δh/alturaNominal)). Assim, entre dois reservatórios, a altura real da instalação reduz a vazão sozinha. Tem
    * precedência sobre `curva`. Ausente = bomba ideal (ignora a altura).
    */
   alturaNominal?: number;
@@ -155,10 +140,8 @@ export interface PropsBomba {
   /** Estado atual liga/desliga (mutável durante a execução). */
   ligada?: boolean;
   /**
-   * Bomba dupla em REVEZAMENTO: uma única bomba (mesmos sensores, mesma vazão e
-   * mesma tubulação) desenhada como um círculo dividido em duas metades ("1" e
-   * "2"). A cada ACIONAMENTO (borda de subida do liga), a metade ativa alterna —
-   * quem rodou por último descansa no ciclo seguinte. É só rodízio de desgaste:
+   * Bomba dupla em REVEZAMENTO: uma única bomba (mesmos sensores, mesma vazão e mesma tubulação) desenhada como um círculo dividido em duas metades ("1" e
+   * "2"). A cada ACIONAMENTO (borda de subida do liga), a metade ativa alterna — quem rodou por último descansa no ciclo seguinte. É só rodízio de desgaste:
    * hidraulicamente equivale a uma bomba comum.
    */
   revezamento?: boolean;
@@ -167,8 +150,7 @@ export interface PropsBomba {
 }
 
 /**
- * Perfis de vazão no tempo (compartilhados por Fonte e Consumo). A lista cresce
- * por fase de implementação; `fixo` é o padrão. Ver `geradorVazao.ts`.
+ * Perfis de vazão no tempo (compartilhados por Fonte e Consumo). A lista cresce por fase de implementação; `fixo` é o padrão. Ver `geradorVazao.ts`.
  */
 export type PerfilVazao =
   | 'fixo'
@@ -183,10 +165,8 @@ export type PerfilVazao =
   | 'aleatoria';
 
 /**
- * Gerador de vazão no tempo — o mesmo bloco na Fonte (entrada) e no Consumo
- * (saída). `perfil` escolhe a forma da onda; os demais campos são os parâmetros
- * daquele perfil (só os relevantes são lidos). Determinístico em função do tempo
- * de simulação (nada de aleatoriedade). O valor é sempre clampado em ≥ 0.
+ * Gerador de vazão no tempo — o mesmo bloco na Fonte (entrada) e no Consumo (saída). `perfil` escolhe a forma da onda; os demais campos são os parâmetros
+ * daquele perfil (só os relevantes são lidos). Determinístico em função do tempo de simulação (nada de aleatoriedade). O valor é sempre clampado em ≥ 0.
  */
 export interface Gerador {
   perfil: PerfilVazao;
@@ -227,8 +207,7 @@ export interface Gerador {
   sentido?: 'subida' | 'decaimento';
   /**
    * Diária (2 picos, período fixo de 1 dia real = 86.400 s; t=0 = 00:00).
-   * Por pico (manhã `pm*`, noite `pn*`): hora (0–24), valor, e as durações de
-   * subida/patamar/descida em HORAS.
+   * Por pico (manhã `pm*`, noite `pn*`): hora (0–24), valor, e as durações de subida/patamar/descida em HORAS.
    */
   pmHora?: number;
   pmValor?: number;
@@ -248,8 +227,7 @@ export interface PropsFonte {
   boia?: NivelControle;
 }
 
-// consumo — ponto de saída/demanda: retira água do reservatório de origem a uma
-// vazão configurável e a descarta (sem destino no grafo). É o oposto da Fonte.
+// consumo — ponto de saída/demanda: retira água do reservatório de origem a uma vazão configurável e a descarta (sem destino no grafo). É o oposto da Fonte.
 export interface PropsConsumo {
   /** Gerador de vazão de demanda no tempo. */
   gerador: Gerador;
@@ -261,8 +239,7 @@ export type PropsSensor = NivelControle & {
   /** IDs das bombas controladas por este sensor (um sensor pode reger várias). */
   bombasAlvo: string[];
   /**
-   * Habilitado? Ausente/true = ativo. `false` = desabilitado no painel (comando
-   * de operação): não emite decisão neste tick (nem direto, nem via quadro).
+   * Habilitado? Ausente/true = ativo. `false` = desabilitado no painel (comando de operação): não emite decisão neste tick (nem direto, nem via quadro).
    */
   ativo?: boolean;
   /** Estado interno do sensor (pedido de liga/desliga do tick anterior). */
@@ -277,36 +254,28 @@ export interface PropsJuncao {
   /** Diâmetro interno em MILÍMETROS que limita o fluxo pela junção (opcional). */
   diametro?: number;
   /**
-   * Rótulo da bitola pré-configurada selecionada (ex.: 'DN110'), do catálogo em
-   * `tubosCatalogo.ts` — mesma lista dos tubos. Apenas informativo/UI: selecionar
-   * um preset grava `diametro` = diâmetro interno tabelado; editar o mm na mão
-   * limpa a bitola (vira "Personalizado").
+   * Rótulo da bitola pré-configurada selecionada (ex.: 'DN110'), do catálogo em `tubosCatalogo.ts` — mesma lista dos tubos. Apenas informativo/UI: selecionar
+   * um preset grava `diametro` = diâmetro interno tabelado; editar o mm na mão limpa a bitola (vira "Personalizado").
    */
   bitola?: string;
 }
 
 /**
- * Um canal do QUADRO DE COMANDOS: rege UMA bomba. `modo` = 'auto' (segue os
- * `sensores` escolhidos), 'manual' (forçada ligada) ou 'desligado'. No 'auto' a
- * bomba segue os sensores-membro marcados em `sensores` (multi-seleção),
- * combinados pela lógica E/OU do quadro; sem sensores, liga só se houver consumo
- * (demanda > 0) à jusante. `revezamento`/`unidade` controlam uma bomba dupla —
- * o quadro assume o revezamento (o toggle direto da bomba fica inativo).
+ * Um canal do QUADRO DE COMANDOS: rege UMA bomba. `modo` = 'auto' (segue os `sensores` escolhidos), 'manual' (forçada ligada) ou 'desligado'. No 'auto' a
+ * bomba segue os sensores-membro marcados em `sensores` (multi-seleção), combinados pela lógica E/OU do quadro; sem sensores, liga só se houver consumo
+ * (demanda > 0) à jusante. `revezamento`/`unidade` controlam uma bomba dupla — o quadro assume o revezamento (o toggle direto da bomba fica inativo).
  */
 export interface CanalQuadro {
   bomba: string;
   modo: 'auto' | 'manual' | 'desligado';
   /**
-   * Boias/sensores-membro que esta bomba segue no 'auto', em ORDEM. A avaliação é
-   * sequencial (esquerda→direita) combinando pares consecutivos pelos `operadores`.
+   * Boias/sensores-membro que esta bomba segue no 'auto', em ORDEM. A avaliação é sequencial (esquerda→direita) combinando pares consecutivos pelos `operadores`.
    * Vazio = sem sensor (liga por demanda).
    */
   sensores?: string[];
   /**
-   * Operador E/OU entre cada par de sensores CONSECUTIVOS de `sensores`. Tamanho =
-   * `sensores.length - 1` (`operadores[i]` liga o sensor i ao i+1). Ausente/curto:
-   * usa a `logica` global do quadro como padrão. Ex.: sensores [S1,S2,S3] com
-   * operadores ['OU','E'] = ((S1 OU S2) E S3).
+   * Operador E/OU entre cada par de sensores CONSECUTIVOS de `sensores`. Tamanho = `sensores.length - 1` (`operadores[i]` liga o sensor i ao i+1). Ausente/curto:
+   * usa a `logica` global do quadro como padrão. Ex.: sensores [S1,S2,S3] com operadores ['OU','E'] = ((S1 OU S2) E S3).
    */
   operadores?: ('E' | 'OU')[];
   /** @deprecated Boia única de saves antigos (1.27.x). Lido como `sensores: [sensor]`. */
@@ -319,14 +288,10 @@ export interface CanalQuadro {
 
 /**
  * Quadro de comandos (MCC): centraliza o controle de bombas e boias/sensores.
- * Tanto a BOMBA (via `canais`) quanto o SENSOR (via `sensores`) são MEMBROS do
- * quadro — a associação é escolhida no inspetor de CADA peça (seletor "Quadro").
- * Cada bomba-membro tem um `modo`; no 'auto' ela segue os sensores-membro
- * marcados no seu canal, combinados pela `logica`. Uma bomba/sensor membro de um
- * quadro OBEDECE o quadro e perde as opções diretas (o `modoControle` da bomba, o
- * `bombasAlvo` e os ajustes do sensor passam a ser feitos no quadro). Peças fora
- * de qualquer quadro mantêm o controle direto. Liga por `props` (por id), sem
- * conexão física.
+ * Tanto a BOMBA (via `canais`) quanto o SENSOR (via `sensores`) são MEMBROS do quadro — a associação é escolhida no inspetor de CADA peça (seletor "Quadro").
+ * Cada bomba-membro tem um `modo`; no 'auto' ela segue os sensores-membro marcados no seu canal, combinados pela `logica`. Uma bomba/sensor membro de um
+ * quadro OBEDECE o quadro e perde as opções diretas (o `modoControle` da bomba, o `bombasAlvo` e os ajustes do sensor passam a ser feitos no quadro). Peças fora
+ * de qualquer quadro mantêm o controle direto. Liga por `props` (por id), sem conexão física.
  */
 export interface PropsQuadro {
   /** Bombas-membro e seu controle (modo + sensores + revezamento no automático). */
@@ -334,8 +299,7 @@ export interface PropsQuadro {
   /** IDs das boias/sensores-membro do quadro (disponíveis para os canais 'auto'). */
   sensores?: string[];
   /**
-   * Combinação dos sensores no 'auto': 'E' (todos precisam pedir ligar) ou 'OU'
-   * (basta um). Ausente = 'OU' (comportamento de sempre).
+   * Combinação dos sensores no 'auto': 'E' (todos precisam pedir ligar) ou 'OU' (basta um). Ausente = 'OU' (comportamento de sempre).
    */
   logica?: 'E' | 'OU';
 }
@@ -346,8 +310,7 @@ export function sensoresDoCanal(c: CanalQuadro): string[] {
 }
 
 /**
- * Operadores E/OU entre os sensores consecutivos de um canal, normalizados ao
- * tamanho `sensores.length - 1`. Falta preenche com o `padrao` (lógica global).
+ * Operadores E/OU entre os sensores consecutivos de um canal, normalizados ao tamanho `sensores.length - 1`. Falta preenche com o `padrao` (lógica global).
  */
 export function operadoresDoCanal(c: CanalQuadro, padrao: 'E' | 'OU'): ('E' | 'OU')[] {
   const n = sensoresDoCanal(c).length;

@@ -1,8 +1,7 @@
 /**
- * HydroFlow — Validação de grafo (Sprint 2, seção 5 da especificação)
+ * HydroFlow — Validação de grafo
  *
- * Executada na transição edição→execução. Se falhar, o sistema permanece em
- * modo edição e exibe os erros. Não roda incrementalmente durante a edição.
+ * Executada na transição edição→execução. Se falhar, o sistema permanece em modo edição e exibe os erros. Não roda incrementalmente durante a edição.
  *
  * Bloqueia:
  *  - Nó órfão (peça sem nenhuma conexão; sensor é exceção se aponta p/ bomba)
@@ -30,8 +29,7 @@ export type ResultadoValidacaoGrafo =
   | { ok: false; erros: ErroValidacao[] };
 
 /**
- * Componentes fortemente conexos (Tarjan). Cada SCC com mais de um nó — ou um
- * nó com auto-laço — representa um ciclo direcionado no grafo de conexões.
+ * Componentes fortemente conexos (Tarjan). Cada SCC com mais de um nó — ou um nó com auto-laço — representa um ciclo direcionado no grafo de conexões.
  */
 function componentesFortementeConexos(
   nos: string[],
@@ -148,8 +146,7 @@ export function validarGrafo(
   }
 
   // ---- Quadro sem efeito (não comanda nenhuma bomba) ------------------
-  // Um quadro só faz sentido se algum canal reger uma BOMBA existente. Um quadro
-  // vazio (ou só com sensores-membro, ou apontando para bombas inexistentes) não
+  // Um quadro só faz sentido se algum canal reger uma BOMBA existente. Um quadro vazio (ou só com sensores-membro, ou apontando para bombas inexistentes) não
   // tem efeito nenhum — sinaliza para o usuário completar ou remover.
   for (const p of projeto.pecas) {
     if (!isQuadro(p)) continue;
@@ -168,8 +165,7 @@ export function validarGrafo(
   }
 
   // ---- Fonte: soma de vazaoAlocada > vazão da fonte --------------------
-  // A fonte pode ter perfil no tempo; usamos a vazão de referência (máx/valor)
-  // como teto para a checagem de alocação entre múltiplos destinos.
+  // A fonte pode ter perfil no tempo; usamos a vazão de referência (máx/valor) como teto para a checagem de alocação entre múltiplos destinos.
   for (const p of projeto.pecas) {
     if (!isFonte(p)) continue;
     const saidas = projeto.conexoes.filter((c) => c.origem === p.id);

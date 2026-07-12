@@ -364,8 +364,7 @@ describe('terminal na rede de junções', () => {
     (r.projeto.pecas.find((x) => x.id === id)!.props as PropsReservatorio).nivel ?? 0;
 
   it('consumo puxando de uma união reflui o ramo alto para o ramo baixo', () => {
-    // R_sup (alto) e R_meio (baixo) unem em J; um consumo pequeno puxa de J. O
-    // R_sup fornece MAIS que o consumo → o excedente reflui J→R_meio, enchendo o
+    // R_sup (alto) e R_meio (baixo) unem em J; um consumo pequeno puxa de J. O R_sup fornece MAIS que o consumo → o excedente reflui J→R_meio, enchendo o
     // ramo baixo CONTRA a seta (R_meio→t_meio→J). Deve marcar t_meio como refluxo.
     const r = tick(
       projeto(
@@ -398,10 +397,8 @@ describe('terminal na rede de junções', () => {
   });
 
   it('tubo entre junção e consumo marca o SENTIDO NORMAL (não é refluxo)', () => {
-    // Consumo puxa da junção POR UM TUBO (como o "registro de consumo" do exemplo):
-    // a água vai J→tubo→consumo, no sentido da seta. A telemetria do run de terminal
-    // invertia o sinal e pintava esse tubo de refluxo (violeta) sem ser — regressão
-    // do sinal, agora corrigida.
+    // Consumo puxa da junção POR UM TUBO (como o "registro de consumo" do exemplo): a água vai J→tubo→consumo, no sentido da seta. A telemetria do run de terminal
+    // invertia o sinal e pintava esse tubo de refluxo (violeta) sem ser — regressão do sinal, agora corrigida.
     const r = tick(
       projeto(
         [
@@ -451,8 +448,7 @@ describe('terminal na rede de junções', () => {
   });
 
   it('reservatório vazio na união não fornece (sem fluxo fantasma)', () => {
-    // R_sup está VAZIO (nível 0) mas com cota alta (10). O solver não pode usar a
-    // cota de fundo como carga e empurrar água que não existe: o superior vazio
+    // R_sup está VAZIO (nível 0) mas com cota alta (10). O solver não pode usar a cota de fundo como carga e empurrar água que não existe: o superior vazio
     // não fornece, então não há refluxo para o meio nem dreno do tanque vazio.
     const r = tick(
       projeto(
@@ -480,8 +476,7 @@ describe('terminal na rede de junções', () => {
   });
 
   it('reservatório não fornece por uma tomada acima do seu nível (rede)', () => {
-    // R_sup tem carga alta (cota 10 + nível 2), mas a saída para a rede é uma
-    // tomada em 4 — acima do nível 2. Sem água acima do bocal, não pode fornecer:
+    // R_sup tem carga alta (cota 10 + nível 2), mas a saída para a rede é uma tomada em 4 — acima do nível 2. Sem água acima do bocal, não pode fornecer:
     // a aresta fica em 0 (nada de fluxo/refluxo fantasma para o meio).
     const r = tick(
       projeto(
@@ -509,10 +504,8 @@ describe('terminal na rede de junções', () => {
   });
 
   it('conserva massa ao longo do tempo mesmo com o ramo alto esvaziando', () => {
-    // Regressão do fluxo fantasma: o superior (pequeno) esvazia refluindo pela
-    // União para o meio enquanto alimenta o consumo. Ao esvaziar, o dreno do
-    // superior é limitado pelo volume — o que ENTRA no meio precisa cair junto,
-    // senão surge água do nada. Somando tudo: o ganho líquido dos reservatórios
+    // Regressão do fluxo fantasma: o superior (pequeno) esvazia refluindo pela União para o meio enquanto alimenta o consumo. Ao esvaziar, o dreno do
+    // superior é limitado pelo volume — o que ENTRA no meio precisa cair junto, senão surge água do nada. Somando tudo: o ganho líquido dos reservatórios
     // deve igualar −(consumido), sem fonte no cenário.
     let proj: ProjetoSimulacao = {
       ...projetoVazio(),
@@ -549,8 +542,7 @@ describe('terminal na rede de junções', () => {
       t = r.tempo;
     }
     // Sem fonte: a variação de volume dos reservatórios = −(consumido de fato).
-    // O consumido "de fato" pode ser menor que a demanda quando o superior seca,
-    // então checamos a conservação com o volume que realmente saiu do sistema.
+    // O consumido "de fato" pode ser menor que a demanda quando o superior seca, então checamos a conservação com o volume que realmente saiu do sistema.
     const perdaReservatorios = volInicial - volDe(proj);
     expect(perdaReservatorios).toBeGreaterThan(0);
     expect(perdaReservatorios).toBeLessThanOrEqual(consumido + 1e-6); // nunca perde MAIS que o consumido (sem sumiço)
@@ -579,8 +571,7 @@ describe('terminal na rede de junções', () => {
   });
 
   it('anota a vazão no cano de sucção da bomba na rede (não fica zerado)', () => {
-    // Bomba que descarrega numa JUNÇÃO (como no exemplo): os canos de sucção
-    // ficam fora da rede da junção — antes apareciam zerados mesmo com a bomba
+    // Bomba que descarrega numa JUNÇÃO (como no exemplo): os canos de sucção ficam fora da rede da junção — antes apareciam zerados mesmo com a bomba
     // ligada. Agora carregam a vazão entregue.
     const r = tick(
       projeto(
@@ -607,10 +598,8 @@ describe('terminal na rede de junções', () => {
   });
 
   it('ponto de operação: cano restritivo (recalque/sucção) reduz a vazão da bomba', () => {
-    // Bomba (curva inclinada) sucção `inf`→ descarrega na junção J → recalque
-    // `rec` → `sup`. Com o atrito ligado, um cano de RECALQUE ou de SUCÇÃO mais
-    // restritivo (longo) sobe a perda de carga do sistema e a bomba encontra o
-    // ponto de operação numa vazão MENOR — a curva da bomba ∩ a curva do sistema.
+    // Bomba (curva inclinada) sucção `inf`→ descarrega na junção J → recalque `rec` → `sup`. Com o atrito ligado, um cano de RECALQUE ou de SUCÇÃO mais
+    // restritivo (longo) sobe a perda de carga do sistema e a bomba encontra o ponto de operação numa vazão MENOR — a curva da bomba ∩ a curva do sistema.
     const cenario = (atrito: boolean, compRec: number, compSuc: number) =>
       tick({
         ...projeto(
@@ -758,8 +747,7 @@ describe('bomba', () => {
   });
 
   it('ponto de operação: com atrito, sucção e recalque restritivos reduzem a vazão', () => {
-    // Bomba direta A→P→B (sem junção). Com o atrito ligado, um cano de SUCÇÃO ou
-    // de RECALQUE mais restritivo (longo) sobe a perda de carga e a bomba opera
+    // Bomba direta A→P→B (sem junção). Com o atrito ligado, um cano de SUCÇÃO ou de RECALQUE mais restritivo (longo) sobe a perda de carga e a bomba opera
     // numa vazão MENOR que a puramente estática (curva ∩ sistema).
     const cenario = (atrito: boolean, compSuc: number, compRec: number) =>
       tick({
@@ -1222,8 +1210,7 @@ describe('quadro de comandos (MCC)', () => {
     expect(estaLigada(r, 'P2')).toBe(false); // S é membro do quadro → vínculo direto inativo
   });
 
-  // Dois sensores no canal auto, combinados pela lógica do quadro. S1 sempre pede
-  // ligar (D1 no fundo); S2 varia com o nível de D2 (banda morta em n2=3).
+  // Dois sensores no canal auto, combinados pela lógica do quadro. S1 sempre pede ligar (D1 no fundo); S2 varia com o nível de D2 (banda morta em n2=3).
   const doisSensores = (logica: 'E' | 'OU', n2: number) =>
     tick(
       projeto(
@@ -1246,8 +1233,7 @@ describe('quadro de comandos (MCC)', () => {
 
   it('lógica E: um desligar ativo derruba; banda morta (manter) é neutra', () => {
     expect(estaLigada(doisSensores('E', 0), 'P')).toBe(true); // ambos pedem ligar
-    expect(estaLigada(doisSensores('E', 5), 'P')).toBe(false); // S2 pede desligar → E derruba
-    // S2 em banda morta (manter) não tem opinião ativa → não conta: S1 ligar vence.
+    expect(estaLigada(doisSensores('E', 5), 'P')).toBe(false); // S2 pede desligar → E derruba S2 em banda morta (manter) não tem opinião ativa → não conta: S1 ligar vence.
     expect(estaLigada(doisSensores('E', 3), 'P')).toBe(true);
   });
 
@@ -1255,8 +1241,7 @@ describe('quadro de comandos (MCC)', () => {
     expect(estaLigada(doisSensores('OU', 3), 'P')).toBe(true); // S1 pede ligar (S2 neutro)
   });
 
-  // Três sensores com operadores por gap: S1 sempre pede ligar (D1 no fundo),
-  // S2 idem (D2 no fundo), S3 pede desligar (D3 cheio). Só a ORDEM dos operadores
+  // Três sensores com operadores por gap: S1 sempre pede ligar (D1 no fundo), S2 idem (D2 no fundo), S3 pede desligar (D3 cheio). Só a ORDEM dos operadores
   // muda o resultado → prova a avaliação sequencial esquerda→direita.
   const tresSensores = (operadores: ('E' | 'OU')[]) =>
     tick(
@@ -1300,8 +1285,7 @@ describe('quadro de comandos (MCC)', () => {
   });
 
   it('boia-membro sem seleção no canal é seguida (reversa protege a origem)', () => {
-    // S (reversa) é MEMBRO do quadro, mas o canal não marcou sensor nenhum. Antes,
-    // a bomba caía na demanda e ignorava o 'desligar' da reversa (origem vazia).
+    // S (reversa) é MEMBRO do quadro, mas o canal não marcou sensor nenhum. Antes, a bomba caía na demanda e ignorava o 'desligar' da reversa (origem vazia).
     // Agora o canal sem seleção segue TODOS os membros → o desligar tem precedência.
     const r = tick(
       projeto(
@@ -1665,8 +1649,7 @@ describe('arbitragem de bombas', () => {
   });
 
   it('ignora ultimaTroca no futuro (obsoleto de execução exportada e recarregada)', () => {
-    // Projeto exportado durante um run guardou ultimaTroca=16696; ao recarregar,
-    // o tempo volta a 0. O delay NÃO deve congelar o sensor até o relógio chegar
+    // Projeto exportado durante um run guardou ultimaTroca=16696; ao recarregar, o tempo volta a 0. O delay NÃO deve congelar o sensor até o relógio chegar
     // lá — ele decide normalmente pelo nível.
     const s: PropsSensor = { bombasAlvo: ['P'], nivelMinimo: 3, nivelMaximo: 5.5, delay: 10, ultimaTroca: 16696 };
     expect(avaliarSensor(s, 2, 0)).toBe('ligar'); // nível 2 < mínimo → liga já em t=0

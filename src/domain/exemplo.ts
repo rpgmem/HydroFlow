@@ -1,27 +1,18 @@
 /**
- * Projeto de exemplo carregado ao abrir a aplicação (cenário montado pelo
- * usuário). Três reservatórios cilíndricos EMPILHADOS (Inferior · C2 Meio · C1
- * Superior): a concessionária enche o inferior passando por um REGISTRO DE
- * HIDRÔMETRO e uma boia; a Bomba Recalque puxa do inferior e recalca — por uma
- * junção DIVISORA — para o superior (e, com o registro fechado, poderia também
- * para o meio). Do superior e do meio a água desce, por uma junção de UNIÃO e um
- * REGISTRO DE CONSUMO, até o consumo; do superior um bypass alimenta o meio. Cada
- * tanque tem um tubo LADRÃO de transbordo e um registro de LIMPEZA (dreno, normal-
- * mente fechado). Dois QUADROS DE COMANDOS centralizam o controle: o "Quadro
- * Recalque" comanda a Bomba Recalque (auto: nível-baixo do superior E origem-com-
- * água pela boia reversa do inferior, com revezamento) e o "Quadro Incêndio"
- * comanda a Bomba Incêndio do sistema secundário (bomba + hidrantes) alimentado
+ * Projeto de exemplo carregado ao abrir a aplicação (cenário montado pelo usuário). Três reservatórios cilíndricos EMPILHADOS (Inferior · C2 Meio · C1 
+ * Superior): a concessionária enche o inferior passando por um REGISTRO DE HIDRÔMETRO e uma boia; a Bomba Recalque puxa do inferior e recalca — por uma
+ * junção DIVISORA — para o superior (e, com o registro fechado, poderia também para o meio). Do superior e do meio a água desce, por uma junção de UNIÃO e um
+ * REGISTRO DE CONSUMO, até o consumo; do superior um bypass alimenta o meio. Cada tanque tem um tubo LADRÃO de transbordo e um registro de LIMPEZA (dreno, normal-
+ * mente fechado). Dois QUADROS DE COMANDOS centralizam o controle: o "Quadro Recalque" comanda a Bomba Recalque (auto: nível-baixo do superior E origem-com-
+ * água pela boia reversa do inferior, com revezamento) e o "Quadro Incêndio" comanda a Bomba Incêndio do sistema secundário (bomba + hidrantes) alimentado
  * pelo meio. Diâmetros em milímetros; tomadas de tubo com altura quando aplicável.
  *
- * Layout em 6 COLUNAS no eixo x, com espaçamento uniforme (passo 120):
- *   240 · 360 · 480 · 600 · 720 · 840.
+ * Layout em 6 COLUNAS no eixo x, com espaçamento uniforme (passo 120): 240 · 360 · 480 · 600 · 720 · 840.
  *
- * Os IDs das peças já são os slugs FIÉIS aos rótulos (a mesma saída da ação
- * "Normalizar IDs pelos nomes" das Opções). Editar um rótulo aqui pede atualizar
+ * Os IDs das peças já são os slugs FIÉIS aos rótulos (a mesma saída da ação "Normalizar IDs pelos nomes" das Opções). Editar um rótulo aqui pede atualizar
  * o id e as referências (ou rodar a ação de novo).
  *
- * NOTA: o estado transitório dos sensores (`ultimaTroca`/`pedindoLigar`) NÃO é
- * incluído aqui — é bookkeeping de execução, não configuração.
+ * NOTA: o estado transitório dos sensores (`ultimaTroca`/`pedindoLigar`) NÃO é incluído aqui — é bookkeeping de execução, não configuração.
  */
 import type {
   ProjetoSimulacao,

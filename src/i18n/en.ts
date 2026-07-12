@@ -1,6 +1,5 @@
 /**
- * English (en) dictionary — mirrors every key of `pt.ts`. Interpolation uses the
- * i18next `{{var}}` syntax and `<1>…</1>` tags for `<Trans>` components.
+ * English (en) dictionary — mirrors every key of `pt.ts`. Interpolation uses the i18next `{{var}}` syntax and `<1>…</1>` tags for `<Trans>` components.
  */
 import type { Dicionario } from './pt';
 

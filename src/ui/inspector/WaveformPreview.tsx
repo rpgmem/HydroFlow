@@ -1,6 +1,5 @@
 /**
- * Preview ao vivo da onda de vazão de um gerador (Fonte/Consumo). Desenha
- * `valorNoTempo(g, t)` numa janela de tempo, em SVG puro — atualiza sozinho ao
+ * Preview ao vivo da onda de vazão de um gerador (Fonte/Consumo). Desenha `valorNoTempo(g, t)` numa janela de tempo, em SVG puro — atualiza sozinho ao
  * mudar os parâmetros. Mostra a forma; o eixo Y vai de 0 ao máximo da janela.
  */
 import { useTranslation } from 'react-i18next';

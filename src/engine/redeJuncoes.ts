@@ -1,17 +1,12 @@
 /**
  * HydroFlow — Solver da rede de junções (extraído do motor).
  *
- * Resolve as sub-redes de gravidade que contêm JUNÇÕES como uma pequena REDE DE
- * VAZÃO, para a junção realmente DIVIDIR (bifurcar) e SOMAR (unir) o fluxo,
- * conservando massa no nó. Reservatórios são nós de carga FIXA (a superfície);
- * junções são nós de carga INCÓGNITA, resolvida por iteração (Gauss-Seidel +
- * bisseção) até o fluxo líquido no nó zerar. Cada "run" de tubos em série entre
- * dois nós vira uma aresta com área = a do gargalo (menor diâmetro).
+ * Resolve as sub-redes de gravidade que contêm JUNÇÕES como uma pequena REDE DE VAZÃO, para a junção realmente DIVIDIR (bifurcar) e SOMAR (unir) o fluxo,
+ * conservando massa no nó. Reservatórios são nós de carga FIXA (a superfície); junções são nós de carga INCÓGNITA, resolvida por iteração (Gauss-Seidel +
+ * bisseção) até o fluxo líquido no nó zerar. Cada "run" de tubos em série entre dois nós vira uma aresta com área = a do gargalo (menor diâmetro).
  *
- * O tipo `GrafoIndex`/`FluxoResolvido` e os ajudantes `reservatorioVazio`/
- * `demandaConsumo` vêm de `simulador.ts` (o índice de grafo e a física comuns).
- * O import de `GrafoIndex`/`FluxoResolvido` é só de TIPO (não cria ciclo em
- * runtime); os dois ajudantes são funções puras hasteadas.
+ * O tipo `GrafoIndex`/`FluxoResolvido` e os ajudantes `reservatorioVazio`/ `demandaConsumo` vêm de `simulador.ts` (o índice de grafo e a física comuns).
+ * O import de `GrafoIndex`/`FluxoResolvido` é só de TIPO (não cria ciclo em runtime); os dois ajudantes são funções puras hasteadas.
  */
 import {
   isBomba,
@@ -51,8 +46,7 @@ interface ArestaRede {
   tubos: string[];
   /** Por tubo: traversal a→b coincide com o sentido origem→destino do tubo? */
   alinhado: Record<string, boolean>;
-  /** Altura da tomada (relativa à base) no lado do reservatório `b`, quando `b`
-   *  é reservatório e há um tubo adjacente. Um reservatório só fornece se o nível
+  /** Altura da tomada (relativa à base) no lado do reservatório `b`, quando `b` é reservatório e há um tubo adjacente. Um reservatório só fornece se o nível
    *  estiver ACIMA dessa tomada. undefined = sem tomada em altura (tap no fundo). */
   tapB?: number;
   /** Comprimento SOMADO dos tubos do run (m) — para a perda de carga (atrito). */
@@ -64,10 +58,8 @@ interface ArestaRede {
 }
 
 /**
- * Marca em `resolvidos` os tubos tratados (o laço de gravidade os ignora) e anota
- * a telemetria. Limitações (v1): não modela checkValve/altura DENTRO de um run
- * entre nós (uma boia fechada, sim, bloqueia o run). Para esses casos, use um
- * reservatório no ponto de divisão. Um reservatório vazio pode gerar leve fluxo
+ * Marca em `resolvidos` os tubos tratados (o laço de gravidade os ignora) e anota a telemetria. Limitações (v1): não modela checkValve/altura DENTRO de um run
+ * entre nós (uma boia fechada, sim, bloqueia o run). Para esses casos, use um reservatório no ponto de divisão. Um reservatório vazio pode gerar leve fluxo
  * fantasma na rede (o clamp de volume evita drená-lo abaixo de zero).
  */
 export function resolverGravidadeComJuncoes(
@@ -98,14 +90,10 @@ export function resolverGravidadeComJuncoes(
     ...(idx.entrada.get(id) ?? []).map((c) => c.origem),
     ...(idx.saida.get(id) ?? []).map((c) => c.destino),
   ];
-  // Um reservatório só FORNECE água acima da TOMADA por onde a aresta o toca (e,
-  // no mínimo, acima do fundo — tomada 0). Sem coluna acima do bocal não há o que
-  // escoar, ainda que a carga (cotaBase + nível) seja alta pela elevação. Sem
-  // isso, o solver usaria a cota de fundo como carga fixa e criaria fluxo
-  // FANTASMA saindo do tanque (ex.: o "superior" já esvaziado empurrando água pela
-  // União para o "meio", ou fornecendo por uma tomada acima do próprio nível). O
-  // clamp de volume não bastava: a vazão calculada (e a seta de refluxo) ficavam
-  // acesas. `tap` é a altura da tomada relativa à base (0 = fundo).
+  // Um reservatório só FORNECE água acima da TOMADA por onde a aresta o toca (e, no mínimo, acima do fundo — tomada 0). Sem coluna acima do bocal não há o que
+  // escoar, ainda que a carga (cotaBase + nível) seja alta pela elevação. Sem isso, o solver usaria a cota de fundo como carga fixa e criaria fluxo
+  // FANTASMA saindo do tanque (ex.: o "superior" já esvaziado empurrando água pela União para o "meio", ou fornecendo por uma tomada acima do próprio nível). O
+  // clamp de volume não bastava: a vazão calculada (e a seta de refluxo) ficavam acesas. `tap` é a altura da tomada relativa à base (0 = fundo).
   const podeFornecer = (n: string, tap: number): boolean => {
     const pe = idx.porId.get(n);
     if (!pe || !isReservatorio(pe)) return true; // junção sempre "fornece"
@@ -165,8 +153,7 @@ export function resolverGravidadeComJuncoes(
         const pe = idx.porId.get(cur);
         if (!pe) return null;
         if (isReservatorio(pe) || pe.tipo === 'juncao') {
-          // Tomada no lado do reservatório: altura do bocal do último tubo (o
-          // adjacente, = prev) na porta que toca o reservatório. Conexão
+          // Tomada no lado do reservatório: altura do bocal do último tubo (o adjacente, = prev) na porta que toca o reservatório. Conexão
           // tubo→reservatório usa alturaSaida; reservatório→tubo usa alturaEntrada.
           let tapB: number | undefined;
           if (isReservatorio(pe) && tubos.length) {
@@ -189,8 +176,7 @@ export function resolverGravidadeComJuncoes(
         if (!ehCandidato(pe)) return null;
         if (pe.props.boia && !(pe.props.boia.aberta ?? true)) return null; // boia fechada bloqueia o run
         tubos.push(cur);
-        // traversal prev→cur→next; alinhado = prev é o lado de ENTRADA de cur
-        // (conexão prev→cur), i.e., a travessia segue origem→destino do tubo.
+        // traversal prev→cur→next; alinhado = prev é o lado de ENTRADA de cur (conexão prev→cur), i.e., a travessia segue origem→destino do tubo.
         alinhado[cur] = (idx.entrada.get(cur) ?? []).some((c) => c.origem === prev);
         area = Math.min(area, areaTuboM2(pe.props.diametro));
         diamMinMM = Math.min(diamMinMM, pe.props.diametro);
@@ -226,8 +212,7 @@ export function resolverGravidadeComJuncoes(
     const repHead = resSet.size ? Math.max(...[...resSet].map(cargaDe)) : 0; // p/ o lift da bomba
 
     // --- Terminais → injeção de vazão (m³/s) no nó em que se ligam. + = entra.
-    // Além de entrar no solve das cargas, cada terminal também vira uma OFERTA ou
-    // DEMANDA REAL de volume (com origem/destino), casada adiante às trocas dos
+    // Além de entrar no solve das cargas, cada terminal também vira uma OFERTA ou DEMANDA REAL de volume (com origem/destino), casada adiante às trocas dos
     // reservatórios — para o volume aplicado conservar massa mesmo sob limite.
     const injecao = new Map<string, number>();
     const runsTerminais: { run: ArestaRede; q: number; para: string }[] = []; // telemetria
@@ -269,8 +254,7 @@ export function resolverGravidadeComJuncoes(
             const sucHeadM = cargaRes(suc);
             const tubosSuc = idx.resolverFluxo(pe.id, 'up').tubos;
             if (atrito) {
-              // Ponto de operação ACOPLADO à rede: a vazão da bomba depende da
-              // carga do nó (que já inclui o atrito a jusante) + o atrito da
+              // Ponto de operação ACOPLADO à rede: a vazão da bomba depende da carga do nó (que já inclui o atrito a jusante) + o atrito da
               // sucção. Resolvida no Gauss-Seidel; finalizada após o solve.
               contribBombas.push({
                 no: noAtar,
@@ -308,8 +292,7 @@ export function resolverGravidadeComJuncoes(
     if (resSet.size === 0 && injecao.size === 0 && contribBombas.length === 0) continue; // nada a mover
     if (arestas.length === 0) continue;
 
-    // Bombas acopladas por nó + a vazão da bomba dada a carga do nó `hJ`: ponto de
-    // operação (curva ∩ sistema) com a estática = hJ − carga da sucção e o atrito
+    // Bombas acopladas por nó + a vazão da bomba dada a carga do nó `hJ`: ponto de operação (curva ∩ sistema) com a estática = hJ − carga da sucção e o atrito
     // da sucção. A jusante já está embutido em hJ (as arestas têm atrito).
     const bombasPorNo = new Map<string, ContribBomba[]>();
     for (const b of contribBombas) {
@@ -334,8 +317,7 @@ export function resolverGravidadeComJuncoes(
         .filter((x): x is number => x !== undefined);
       carga.set(j, hs.length ? hs.reduce((s, x) => s + x, 0) / hs.length : repHead);
     }
-    // Magnitude da vazão numa aresta para uma carga |dh| (m): Torricelli puro ou,
-    // com o atrito ligado, Hazen-Williams sobre o comprimento SOMADO do run (com o
+    // Magnitude da vazão numa aresta para uma carga |dh| (m): Torricelli puro ou, com o atrito ligado, Hazen-Williams sobre o comprimento SOMADO do run (com o
     // diâmetro do gargalo — aproximação da série de tubos).
     const magVazao = (ar: ArestaRede, absDh: number): number =>
       vazaoGravidadeM3(atrito, ar.area, ar.diamMinMM, ar.comprimentoM, ar.coefC, absDh, g);
@@ -394,15 +376,12 @@ export function resolverGravidadeComJuncoes(
       if (isReservatorio(idx.porId.get(ar.b)!)) netRes.set(ar.b, (netRes.get(ar.b) ?? 0) - q);
       anotar(ar, q);
     }
-    // Telemetria dos runs de terminais. O run vai do terminal (a) ao nó (b), e `q`
-    // é o fluxo FAVOR DO NÓ — ou seja, exatamente o sentido a→b. Então `anotar`
+    // Telemetria dos runs de terminais. O run vai do terminal (a) ao nó (b), e `q` é o fluxo FAVOR DO NÓ — ou seja, exatamente o sentido a→b. Então `anotar`
     // recebe `q` direto (ele já converte para o sinal origem→destino de cada tubo).
-    // Passar -q invertia o sinal: um tubo entre uma junção e um consumo (água indo
-    // para o consumo, sentido normal) aparecia como refluxo (violeta) sem ser.
+    // Passar -q invertia o sinal: um tubo entre uma junção e um consumo (água indo para o consumo, sentido normal) aparecia como refluxo (violeta) sem ser.
     for (const { run, q } of runsTerminais) anotar(run, q);
 
-    // --- Finaliza as bombas ACOPLADAS (atrito): a vazão é o ponto de operação na
-    // carga JÁ resolvida do nó. Anota o cano de sucção (fora da rede), o run até o
+    // --- Finaliza as bombas ACOPLADAS (atrito): a vazão é o ponto de operação na carga JÁ resolvida do nó. Anota o cano de sucção (fora da rede), o run até o
     // nó e vira uma OFERTA de volume com origem na sucção.
     const ofertasBomba: { origem: string | null; vol: number }[] = [];
     for (const b of contribBombas) {
@@ -419,11 +398,9 @@ export function resolverGravidadeComJuncoes(
     }
 
     // --- Transferência de volume por rota DIRETA origem→destino (bipartite).
-    // Descolar o dreno (reservatório→ambiente) do enchimento (ambiente→destino)
-    // faria o limite de volume (reservatório quase vazio) escalar SÓ o dreno,
+    // Descolar o dreno (reservatório→ambiente) do enchimento (ambiente→destino) faria o limite de volume (reservatório quase vazio) escalar SÓ o dreno,
     // criando água no destino (o refluxo fantasma da União com o superior no fim).
-    // Casando cada FONTE real (reservatório que perde, fonte, bomba pela sucção)
-    // com cada SORVEDOURO real (reservatório que ganha, consumo) na proporção de
+    // Casando cada FONTE real (reservatório que perde, fonte, bomba pela sucção) com cada SORVEDOURO real (reservatório que ganha, consumo) na proporção de
     // cada um, o escalonamento propaga aos destinos e a massa conserva.
     const ofertas: { origem: string | null; vol: number }[] = [...ofertasTerm, ...ofertasBomba];
     const demandas: { destino: string | null; vol: number }[] = [...demandasTerm];

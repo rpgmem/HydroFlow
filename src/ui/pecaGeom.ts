@@ -1,16 +1,14 @@
 /**
  * Geometria de desenho das peças (compartilhada entre PecaView e Canvas).
- * Fica fora do módulo de componente para não quebrar o fast-refresh do Vite
- * (que exige que arquivos de componente exportem só componentes).
+ * Fica fora do módulo de componente para não quebrar o fast-refresh do Vite (que exige que arquivos de componente exportem só componentes).
  */
 import type { Peca } from '../domain/types';
 
-/** Passo da grade de encaixe (snap) ao arrastar peças na edição, em px. As
- *  colunas do exemplo (múltiplas de 120) continuam alinhadas — 120 = 6×20. */
+/** Passo da grade de encaixe (snap) ao arrastar peças na edição, em px. As colunas do exemplo (múltiplas de 120) continuam alinhadas — 120 = 6×20.
+ */
 export const GRADE = 20;
 
-/** Diâmetro (px) uniforme dos nós/componentes pontuais (bomba, fonte, consumo,
- *  sensor, junção). Padronizado para todos terem a MESMA pegada — a diferença
+/** Diâmetro (px) uniforme dos nós/componentes pontuais (bomba, fonte, consumo, sensor, junção). Padronizado para todos terem a MESMA pegada — a diferença
  *  entre eles vem da forma e da cor, não do tamanho. */
 export const TAMANHO_NO = 46;
 

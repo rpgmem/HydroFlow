@@ -1,6 +1,5 @@
 /**
- * Componente raiz do HydroFlow. Junta paleta, canvas, inspetor e barra de
- * ferramentas em torno do reducer central (Sprints 3–5).
+ * Componente raiz do HydroFlow. Junta paleta, canvas, inspetor e barra de ferramentas em torno do reducer central.
  */
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
@@ -41,22 +40,19 @@ function carregarFormatoTempo(): FormatoTempo {
 
 export function App() {
   const { t } = useTranslation();
-  // Restaura o autosave se houver; senão abre no exemplo. `exemploSerial` é a
-  // referência do exemplo INTOCADO — enquanto o projeto for igual a ela, nada é
+  // Restaura o autosave se houver; senão abre no exemplo. `exemploSerial` é a referência do exemplo INTOCADO — enquanto o projeto for igual a ela, nada é
   // persistido (quem só abre e não mexe recarrega no exemplo).
   const exemploSerial = useRef(serializarProjeto(projetoExemplo()));
   const [estado, dispatch] = useReducer(reducer, carregarAutosave() ?? projetoExemplo(), estadoInicial);
   const [erroImport, setErroImport] = useState<string | null>(null);
   const [tamanho, setTamanho] = useState({ largura: 800, altura: 600 });
-  // Mobile: o inspetor é uma gaveta; abre ao selecionar uma peça (no desktop a
-  // classe não tem efeito visual, então o estado é inofensivo lá).
+  // Mobile: o inspetor é uma gaveta; abre ao selecionar uma peça (no desktop a classe não tem efeito visual, então o estado é inofensivo lá).
   const [inspetorAberto, setInspetorAberto] = useState(false);
   const [avisoVisivel, setAvisoVisivel] = useState(true);
   const [logAberto, setLogAberto] = useState(false);
   const [legendaAberta, setLegendaAberta] = useState(false);
   // Tema de exibição: escuro é o padrão; claro é opcional e usado na impressão.
-  // Preferência do DISPOSITIVO — persistida no localStorage (como o idioma), não
-  // no arquivo do projeto. Sobrevive à recarga.
+  // Preferência do DISPOSITIVO — persistida no localStorage (como o idioma), não no arquivo do projeto. Sobrevive à recarga.
   const [tema, setTema] = useState<'escuro' | 'claro'>(carregarTema);
   const [imprimindo, setImprimindo] = useState(false);
   const temaClaro = imprimindo || tema === 'claro';
@@ -67,8 +63,7 @@ export function App() {
       /* localStorage indisponível (modo privado/cota) — ignora. */
     }
   }, [tema]);
-  // Formato do tempo na barra (segundos / horário 24 h / ambos) — preferência do
-  // dispositivo, persistida como o tema.
+  // Formato do tempo na barra (segundos / horário 24 h / ambos) — preferência do dispositivo, persistida como o tema.
   const [formatoTempo, setFormatoTempo] = useState<FormatoTempo>(carregarFormatoTempo);
   useEffect(() => {
     try {
@@ -79,8 +74,7 @@ export function App() {
   }, [formatoTempo]);
   const wrapRef = useRef<HTMLDivElement>(null);
 
-  // Aviso "edição só no desktop": some sozinho após ~8 s (não fica atrapalhando)
-  // e assim que a simulação começa (ENTRAR_EXECUCAO/Play) — ver render abaixo.
+  // Aviso "edição só no desktop": some sozinho após ~8 s (não fica atrapalhando) e assim que a simulação começa (ENTRAR_EXECUCAO/Play) — ver render abaixo.
   useEffect(() => {
     if (!avisoVisivel) return;
     const id = window.setTimeout(() => setAvisoVisivel(false), 8000);
@@ -97,8 +91,7 @@ export function App() {
     if (estado.selecionada) setInspetorAberto(true);
   }, [estado.selecionada]);
 
-  // Atalhos de desfazer/refazer (só em edição). Ignora quando o foco está num
-  // campo de texto (aí o Ctrl+Z é o "desfazer" nativo do input).
+  // Atalhos de desfazer/refazer (só em edição). Ignora quando o foco está num campo de texto (aí o Ctrl+Z é o "desfazer" nativo do input).
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (estado.modo !== 'edicao' || !(e.ctrlKey || e.metaKey)) return;
@@ -120,8 +113,7 @@ export function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, [estado.modo, estado.selecionada]);
 
-  // Autosave: em EDIÇÃO, persiste quando o projeto deixa de ser o exemplo
-  // intocado; se voltar a ser o exemplo ("Restaurar exemplo"), limpa o storage.
+  // Autosave: em EDIÇÃO, persiste quando o projeto deixa de ser o exemplo intocado; se voltar a ser o exemplo ("Restaurar exemplo"), limpa o storage.
   // Durante a execução o nível é transitório — não salva.
   useEffect(() => {
     if (estado.modo !== 'edicao') return;
@@ -141,8 +133,7 @@ export function App() {
     return () => window.removeEventListener('resize', medir);
   }, []);
 
-  // Impressão: usa o tema CLARO (rótulos escuros), o Canvas enquadra tudo, e
-  // então window.print() (o CSS @media print esconde a interface). Ao terminar,
+  // Impressão: usa o tema CLARO (rótulos escuros), o Canvas enquadra tudo, e então window.print() (o CSS @media print esconde a interface). Ao terminar,
   // volta ao normal. Um pequeno atraso dá tempo do enquadramento/re-render.
   useEffect(() => {
     if (!imprimindo) return;
@@ -157,15 +148,13 @@ export function App() {
 
   const selecionada = estado.projeto.pecas.find((p) => p.id === estado.selecionada);
   const emExecucao = estado.modo === 'execucao';
-  // "Alterado" = o projeto difere do exemplo intocado. Em execução tratamos como
-  // alterado (o nível/estado é transitório). Guia a exibição de Salvar/Restaurar:
+  // "Alterado" = o projeto difere do exemplo intocado. Em execução tratamos como alterado (o nível/estado é transitório). Guia a exibição de Salvar/Restaurar:
   // não faz sentido salvar nem "restaurar o exemplo" quando já se está nele.
   const alterado = useMemo(
     () => emExecucao || serializarProjeto(estado.projeto) !== exemploSerial.current,
     [estado.projeto, emExecucao],
   );
-  // Erro de validação: usa a chave i18n quando houver (resolvendo o tipo da peça
-  // em `pecas.<tipo>`); senão cai na mensagem em Português (ex.: erros de schema
+  // Erro de validação: usa a chave i18n quando houver (resolvendo o tipo da peça em `pecas.<tipo>`); senão cai na mensagem em Português (ex.: erros de schema
   // no import, ainda não internacionalizados).
   const traduzErro = (e: ErroValidacao): string => {
     if (!e.chave) return e.mensagem;

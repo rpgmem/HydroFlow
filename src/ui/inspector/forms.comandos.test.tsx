@@ -15,8 +15,7 @@ const proj = (pecas: Peca[] = []): ProjetoSimulacao => ({
 });
 const dis = (nome: string): boolean => (screen.getByLabelText(nome) as HTMLInputElement).disabled;
 
-// Em execução, os COMANDOS de operação ficam ativos e o resto (estrutura/
-// dimensionamento) fica desabilitado campo a campo.
+// Em execução, os COMANDOS de operação ficam ativos e o resto (estrutura/dimensionamento) fica desabilitado campo a campo.
 describe('inspetor em execução — comandos ativos, estrutura travada', () => {
   it('tubo: registro (comando) ativo; diâmetro (estrutura) travado', () => {
     render(<TuboForm props={{ diametro: 100 }} emExecucao upd={noop} u={u} unidades={proj().unidades} atrito={false} velRef={3} />);

@@ -1,12 +1,10 @@
 /**
  * Inicialização do i18next (react-i18next) para o HydroFlow.
  *
- * Idiomas: Português (pt, padrão/origem) e Inglês (en). A escolha é DETECTADA do
- * navegador na primeira visita e PERSISTIDA em localStorage — o usuário pode
+ * Idiomas: Português (pt, padrão/origem) e Inglês (en). A escolha é DETECTADA do navegador na primeira visita e PERSISTIDA em localStorage — o usuário pode
  * trocar manualmente nas ⚙ Opções (`i18n.changeLanguage`, que também persiste).
  *
- * `fallbackLng: 'pt'` garante que qualquer chave faltante caia no texto de
- * origem. Sob teste (jsdom), o `src/test/setup.ts` força o idioma para `pt` para
+ * `fallbackLng: 'pt'` garante que qualquer chave faltante caia no texto de origem. Sob teste (jsdom), o `src/test/setup.ts` força o idioma para `pt` para
  * as asserções em português permanecerem determinísticas.
  */
 import i18n from 'i18next';
@@ -21,8 +19,7 @@ export type Idioma = (typeof IDIOMAS)[number];
 /** Chave usada para persistir o idioma escolhido (mesma família das outras). */
 export const CHAVE_IDIOMA = 'hydroflow:lang';
 
-// Sob teste (Vitest, MODE='test') fixamos 'pt' e dispensamos o detector — as
-// asserções em português ficam determinísticas independentes do navegador do CI.
+// Sob teste (Vitest, MODE='test') fixamos 'pt' e dispensamos o detector — as asserções em português ficam determinísticas independentes do navegador do CI.
 const emTeste = import.meta.env?.MODE === 'test';
 
 (emTeste ? i18n : i18n.use(LanguageDetector))

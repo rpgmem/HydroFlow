@@ -1,15 +1,12 @@
 /**
- * Catálogo de bitolas de tubo pré-configuradas. O usuário seleciona a bitola
- * (DN) mais adequada e a aplicação usa o DIÂMETRO INTERNO tabelado no cálculo de
+ * Catálogo de bitolas de tubo pré-configuradas. O usuário seleciona a bitola (DN) mais adequada e a aplicação usa o DIÂMETRO INTERNO tabelado no cálculo de
  * vazão (Torricelli), em vez do nominal — mais realista.
  *
- * Fonte: tabela de referência PVC (soldável fria predial e junta elástica para
- * irrigação/adutoras). Os internos do grupo "Junta Elástica" são aproximados
+ * Fonte: tabela de referência PVC (soldável fria predial e junta elástica para irrigação/adutoras). Os internos do grupo "Junta Elástica" são aproximados
  * (variam com a classe de pressão) — marcados com `aproximado`.
  *
  * Modelo: `PropsTubo.diametro` (mm) é sempre o diâmetro interno usado na física;
- * `PropsTubo.bitola` guarda apenas o rótulo do preset (ex.: 'DN110'). Selecionar
- * um preset grava `diametro = internoMm` e `bitola = dn`; editar o mm na mão
+ * `PropsTubo.bitola` guarda apenas o rótulo do preset (ex.: 'DN110'). Selecionar um preset grava `diametro = internoMm` e `bitola = dn`; editar o mm na mão
  * limpa `bitola` (vira "Personalizado"). Projetos sem `bitola` seguem válidos.
  */
 

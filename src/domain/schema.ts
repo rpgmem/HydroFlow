@@ -1,10 +1,8 @@
 /**
- * HydroFlow — Validação e versionamento de schema (Sprint 1)
+ * HydroFlow — Validação e versionamento de schema
  *
- * Tudo roda no cliente, então "segurança" aqui significa robustez: um `.json`
- * malformado ou malicioso nunca deve derrubar a aplicação. Toda a superfície de
- * parsing é envolvida em try/catch e retorna um `ResultadoParse` discriminado
- * em vez de lançar exceções para o chamador.
+ * Tudo roda no cliente, então "segurança" aqui significa robustez: um `.json` malformado ou malicioso nunca deve derrubar a aplicação.
+ * Toda a superfície de parsing é envolvida em try/catch e retorna um `ResultadoParse` discriminado em vez de lançar exceções para o chamador.
  */
 
 import { SCHEMA_VERSION, type ProjetoSimulacao, type TipoPeca } from './types';
@@ -192,8 +190,7 @@ function validarConexao(
 
 /**
  * Valida a estrutura de um objeto já desserializado (não string JSON).
- * Não valida a topologia do grafo (isso é responsabilidade do motor —
- * seção 5). Aqui garantimos apenas que o formato/tipos estão sãos.
+ * Não valida a topologia do grafo (isso é responsabilidade do motor — seção 5). Aqui garantimos apenas que o formato/tipos estão sãos.
  */
 export function validarProjeto(dado: unknown): ResultadoParse {
   const erros: ErroValidacao[] = [];
@@ -269,8 +266,7 @@ export function validarProjeto(dado: unknown): ResultadoParse {
 
 /**
  * Ponto de entrada para carregar um `.json` cru (string). Nunca lança:
- * JSON inválido vira um `ResultadoParse` de erro. É a fronteira de robustez
- * exigida pelo DoD do Sprint 1.
+ * JSON inválido vira um `ResultadoParse` de erro. É a fronteira de robustez exigida pelo DoD.
  */
 export function carregarProjetoDeTexto(texto: string): ResultadoParse {
   let dado: unknown;
@@ -291,10 +287,8 @@ export function carregarProjetoDeTexto(texto: string): ResultadoParse {
 }
 
 /**
- * Remove o estado INTERNO de execução das peças — bookkeeping que não é
- * configuração e não deve viajar no arquivo exportado (foi um `ultimaTroca`
- * salvo assim que congelou uma bomba por ~17000 s ao recarregar). Mantém o que é
- * cenário (nível dos reservatórios, bomba ligada/desligada).
+ * Remove o estado INTERNO de execução das peças — bookkeeping que não é configuração e não deve viajar no arquivo exportado (foi um `ultimaTroca`
+ * salvo assim que congelou uma bomba por ~17000 s ao recarregar). Mantém o que é cenário (nível dos reservatórios, bomba ligada/desligada).
  */
 export function limparEstadoTransitorio(projeto: ProjetoSimulacao): ProjetoSimulacao {
   const clone = structuredClone(projeto);

@@ -1,16 +1,13 @@
 /**
- * HydroFlow — Estado da aplicação (Sprint 4)
+ * HydroFlow — Estado da aplicação
  *
  * Reducer puro que orquestra os dois modos de operação (seção 6):
  *  - 'edicao':   grafo mutável (add/remove peça, conexão, mover no canvas).
- *  - 'execucao': grafo estruturalmente IMUTÁVEL — só valores mudam (nível,
- *                vazão, registro, bomba on/off, thresholds de sensor).
+ *  - 'execucao': grafo estruturalmente IMUTÁVEL — só valores mudam (nível, vazão, registro, bomba on/off, thresholds de sensor).
  *
- * A transição edição→execução roda a validação de grafo (seção 5) e só avança
- * se passar. A transição execução→edição exige pause/reset primeiro.
+ * A transição edição→execução roda a validação de grafo (seção 5) e só avança se passar. A transição execução→edição exige pause/reset primeiro.
  *
- * O reducer é puro e independente de React (o loop de render vive no
- * componente), o que o torna diretamente testável no Vitest.
+ * O reducer é puro e independente de React (o loop de render vive no componente), o que o torna diretamente testável no Vitest.
  */
 
 import type { ErroValidacao } from '../domain/schema';
@@ -54,8 +51,7 @@ const MAX_EVENTOS = 300;
 /** Máximo de amostras guardadas por peça para o sparkline do inspetor. */
 const MAX_HISTORICO = 150;
 
-// Multiplicador de ticks por frame. Valores altos permitem acompanhar cenários
-// realistas (vazões em L/s enchendo tanques de milhares de litros) em segundos.
+// Multiplicador de ticks por frame. Valores altos permitem acompanhar cenários realistas (vazões em L/s enchendo tanques de milhares de litros) em segundos.
 export type Velocidade = 1 | 5 | 30 | 120;
 
 export interface EstadoApp {
@@ -75,8 +71,7 @@ export interface EstadoApp {
   refluxos: string[];
   consumoInsuficiente: string[];
   sensores: Record<string, Decisao>;
-  /** Série temporal por peça (nível dos reservatórios, vazão dos condutores)
-   *  acumulada durante a execução — alimenta o sparkline do inspetor. */
+  /** Série temporal por peça (nível dos reservatórios, vazão dos condutores) acumulada durante a execução — alimenta o sparkline do inspetor. */
   historico: Record<string, number[]>;
   /** Log de eventos (acionamentos de bomba/sensor e alertas) da execução. */
   eventos: EventoLog[];
@@ -89,13 +84,11 @@ export interface EstadoApp {
   /** Pilhas de desfazer/refazer (só edição): projetos anteriores/posteriores. */
   undoStack: ProjetoSimulacao[];
   redoStack: ProjetoSimulacao[];
-  /** Sequência incrementada a cada projeto CARREGADO (início/troca) — sinaliza ao
-   *  Canvas que deve recentralizar a vista. Não faz parte do projeto salvo. */
+  /** Sequência incrementada a cada projeto CARREGADO (início/troca) — sinaliza ao Canvas que deve recentralizar a vista. Não faz parte do projeto salvo. */
   geracao: number;
 }
 
-// Sequência de "carregamentos" de projeto. Fora do estado (contador de módulo)
-// porque `estadoInicial` cria estado do zero a cada carga e precisa de um valor
+// Sequência de "carregamentos" de projeto. Fora do estado (contador de módulo) porque `estadoInicial` cria estado do zero a cada carga e precisa de um valor
 // crescente entre chamadas. É só bookkeeping de UI (não afeta a física/autosave).
 let geracaoSeq = 0;
 
@@ -127,8 +120,7 @@ export type Acao =
   | { tipo: 'TICK' };
 
 export function estadoInicial(projeto: ProjetoSimulacao): EstadoApp {
-  // Evita ids duplicados: alinha o contador aos ids já presentes no projeto
-  // (início e carregamento — CARREGAR_PROJETO passa por aqui).
+  // Evita ids duplicados: alinha o contador aos ids já presentes no projeto (início e carregamento — CARREGAR_PROJETO passa por aqui).
   sincronizarContador(projeto);
   return {
     projeto,
@@ -205,10 +197,8 @@ function rotuloDePeca(projeto: ProjetoSimulacao, id: string): string {
 }
 
 /**
- * Deriva os eventos novos comparando o estado anterior com o resultado do tick:
- * transições de bomba (liga/desliga), decisões de sensor e a ENTRADA em cada
- * condição de alerta (a seco, ladrão, déficit, transbordo). Só transições — uma
- * condição contínua é registrada uma vez, quando começa.
+ * Deriva os eventos novos comparando o estado anterior com o resultado do tick: transições de bomba (liga/desliga), decisões de sensor e a ENTRADA
+ * em cada condição de alerta (a seco, ladrão, déficit, transbordo). Só transições — uma condição contínua é registrada uma vez, quando começa.
  */
 function derivarEventos(anterior: EstadoApp, r: ResultadoTick): EventoLog[] {
   const ev: EventoLog[] = [];
@@ -223,8 +213,7 @@ function derivarEventos(anterior: EstadoApp, r: ResultadoTick): EventoLog[] {
     const antes = antLigada.get(p.id) ?? false;
     const agora = p.props.ligada ?? false;
     if (antes !== agora) {
-      // Revezamento: anota qual metade assumiu (a unidadeAtiva já foi alternada
-      // no tick da borda de subida).
+      // Revezamento: anota qual metade assumiu (a unidadeAtiva já foi alternada no tick da borda de subida).
       const nome = rot(p.id);
       if (!agora) ev.push({ tempo: t, tipo: 'bomba', chave: 'log.bombaDesligou', params: { nome } });
       else if (p.props.revezamento)
@@ -260,10 +249,8 @@ function derivarEventos(anterior: EstadoApp, r: ResultadoTick): EventoLog[] {
 }
 
 /**
- * Evento de log para um COMANDO de operação feito durante a execução (abrir/
- * fechar registro, modo da bomba/quadro, saída de consumo, habilitar sensor).
- * Compara as props antigas com o patch para descobrir o que mudou; devolve null
- * quando a mudança não é um comando operável (ex.: ajuste estrutural). Só é
+ * Evento de log para um COMANDO de operação feito durante a execução (abrir/fechar registro, modo da bomba/quadro, saída de consumo, habilitar sensor).
+ * Compara as props antigas com o patch para descobrir o que mudou; devolve null quando a mudança não é um comando operável (ex.: ajuste estrutural). Só é
  * chamado em execução — em edição, comandos não vão para o log.
  */
 function eventoDeComando(estado: EstadoApp, id: string, patch: Partial<PropsPorTipo>): EventoLog | null {
@@ -338,8 +325,7 @@ const MAX_UNDO = 60;
 
 /**
  * Reducer público: envolve o `reducerBase` com o histórico de desfazer/refazer.
- * Antes de aplicar uma edição undoável (só em edição), empilha o projeto atual e
- * zera o redo. UNDO/REDO trocam o projeto entre as pilhas.
+ * Antes de aplicar uma edição undoável (só em edição), empilha o projeto atual e zera o redo. UNDO/REDO trocam o projeto entre as pilhas.
  */
 export function reducer(estado: EstadoApp, acao: Acao): EstadoApp {
   if (acao.tipo === 'UNDO') {
@@ -411,8 +397,7 @@ function reducerBase(estado: EstadoApp, acao: Acao): EstadoApp {
       };
 
     case 'MOVER_PECA':
-      // Mover no canvas é edição pura; em execução mantemos posição imutável
-      // por consistência com "grafo estruturalmente imutável".
+      // Mover no canvas é edição pura; em execução mantemos posição imutável por consistência com "grafo estruturalmente imutável".
       if (estado.modo === 'execucao') return estado;
       return {
         ...estado,
@@ -444,10 +429,8 @@ function reducerBase(estado: EstadoApp, acao: Acao): EstadoApp {
       };
 
     case 'ATUALIZAR_PROPS': {
-      // Permitido em ambos os modos: em execução, só os COMANDOS de operação
-      // (registro, modo da bomba/quadro, saída de consumo, sensor on/off) chegam
-      // aqui — a UI trava o resto. O comando também atualiza o snapshot de edição
-      // (persiste ao voltar à edição e sobrevive ao RESET) e entra no log; NÃO
+      // Permitido em ambos os modos: em execução, só os COMANDOS de operação (registro, modo da bomba/quadro, saída de consumo, sensor on/off) chegam
+      // aqui — a UI trava o resto. O comando também atualiza o snapshot de edição (persiste ao voltar à edição e sobrevive ao RESET) e entra no log; NÃO
       // gera histórico de desfazer (o wrapper só registra em edição).
       const aplicar = (proj: ProjetoSimulacao): ProjetoSimulacao =>
         atualizarPeca(proj, acao.id, (p) => ({
@@ -495,8 +478,7 @@ function reducerBase(estado: EstadoApp, acao: Acao): EstadoApp {
       };
 
     case 'NORMALIZAR_IDS': {
-      // Reescreve os ids das peças como slug do rótulo (fiel), atualizando todas
-      // as referências. Os ids mudam → limpa a seleção. Sem mudança → no-op.
+      // Reescreve os ids das peças como slug do rótulo (fiel), atualizando todas as referências. Os ids mudam → limpa a seleção. Sem mudança → no-op.
       const projeto = normalizarIds(estado.projeto);
       if (projeto === estado.projeto) return estado;
       return { ...estado, projeto, selecionada: null, conexaoSelecionada: null };
@@ -561,8 +543,7 @@ function reducerBase(estado: EstadoApp, acao: Acao): EstadoApp {
     }
 
     case 'SAIR_EXECUCAO':
-      // Exige pause primeiro (seção 6). Restaura o snapshot de edição para
-      // descartar valores gerados pela simulação.
+      // Exige pause primeiro (seção 6). Restaura o snapshot de edição para descartar valores gerados pela simulação.
       if (estado.rodando) return estado;
       return {
         ...estado,
@@ -615,8 +596,7 @@ function reducerBase(estado: EstadoApp, acao: Acao): EstadoApp {
 
     case 'TICK': {
       if (estado.modo !== 'execucao' || !estado.rodando) return estado;
-      // Controle de velocidade (seção 7): roda N ticks por frame, sem alterar
-      // o dt da física.
+      // Controle de velocidade (seção 7): roda N ticks por frame, sem alterar o dt da física.
       const r = rodarTicks(estado.projeto, estado.velocidade, estado.tempo);
       const novosEventos = derivarEventos(estado, r);
       return {

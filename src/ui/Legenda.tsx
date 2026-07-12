@@ -1,6 +1,5 @@
 /**
- * Legenda do canvas: explica as FORMAS das peças, os indicadores de válvula no
- * tubo e as CORES de estado usadas na simulação. Cartão recolhível (como o log).
+ * Legenda do canvas: explica as FORMAS das peças, os indicadores de válvula no tubo e as CORES de estado usadas na simulação. Cartão recolhível (como o log).
  * As cores espelham as de PecaView/Canvas para a leitura bater com o desenho.
  */
 import { useTranslation } from 'react-i18next';

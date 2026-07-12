@@ -1,6 +1,5 @@
 /**
- * Barra de ferramentas (Sprint 4/5): nome do projeto, transição de modo,
- * play/pause/reset, controle de velocidade e persistência (salvar/carregar).
+ * Barra de ferramentas: nome do projeto, transição de modo, play/pause/reset, controle de velocidade e persistência (salvar/carregar).
  */
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -30,8 +29,7 @@ const VELOCIDADES: Velocidade[] = [1, 5, 30, 120];
 const DIA_SEGUNDOS = 86400; // segundos de um dia real (o perfil "diária" usa isso)
 
 /**
- * Formata o tempo de simulação (segundos) como um relógio de 24 h (HH:MM:SS),
- * começando em 00:00:00 e dando a volta a cada 24 h. O contador em segundos segue
+ * Formata o tempo de simulação (segundos) como um relógio de 24 h (HH:MM:SS), começando em 00:00:00 e dando a volta a cada 24 h. O contador em segundos segue
  * acumulando à parte; este é só o "horário do dia" correspondente.
  */
 function relogio24h(segundos: number): string {

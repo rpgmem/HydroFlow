@@ -1,9 +1,6 @@
 /**
- * Formulário do "gerador de vazão" — compartilhado por Fonte (entrada) e Consumo
- * (saída). Seletor de perfil (agrupado) + ajuda + preview ao vivo + campos
- * contextuais (só os parâmetros do perfil escolhido). Fase 1: fixo, trapezoidal
- * (com presets) e senoidal. Toda a configuração é estrutural → travada em
- * execução.
+ * Formulário do "gerador de vazão" — compartilhado por Fonte (entrada) e Consumo (saída). Seletor de perfil (agrupado) + ajuda + preview ao vivo + campos contextuais
+ * (só os parâmetros do perfil escolhido). Fixo, trapezoidal (com presets) e senoidal. Toda a configuração é estrutural → travada em execução.
  */
 import { useTranslation } from 'react-i18next';
 import type { Gerador, PerfilVazao } from '../../domain/types';

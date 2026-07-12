@@ -1,7 +1,6 @@
 /**
  * Mock de react-konva para testes de componente (jsdom não tem canvas).
- * Mapeia os nós konva para elementos DOM simples, preservando os props e
- * eventos que os testes exercitam (onClick, name, x/y, draggable, onDragEnd).
+ * Mapeia os nós konva para elementos DOM simples, preservando os props e eventos que os testes exercitam (onClick, name, x/y, draggable, onDragEnd).
  */
 import type { ReactNode } from 'react';
 

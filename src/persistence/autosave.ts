@@ -1,11 +1,8 @@
 /**
- * Autosave em localStorage: preserva o trabalho entre recarregamentos, MAS só
- * enquanto o projeto deixou de ser o exemplo intocado (a decisão fica no App:
- * se o projeto atual == exemplo, `limparAutosave`; senão `salvarAutosave`). Assim
- * quem só abre a página e não mexe recarrega no exemplo padrão.
+ * Autosave em localStorage: preserva o trabalho entre recarregamentos, MAS só enquanto o projeto deixou de ser o exemplo intocado (a decisão fica no App:
+ * se o projeto atual == exemplo, `limparAutosave`; senão `salvarAutosave`). Assim quem só abre a página e não mexe recarrega no exemplo padrão.
  *
- * Reusa o mesmo caminho robusto do arquivo (`serializarProjeto` /
- * `carregarProjetoDeTexto`), então dados corrompidos no storage nunca quebram a
+ * Reusa o mesmo caminho robusto do arquivo (`serializarProjeto` / `carregarProjetoDeTexto`), então dados corrompidos no storage nunca quebram a
  * inicialização — caem em `null` e o App usa o exemplo.
  */
 import type { ProjetoSimulacao } from '../domain/types';

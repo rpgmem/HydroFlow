@@ -1,14 +1,10 @@
 /**
- * Normalização de IDs de peças: reescreve cada `id` como um slug FIEL ao rótulo
- * (minúsculo, sem acentos, sem espaços) e atualiza TODAS as referências cruzadas
- * (conexões, canais/sensores dos quadros, `bombasAlvo` dos sensores, `sensores`
- * das bombas). Ação opt-in — o app não acopla `id` ao rótulo automaticamente
+ * Normalização de IDs de peças: reescreve cada `id` como um slug FIEL ao rótulo (minúsculo, sem acentos, sem espaços) e atualiza TODAS as referências cruzadas
+ * (conexões, canais/sensores dos quadros, `bombasAlvo` dos sensores, `sensores` das bombas). Ação opt-in — o app não acopla `id` ao rótulo automaticamente
  * (renomear não mexe no id); isto só roda quando o usuário pede.
  *
- * Pré-condição de qualidade: rótulos ÚNICOS. `rotulosDuplicados` sinaliza o que
- * precisa ser resolvido antes (a UI bloqueia a ação enquanto houver duplicados).
- * Ainda assim, `normalizarIds` é defensivo: rótulos distintos que gerem o mesmo
- * slug recebem sufixo `_2`, `_3`… para manter os ids únicos.
+ * Pré-condição de qualidade: rótulos ÚNICOS. `rotulosDuplicados` sinaliza o que precisa ser resolvido antes (a UI bloqueia a ação enquanto houver duplicados).
+ * Ainda assim, `normalizarIds` é defensivo: rótulos distintos que gerem o mesmo slug recebem sufixo `_2`, `_3`… para manter os ids únicos.
  */
 import { isBomba, isQuadro, isSensor, type Peca, type ProjetoSimulacao } from './types';
 
@@ -24,8 +20,7 @@ export function slugId(texto: string): string {
 }
 
 /**
- * Rótulos que se repetem entre as peças (comparação sem espaços nas pontas e sem
- * distinguir maiúsc./minúsc.). Rótulo vazio não conta. Retorna os textos duplicados.
+ * Rótulos que se repetem entre as peças (comparação sem espaços nas pontas e sem distinguir maiúsc./minúsc.). Rótulo vazio não conta. Retorna os textos duplicados.
  */
 export function rotulosDuplicados(projeto: ProjetoSimulacao): string[] {
   const cont = new Map<string, { rotulo: string; n: number }>();
@@ -41,10 +36,8 @@ export function rotulosDuplicados(projeto: ProjetoSimulacao): string[] {
 }
 
 /**
- * Devolve um projeto com os ids das peças normalizados (slug do rótulo, ou do id
- * quando sem rótulo), as conexões renumeradas em sequência (`c_1…c_N`, na ordem
- * da lista) e todas as referências atualizadas. Se nada mudaria, devolve a MESMA
- * referência (para não sujar histórico/estado "alterado").
+ * Devolve um projeto com os ids das peças normalizados (slug do rótulo, ou do id quando sem rótulo), as conexões renumeradas em sequência (`c_1…c_N`, na ordem
+ * da lista) e todas as referências atualizadas. Se nada mudaria, devolve a MESMA referência (para não sujar histórico/estado "alterado").
  */
 export function normalizarIds(projeto: ProjetoSimulacao): ProjetoSimulacao {
   const usados = new Set<string>();
@@ -94,8 +87,7 @@ export function normalizarIds(projeto: ProjetoSimulacao): ProjetoSimulacao {
     }
     return { ...p, id };
   });
-  // Renumera as conexões em sequência (`c_1…c_N`) e remapeia os endpoints. A
-  // conexão não é referenciada por peça alguma, então a renumeração é livre.
+  // Renumera as conexões em sequência (`c_1…c_N`) e remapeia os endpoints. A conexão não é referenciada por peça alguma, então a renumeração é livre.
   const conexoes = projeto.conexoes.map((c, i) => ({
     ...c,
     id: `c_${i + 1}`,

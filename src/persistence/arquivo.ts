@@ -1,9 +1,7 @@
 /**
- * HydroFlow — Persistência via arquivo `.json` (Sprint 5, seção 8)
+ * HydroFlow — Persistência via arquivo `.json`
  *
- * Sem backend e sem banco de dados: o projeto é serializado e baixado como
- * arquivo, e recarregado por upload. A validação de schema/versão (Sprint 1)
- * é reaplicada no import.
+ * Sem backend e sem banco de dados: o projeto é serializado e baixado como arquivo, e recarregado por upload. A validação de schema/versão é reaplicada no import.
  */
 
 import {
@@ -20,8 +18,7 @@ export function nomeArquivo(projeto: ProjetoSimulacao): string {
 }
 
 /**
- * Dispara o download do projeto como `.json`. Isolado do DOM real via
- * injeção do documento para permitir teste (jsdom) sem navegador.
+ * Dispara o download do projeto como `.json`. Isolado do DOM real via injeção do documento para permitir teste (jsdom) sem navegador.
  */
 export function baixarProjeto(
   projeto: ProjetoSimulacao,

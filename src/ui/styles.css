@@ -92,8 +92,7 @@ body {
   flex-wrap: wrap;
 }
 
-/* Ações secundárias (Novo/Tema/Imprimir/Salvar/Carregar): no desktop fluem
-   inline na barra; no mobile recolhem sob o botão "⋯" (ver media query). */
+/* Ações secundárias (Novo/Tema/Imprimir/Salvar/Carregar): no desktop fluem inline na barra; no mobile recolhem sob o botão "⋯" (ver media query). */
 .menu-toggle {
   display: none;
 }
@@ -664,8 +663,7 @@ button.ativo {
   padding: 2px 7px;
 }
 
-/* Bloco recolhível (accordion) de um membro do quadro — boia/sensor ou bomba.
-   A borda esquerda colorida (cor definida inline) identifica o membro. */
+/* Bloco recolhível (accordion) de um membro do quadro — boia/sensor ou bomba. A borda esquerda colorida (cor definida inline) identifica o membro. */
 .quadro-membro {
   border: 1px solid var(--line);
   border-left: 4px solid var(--line);
@@ -871,8 +869,7 @@ button.ativo {
     width: 100%;
   }
 
-  /* Barra enxuta no mobile: status edição/execução, desfazer/refazer e voltar-à-
-     edição não aparecem (o celular é superfície de simular/inspecionar). */
+  /* Barra enxuta no mobile: status edição/execução, desfazer/refazer e voltar-à-edição não aparecem (o celular é superfície de simular/inspecionar). */
   .so-desktop {
     display: none !important;
   }
@@ -907,8 +904,7 @@ button.ativo {
     background: rgba(0, 0, 0, 0.5);
   }
 
-  /* Botão flutuante para abrir o inspetor (fica atrás da gaveta quando aberta;
-     o backdrop fecha ao toque). */
+  /* Botão flutuante para abrir o inspetor (fica atrás da gaveta quando aberta; o backdrop fecha ao toque). */
   .fab-inspetor {
     display: flex;
     align-items: center;

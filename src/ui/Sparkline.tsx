@@ -1,6 +1,5 @@
 /**
- * Sparkline: mini-gráfico da série temporal de uma peça (nível ou vazão),
- * acumulada durante a execução. Sem eixos — só a curva, o valor atual e a
+ * Sparkline: mini-gráfico da série temporal de uma peça (nível ou vazão), acumulada durante a execução. Sem eixos — só a curva, o valor atual e a
  * faixa min–máx, para caber no inspetor.
  */
 import { useTranslation } from 'react-i18next';

@@ -1,11 +1,10 @@
 /**
- * Canvas do editor (Sprint 3). react-konva com:
+ * Canvas do editor. react-konva com:
  *  - arrastar peças (modo edição)
  *  - criar conexões arrastando da alça de saída de uma peça até outra (N8N-like)
  *  - selecionar e excluir conexões
  *  - visualização de níveis e vazões (modo execução)
- *  - navegação: arrastar o fundo (pan), pinça/rolagem para zoom, e botões
- *    ＋ / － / ⤢ (ajustar) — essencial no mobile, onde o diagrama não cabe na tela.
+ *  - navegação: arrastar o fundo (pan), pinça/rolagem para zoom, e botões ＋ / － / ⤢ (ajustar) — essencial no mobile, onde o diagrama não cabe na tela.
  */
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -51,8 +50,7 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
   const [ponteiro, setPonteiro] = useState<{ x: number; y: number } | null>(null);
   // Peça sob o cursor (para o tooltip). Guarda a posição na tela (px do container).
   const [hover, setHover] = useState<{ id: string; x: number; y: number } | null>(null);
-  // Transform corrente do Stage (escala/posição) espelhado em estado para o
-  // minimapa redesenhar o retângulo de viewport ao dar zoom/pan.
+  // Transform corrente do Stage (escala/posição) espelhado em estado para o minimapa redesenhar o retângulo de viewport ao dar zoom/pan.
   const [vista, setVista] = useState({ scale: 1, x: 0, y: 0 });
   const conectandoRef = useRef<string | null>(null);
   conectandoRef.current = conectando;
@@ -60,8 +58,7 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
   const stageRef = useRef<KonvaStage>(null);
   // Distância entre os dois dedos no gesto de pinça anterior (0 = sem gesto).
   const pinchRef = useRef(0);
-  // Enquanto o usuário não mexer no zoom/pan, reenquadramos ao mudar o tamanho
-  // (ex.: primeira medição real no mobile, rotação de tela).
+  // Enquanto o usuário não mexer no zoom/pan, reenquadramos ao mudar o tamanho (ex.: primeira medição real no mobile, rotação de tela).
   const usuarioMexeu = useRef(false);
   // Última "geração" de projeto já centralizada (ver efeito abaixo).
   const geracaoAplicada = useRef<number | null>(null);
@@ -73,8 +70,7 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
     const p = pecaPorId.get(id);
     return p ? { x: p.x, y: p.y } : { x: 0, y: 0 };
   };
-  // Ponto na BORDA da caixa da peça `id`, na direção de `alvo` (com folga). Usado
-  // para encurtar as conexões até a beirada, deixando a ponta da seta à vista
+  // Ponto na BORDA da caixa da peça `id`, na direção de `alvo` (com folga). Usado para encurtar as conexões até a beirada, deixando a ponta da seta à vista
   // (senão a seta vai de centro a centro e a cabeça fica escondida sob a peça).
   const bordaPeca = (id: string, alvo: { x: number; y: number }, folga = 0): { x: number; y: number } => {
     const p = pecaPorId.get(id);
@@ -111,29 +107,24 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
     return () => window.removeEventListener('keydown', onKey);
   }, [emExecucao, estado.conexaoSelecionada, dispatch]);
 
-  // O pan (arrastar o fundo) é controlado imperativamente para não ser resetado
-  // pelos re-renders da simulação. Desabilitado enquanto se cria uma conexão.
+  // O pan (arrastar o fundo) é controlado imperativamente para não ser resetado pelos re-renders da simulação. Desabilitado enquanto se cria uma conexão.
   useEffect(() => {
     stageRef.current?.draggable(!conectando);
   }, [conectando]);
 
-  // Reenquadra automaticamente quando o diagrama não couber na área visível
-  // (típico no mobile) — até o usuário assumir o controle do zoom/pan.
+  // Reenquadra automaticamente quando o diagrama não couber na área visível (típico no mobile) — até o usuário assumir o controle do zoom/pan.
   useEffect(() => {
     if (usuarioMexeu.current || largura <= 0 || altura <= 0) return;
     const pcs = estado.projeto.pecas;
     if (pcs.length === 0) return;
     const b = limitesPecas(pcs);
-    // Decide pelo tamanho CRU das peças (sem a margem de enquadramento), para o
-    // desktop — onde tudo já cabe — não ficar reduzido à toa.
+    // Decide pelo tamanho CRU das peças (sem a margem de enquadramento), para o desktop — onde tudo já cabe — não ficar reduzido à toa.
     if (b.rawW > largura || b.rawH > altura) ajustarView();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [largura, altura, estado.projeto.pecas.length]);
 
-  // Ao CARREGAR/trocar de projeto (ou na primeira medição real), centraliza o
-  // diagrama na área visível — mesmo quando já caberia sem reduzir (o exemplo).
-  // `geracao` muda só no carregamento, então editar peças não recentraliza; e o
-  // guard por geração evita recentralizar a cada resize (isso fica com o efeito
+  // Ao CARREGAR/trocar de projeto (ou na primeira medição real), centraliza o diagrama na área visível — mesmo quando já caberia sem reduzir (o exemplo).
+  // `geracao` muda só no carregamento, então editar peças não recentraliza; e o guard por geração evita recentralizar a cada resize (isso fica com o efeito
   // acima, que respeita o pan/zoom do usuário).
   useEffect(() => {
     if (largura <= 0 || altura <= 0) return;
@@ -166,8 +157,7 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
 
   const onStageMouseMove = (e: KonvaEventObject<MouseEvent>): void => {
     if (!conectandoRef.current) return;
-    // Posição do ponteiro em COORDENADAS DO CONTEÚDO (considera zoom/pan), para a
-    // linha temporária alinhar com as peças mesmo com o canvas transformado.
+    // Posição do ponteiro em COORDENADAS DO CONTEÚDO (considera zoom/pan), para a linha temporária alinhar com as peças mesmo com o canvas transformado.
     const pos = e.target.getStage()?.getRelativePointerPosition();
     if (pos) setPonteiro({ x: pos.x, y: pos.y });
   };
@@ -277,8 +267,7 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
     sincronizarVista();
   };
 
-  // Impressão: enquadra todo o diagrama (para nada ficar cortado) e restaura a
-  // vista do usuário ao terminar.
+  // Impressão: enquadra todo o diagrama (para nada ficar cortado) e restaura a vista do usuário ao terminar.
   useEffect(() => {
     const stage = stageRef.current;
     if (!stage) return;
@@ -536,8 +525,7 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
 }
 
 /**
- * Caixa envolvente das peças. `minX/minY/w/h` já incluem a margem usada pelo
- * enquadramento "ajustar"; `rawW/rawH` são as dimensões cruas (sem margem),
+ * Caixa envolvente das peças. `minX/minY/w/h` já incluem a margem usada pelo enquadramento "ajustar"; `rawW/rawH` são as dimensões cruas (sem margem),
  * usadas só para decidir se o diagrama realmente não cabe na área visível.
  */
 function limitesPecas(pcs: EstadoApp['projeto']['pecas']): {
@@ -575,8 +563,7 @@ function rotuloDe(p: { id: string; rotulo?: string } | undefined): string {
 }
 
 /**
- * Linhas do tooltip de uma peça: dados de configuração (diâmetro, cota…) e, em
- * execução, os valores correntes (vazão, nível). Unidades conforme o projeto.
+ * Linhas do tooltip de uma peça: dados de configuração (diâmetro, cota…) e, em execução, os valores correntes (vazão, nível). Unidades conforme o projeto.
  */
 function linhasTooltip(peca: Peca, estado: EstadoApp): string[] {
   const t = i18n.t.bind(i18n);

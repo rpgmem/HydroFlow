@@ -1,10 +1,8 @@
 /**
  * HydroFlow — Índice de grafo e primitivas estruturais do motor.
  *
- * Camada FUNDACIONAL da engine: a topologia (quem conecta com quem) e as
- * travessias que respondem "qual reservatório/terminal está deste lado". Sem
- * nenhuma física (Torricelli/atrito/bomba) — depende só de `domain/types`. Por
- * isso é importável tanto pelo `simulador.ts` (o tick) quanto pelo
+ * Camada FUNDACIONAL da engine: a topologia (quem conecta com quem) e as travessias que respondem "qual reservatório/terminal está deste lado". Sem
+ * nenhuma física (Torricelli/atrito/bomba) — depende só de `domain/types`. Por isso é importável tanto pelo `simulador.ts` (o tick) quanto pelo
  * `redeJuncoes.ts` (a rede) sem criar ciclo de import.
  */
 import {
@@ -35,8 +33,7 @@ export function cargaM(peca: PecaDe<'reservatorio'>, kL: number): number {
 }
 
 /**
- * Reservatório VAZIO: sem coluna d'água na origem não há o que escoar, ainda que
- * a carga (cotaBase + nível) seja positiva pela elevação. Evita vazão "fantasma"
+ * Reservatório VAZIO: sem coluna d'água na origem não há o que escoar, ainda que a carga (cotaBase + nível) seja positiva pela elevação. Evita vazão "fantasma"
  * saindo de um tanque vazio.
  */
 export function reservatorioVazio(r: PecaDe<'reservatorio'>): boolean {
@@ -69,11 +66,9 @@ export class GrafoIndex {
   }
 
   /**
-   * Caminha em uma direção atravessando junções/condutores até achar um
-   * reservatório. 'up' segue arestas de entrada; 'down' segue arestas de saída.
+   * Caminha em uma direção atravessando junções/condutores até achar um reservatório. 'up' segue arestas de entrada; 'down' segue arestas de saída.
    *
-   * Com `bloquearFechados`, um tubo de **registro fechado** é intransponível —
-   * usado nas resoluções de FLUXO (bomba/fonte/consumo) para que fechar o
+   * Com `bloquearFechados`, um tubo de **registro fechado** é intransponível — usado nas resoluções de FLUXO (bomba/fonte/consumo) para que fechar o
    * registro de um cano em série realmente interrompa o fluxo que passa por ele.
    * Resoluções que só observam nível (sensores) usam `false`.
    */
@@ -108,16 +103,12 @@ export class GrafoIndex {
   }
 
   /**
-   * Resolve o caminho de FLUXO de um condutor ativo (bomba/fonte/consumo) até o
-   * TERMINAL — um reservatório (`res`) ou um ponto de consumo (`consumo`) —,
-   * informando também se o caminho está ABERTO. Fecha quando um tubo em série tem
-   * registro fechado OU boia fechada. A boia é mecânica: monitora o reservatório
+   * Resolve o caminho de FLUXO de um condutor ativo (bomba/fonte/consumo) até o TERMINAL — um reservatório (`res`) ou um ponto de consumo (`consumo`) —,
+   * informando também se o caminho está ABERTO. Fecha quando um tubo em série tem registro fechado OU boia fechada. A boia é mecânica: monitora o reservatório
    * de destino (fecha ao encher) — só avaliada no sentido 'down'.
    *
-   * `ehRaiz` distingue o nó de partida dos intermediários: no meio do caminho, um
-   * consumo é terminal (dreno) e uma bomba/fonte é BARREIRA (elemento ativo
-   * governa o próprio fluxo — não se atravessa). Na raiz isso não vale, para a
-   * própria bomba resolver a sucção e o próprio consumo achar sua origem.
+   * `ehRaiz` distingue o nó de partida dos intermediários: no meio do caminho, um consumo é terminal (dreno) e uma bomba/fonte é BARREIRA (elemento ativo
+   * governa o próprio fluxo — não se atravessa). Na raiz isso não vale, para a própria bomba resolver a sucção e o próprio consumo achar sua origem.
    */
   resolverFluxo(
     start: string,
@@ -136,14 +127,12 @@ export class GrafoIndex {
     const peca = this.porId.get(start);
     if (!peca) return vazio;
     if (isReservatorio(peca)) return { res: peca, consumo: null, aberto: true, tubos: [] };
-    // Consumo é terminal (dreno), inclusive na raiz de uma consulta 'down' (bomba
-    // ligada direto no consumo). Exceção: a raiz de uma consulta 'up' é o próprio
+    // Consumo é terminal (dreno), inclusive na raiz de uma consulta 'down' (bomba ligada direto no consumo). Exceção: a raiz de uma consulta 'up' é o próprio
     // consumo perguntando qual é a sua origem — aí atravessa.
     if (isConsumo(peca) && !(ehRaiz && dir === 'up')) {
       return { res: null, consumo: peca, aberto: true, tubos: [] };
     }
-    // Elemento ativo (bomba/fonte) é barreira no meio do caminho: ele governa o
-    // próprio fluxo, não se atravessa por gravidade.
+    // Elemento ativo (bomba/fonte) é barreira no meio do caminho: ele governa o próprio fluxo, não se atravessa por gravidade.
     if (!ehRaiz && (isBomba(peca) || isFonte(peca))) return vazio;
 
     const arestas = dir === 'up' ? this.entrada.get(start) : this.saida.get(start);

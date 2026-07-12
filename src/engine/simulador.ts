@@ -1,16 +1,14 @@
 /**
- * HydroFlow — Motor de simulação (Sprint 2, seção 4)
+ * HydroFlow — Motor de simulação
  *
- * Motor puro, desacoplado de React: recebe um `ProjetoSimulacao` e devolve o
- * estado do próximo tick. Nenhuma dependência de DOM/canvas — testável isolado.
+ * Motor puro, desacoplado de React: recebe um `ProjetoSimulacao` e devolve o estado do próximo tick. Nenhuma dependência de DOM/canvas — testável isolado.
  *
  * FÍSICA SIMPLIFICADA (Torricelli + continuidade de volume; NÃO é CFD):
  *
  *   Vazão por gravidade (tubo):  v = √(2·g·Δh)
  *                                A = π·(diametro/2)²
  *                                Q = A·v
- *   Δh = (cotaBase + nivel)_origem − (cotaBase + nivel)_destino
- *        (sempre a carga hidráulica total; nunca só o nível bruto)
+ *   Δh = (cotaBase + nivel)_origem − (cotaBase + nivel)_destino (sempre a carga hidráulica total; nunca só o nível bruto)
  *   Bomba:   Q = vazaoNominal           (sem curva)
  *            Q = vazaoNominal − k·Δh_lift (com curva), Δh_lift = carga a vencer
  *            Sentido forçado pela conexão, independe do Δh natural.
@@ -99,10 +97,8 @@ function reservatorioMonitorado(
 }
 
 /**
- * Demanda instantânea total (na unidade do usuário) dos CONSUMOS alcançáveis à
- * jusante de `bombaId` seguindo as conexões de saída (por tubos/junções/
- * reservatórios). Usada pelo quadro no 'auto' sem sensor: a bomba só liga se
- * houver consumo pedindo água na linha.
+ * Demanda instantânea total (na unidade do usuário) dos CONSUMOS alcançáveis à jusante de `bombaId` seguindo as conexões de saída (por tubos/junções/
+ * reservatórios). Usada pelo quadro no 'auto' sem sensor: a bomba só liga se houver consumo pedindo água na linha.
  */
 function demandaJusante(idx: GrafoIndex, bombaId: string, tempo: number): number {
   const visto = new Set<string>([bombaId]);
@@ -135,10 +131,8 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   const tempoFim = tempoAtual + dt;
 
   // ---- (0) Quadros de comando (MCC) -------------------------------------
-  // Uma bomba referenciada por um canal passa a OBEDECER o quadro (o
-  // `modoControle` dela é ignorado). O sensor escolhido num canal 'auto' age só
-  // pelo quadro (seu `bombasAlvo` direto não roteia). Peças não referenciadas por
-  // nenhum quadro mantêm o controle direto. Primeira referência a uma bomba vence.
+  // Uma bomba referenciada por um canal passa a OBEDECER o quadro (o `modoControle` dela é ignorado). O sensor escolhido num canal 'auto' age só
+  // pelo quadro (seu `bombasAlvo` direto não roteia). Peças não referenciadas por nenhum quadro mantêm o controle direto. Primeira referência a uma bomba vence.
   const regidaPorQuadro = new Map<string, { canal: CanalQuadro; logica: 'E' | 'OU'; membros: string[] }>();
   const sensoresEmQuadro = new Set<string>();
   for (const p of proj.pecas) {
@@ -160,10 +154,8 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     const resMon = reservatorioMonitorado(idx, p.id);
     const nivel = resMon?.props.nivel ?? 0;
     const decisao = avaliarSensor(p.props, nivel, tempoAtual);
-    // Na banda morta ('manter'), o sensor assere a SUA intenção persistida
-    // (pedindoLigar) — histerese real por sensor. Sem isso, com vários sensores
-    // um "manter" deixaria outro sensor vencer (ex.: o reverso segurando a bomba
-    // desligada perderia para o normal pedindo ligar → chatter).
+    // Na banda morta ('manter'), o sensor assere a SUA intenção persistida (pedindoLigar) — histerese real por sensor. Sem isso, com vários sensores
+    // um "manter" deixaria outro sensor vencer (ex.: o reverso segurando a bomba desligada perderia para o normal pedindo ligar → chatter).
     const efetiva: Decisao =
       decisao !== 'manter'
         ? decisao
@@ -173,16 +165,14 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
             ? 'desligar'
             : 'manter';
     sensores[p.id] = efetiva;
-    // Persiste a intenção (para a histerese e o delay) a partir da decisão
-    // EFETIVA deste tick — no início do tick, coerente com a arbitragem.
+    // Persiste a intenção (para a histerese e o delay) a partir da decisão EFETIVA deste tick — no início do tick, coerente com a arbitragem.
     const querLigar =
       efetiva === 'ligar' ? true : efetiva === 'desligar' ? false : p.props.pedindoLigar;
     if (querLigar !== p.props.pedindoLigar) {
       p.props.ultimaTroca = tempoAtual;
       p.props.pedindoLigar = querLigar;
     }
-    // Um sensor pode reger várias bombas simultaneamente — a MENOS que ele esteja
-    // sob um quadro de comandos (aí só age pelo quadro; o roteamento direto para).
+    // Um sensor pode reger várias bombas simultaneamente — a MENOS que ele esteja sob um quadro de comandos (aí só age pelo quadro; o roteamento direto para).
     if (!sensoresEmQuadro.has(p.id)) {
       for (const alvo of p.props.bombasAlvo) {
         const lista = decisoesPorBomba.get(alvo) ?? [];
@@ -193,10 +183,8 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   }
 
   // ---- (2) Controle de bombas (modo/arbitragem) -----------------------
-  // 'ligado'/'desligado' forçam o estado (o botão manual); 'auto' segue os
-  // sensores (normais e reversos — 'desligar' vence). A bomba NÃO desliga sozinha
-  // por nível: a proteção é feita por um sensor REVERSO na origem. Se mesmo assim
-  // a origem esvaziar com a bomba ligada, é detectado como "rodando a seco".
+  // 'ligado'/'desligado' forçam o estado (o botão manual); 'auto' segue os sensores (normais e reversos — 'desligar' vence). A bomba NÃO desliga sozinha
+  // por nível: a proteção é feita por um sensor REVERSO na origem. Se mesmo assim a origem esvaziar com a bomba ligada, é detectado como "rodando a seco".
   for (const p of proj.pecas) {
     if (!isBomba(p)) continue;
     const antes = p.props.ligada ?? false;
@@ -208,10 +196,8 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
       if (canal.modo === 'desligado') agora = false;
       else if (canal.modo === 'manual') agora = true;
       else {
-        // 'auto': segue os sensores marcados no canal; se NENHUM foi marcado,
-        // segue TODOS os sensores-membro do quadro (assim uma boia-membro — em
-        // especial uma REVERSA de proteção — nunca é silenciosamente ignorada: seu
-        // 'desligar' continua tendo precedência). Só quando o quadro não tem sensor
+        // 'auto': segue os sensores marcados no canal; se NENHUM foi marcado, segue TODOS os sensores-membro do quadro (assim uma boia-membro — em
+        // especial uma REVERSA de proteção — nunca é silenciosamente ignorada: seu 'desligar' continua tendo precedência). Só quando o quadro não tem sensor
         // ALGUM é que o 'auto' vira acionamento por DEMANDA (consumo > 0 à jusante).
         const marcados = sensoresDoCanal(canal);
         const ids = marcados.length > 0 ? marcados : regida.membros;
@@ -219,8 +205,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
           agora = demandaJusante(idx, p.id, tempoAtual) > 1e-9;
         } else {
           // Sequência ordenada: cada gap tem seu operador (default = lógica global).
-          // No fallback "segue todos os membros" não há operadores explícitos, logo
-          // todos os gaps caem no padrão `logica` (compatível com o comportamento
+          // No fallback "segue todos os membros" não há operadores explícitos, logo todos os gaps caem no padrão `logica` (compatível com o comportamento
           // anterior). Decisões `undefined` (sensor inativo) são puladas.
           const decisoes = ids.map((id) => sensores[id]);
           const operadores = marcados.length > 0 ? operadoresDoCanal(canal, logica) : [];
@@ -234,8 +219,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
       else agora = arbitrarBomba(decisoesPorBomba.get(p.id) ?? [], antes);
     }
     p.props.ligada = agora;
-    // Revezamento: quando regida, o QUADRO decide (canal.revezamento + unidade);
-    // senão, a própria bomba (props.revezamento). Com uma unidade forçada (1/2) a
+    // Revezamento: quando regida, o QUADRO decide (canal.revezamento + unidade); senão, a própria bomba (props.revezamento). Com uma unidade forçada (1/2) a
     // metade fica fixa; sem ela, alterna a cada ACIONAMENTO (borda de subida).
     const revezar = regida ? (regida.canal.revezamento ?? false) : (p.props.revezamento ?? false);
     const unidadeForcada = regida?.canal.unidade;
@@ -248,8 +232,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   }
 
   // ---- (2b) Estado das boias mecânicas (histerese persistida) ----------
-  // Cada boia de tubo atualiza aberta/fechada monitorando o reservatório de
-  // destino. Entre mín. e máx. mantém o estado anterior (b.aberta) — histerese
+  // Cada boia de tubo atualiza aberta/fechada monitorando o reservatório de destino. Entre mín. e máx. mantém o estado anterior (b.aberta) — histerese
   // real, sem chatter. O resto do tick lê b.aberta.
   for (const p of proj.pecas) {
     if (!isTubo(p) || !p.props.boia) continue;
@@ -268,13 +251,10 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
 
   const ladroesAtivos: string[] = [];
   const cadeiaResolvida = new Set<string>();
-  // Junções que bifurcam/unem: resolvidas ANTES como uma REDE de vazão, para
-  // dividir/somar o fluxo conservando massa no nó. Terminais (consumo/fonte/
-  // bomba) ligados a uma junção entram como NÓS DE VAZÃO da própria rede — assim
-  // um consumo puxando de uma união pode forçar refluxo do ramo mais alto, em vez
-  // de cada driver resolver seu caminho isolado. Os terminais assim resolvidos
-  // ficam em `driversResolvidos` (o laço de ativos os pula) e seus tubos em
-  // `cadeiaResolvida`.
+  // Junções que bifurcam/unem: resolvidas ANTES como uma REDE de vazão, para dividir/somar o fluxo conservando massa no nó. Terminais (consumo/fonte/
+  // bomba) ligados a uma junção entram como NÓS DE VAZÃO da própria rede — assim um consumo puxando de uma união pode forçar refluxo do ramo mais alto,
+  //  em vez de cada driver resolver seu caminho isolado. Os terminais assim resolvidos ficam em `driversResolvidos` (o laço de ativos os pula) e seus
+  // tubos em `cadeiaResolvida`.
   const driversResolvidos = new Set<string>();
   resolverGravidadeComJuncoes(
     idx,
@@ -290,8 +270,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     atrito,
   );
 
-  // Elementos ATIVOS: além da própria vazão, anotam a vazão nos tubos em série
-  // pelos quais empurram a água (para a telemetria/animação refletir o fluxo que
+  // Elementos ATIVOS: além da própria vazão, anotam a vazão nos tubos em série pelos quais empurram a água (para a telemetria/animação refletir o fluxo que
   // passa por esses canos). Os já resolvidos pela rede de junções são pulados.
   for (const p of proj.pecas) {
     if (driversResolvidos.has(p.id)) continue;
@@ -299,14 +278,11 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     else if (isFonte(p)) vazoesM3[p.id] = calcularFonte(idx, p, u, tempoAtual, fluxos, vazoesM3);
     else if (isConsumo(p)) vazoesM3[p.id] = calcularConsumo(idx, p, g, u, tempoAtual, fluxos, vazoesM3, atrito);
   }
-  // Tubos por gravidade / ladrão: só os que ainda não foram atribuídos por um
-  // elemento ativo (um cano alimentado por fonte/bomba tem sua vazão dada pelo
+  // Tubos por gravidade / ladrão: só os que ainda não foram atribuídos por um elemento ativo (um cano alimentado por fonte/bomba tem sua vazão dada pelo
   // driver).
   //
-  // Uma CADEIA de tubos em série limitada por reservatórios nas duas pontas
-  // carrega UM único fluxo, limitado pelo cano mais estreito (o gargalo). Sem
-  // isso, cada tubo resolveria os mesmos reservatórios e empurraria o próprio
-  // fluxo — tubos em série viravam paralelos e a origem drenava N×. Ladrão,
+  // Uma CADEIA de tubos em série limitada por reservatórios nas duas pontas carrega UM único fluxo, limitado pelo cano mais estreito (o gargalo). Sem
+  // isso, cada tubo resolveria os mesmos reservatórios e empurraria o próprio fluxo — tubos em série viravam paralelos e a origem drenava N×. Ladrão,
   // registro fechado e descarga ao ambiente/sucção seguem a lógica por tubo.
   for (const p of proj.pecas) {
     if (!isTubo(p) || vazoesM3[p.id] !== undefined || cadeiaResolvida.has(p.id)) continue;
@@ -314,15 +290,13 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     const up = fechado || p.props.ladrao ? null : idx.resolverReservatorio(p.id, 'up', true);
     const down = fechado || p.props.ladrao ? null : idx.resolverReservatorio(p.id, 'down', true);
     if (!up || !down) {
-      // Registro fechado, ladrão, descarga ao ambiente ou sucção de bomba
-      // (sem reservatório nas duas pontas) → lógica por tubo, como antes.
+      // Registro fechado, ladrão, descarga ao ambiente ou sucção de bomba (sem reservatório nas duas pontas) → lógica por tubo, como antes.
       const q = calcularTubo(idx, p, g, u, fluxos, ladroesAtivos, atrito);
       vazoesM3[p.id] = q;
       if (q < -1e-9) refluxos.push(p.id); // fluxo contrário à seta
       continue;
     }
-    // Cadeia entre dois reservatórios → resolve UMA vez, pelo gargalo (menor
-    // diâmetro). Uma boia fechada em qualquer tubo da cadeia interrompe o fluxo.
+    // Cadeia entre dois reservatórios → resolve UMA vez, pelo gargalo (menor diâmetro). Uma boia fechada em qualquer tubo da cadeia interrompe o fluxo.
     const cadeia = coletarCadeiaTubos(idx, p.id);
     cadeia.forEach((id) => cadeiaResolvida.add(id));
     const diam = (id: string): number => (idx.porId.get(id) as PecaDe<'tubo'>).props.diametro;
@@ -331,8 +305,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
       const b = (idx.porId.get(id) as PecaDe<'tubo'>).props.boia;
       return b !== undefined && !(b.aberta ?? true);
     });
-    // Atrito na cadeia: usa o comprimento SOMADO dos tubos em série (com o
-    // diâmetro do gargalo) — perda de carga do trecho inteiro, não só do gargalo.
+    // Atrito na cadeia: usa o comprimento SOMADO dos tubos em série (com o diâmetro do gargalo) — perda de carga do trecho inteiro, não só do gargalo.
     const kLc = metrosPorComprimento(u);
     const compTotalM = atrito
       ? cadeia.reduce((s, id) => s + ((idx.porId.get(id) as PecaDe<'tubo'>).props.comprimento ?? COMPRIMENTO_PADRAO_M) * kLc, 0)
@@ -344,8 +317,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     if (q < -1e-9) cadeia.forEach((id) => refluxos.push(id)); // fluxo contrário à seta
   }
 
-  // Tubos com velocidade acima da recomendada (v = Q/A > limite) = subdimensionados
-  // para a vazão que passa. Só um aviso de dimensionamento; não altera a física.
+  // Tubos com velocidade acima da recomendada (v = Q/A > limite) = subdimensionados para a vazão que passa. Só um aviso de dimensionamento; não altera a física.
   const tubosVelozes: string[] = [];
   for (const p of proj.pecas) {
     if (!isTubo(p)) continue;
@@ -401,8 +373,7 @@ function aplicarFluxos(
     }
   }
 
-  // Limita saídas para não drenar abaixo de zero: escala proporcionalmente
-  // quando a soma das saídas de um reservatório excede seu volume disponível.
+  // Limita saídas para não drenar abaixo de zero: escala proporcionalmente quando a soma das saídas de um reservatório excede seu volume disponível.
   const saidaPorRes = new Map<string, number>();
   for (const f of fluxos) {
     if (f.origem) saidaPorRes.set(f.origem, (saidaPorRes.get(f.origem) ?? 0) + f.vazao * dt);

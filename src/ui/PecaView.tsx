@@ -1,9 +1,8 @@
 /**
- * Desenho de uma peça no canvas (Sprint 3). Cada peça é um Group arrastável.
+ * Desenho de uma peça no canvas. Cada peça é um Group arrastável.
  * Reservatórios mostram o nível de líquido proporcional à alturaMaxima.
  *
- * Conexão deliberada (estilo N8N): cada peça tem uma alça de saída (o ponto à
- * direita). O usuário arrasta a partir dela até outra peça para criar a aresta —
+ * Conexão deliberada (estilo N8N): cada peça tem uma alça de saída (o ponto à direita). O usuário arrasta a partir dela até outra peça para criar a aresta —
  * clicar no corpo apenas seleciona. Isso evita conexões acidentais.
  */
 import { Group, Rect, Circle, Line, Text, Wedge, Ellipse } from 'react-konva';
@@ -46,23 +45,20 @@ interface Props {
   onHover?: (info: { id: string; x: number; y: number } | null) => void;
 }
 
-// Cores de estado. Registro e boia: verde = aberto (deixa passar), vermelho =
-// fechado. O ladrão em espera usa âmbar (não é uma boia — só sinaliza o dreno).
+// Cores de estado. Registro e boia: verde = aberto (deixa passar), vermelho = fechado. O ladrão em espera usa âmbar (não é uma boia — só sinaliza o dreno).
 const COR_ABERTO = '#34d399';
 const COR_FECHADO = '#f87171';
 const COR_BOIA_ABERTA = '#34d399'; // boia aberta = verde (deixa passar)
 const COR_AMBAR = '#fbbf24'; // ladrão em espera / sensor em banda morta
 
-// Sensor: verde = atuando p/ ligar, vermelho = atuando p/ desligar,
-// amarelo = esperando (banda morta). Sem simulação usa a cor padrão do sensor.
+// Sensor: verde = atuando p/ ligar, vermelho = atuando p/ desligar, amarelo = esperando (banda morta). Sem simulação usa a cor padrão do sensor.
 const COR_SENSOR: Record<string, string> = {
   ligar: '#34d399',
   desligar: '#f87171',
   manter: COR_AMBAR,
 };
 
-// Cor base de cada tipo. Bomba (violeta) e junção (teal) ganham cores próprias
-// para se distinguirem à primeira vista, além da forma (círculo/hexágono).
+// Cor base de cada tipo. Bomba (violeta) e junção (teal) ganham cores próprias para se distinguirem à primeira vista, além da forma (círculo/hexágono).
 const COR: Record<Peca['tipo'], string> = {
   reservatorio: '#1e3a52',
   tubo: '#8aa0b2',
@@ -98,8 +94,7 @@ export function PecaView({
   const larguraBorda = selecionada ? 2.5 : 1;
 
   const handleDragEnd = (e: KonvaEventObject<DragEvent>): void => {
-    // Snap à grade: encaixa o centro da peça no múltiplo de GRADE mais próximo,
-    // ajudando o alinhamento em colunas/linhas (as colunas do exemplo, múltiplas
+    // Snap à grade: encaixa o centro da peça no múltiplo de GRADE mais próximo, ajudando o alinhamento em colunas/linhas (as colunas do exemplo, múltiplas
     // de 120, permanecem intactas — 120 é múltiplo da grade).
     const gx = Math.round(e.target.x() / GRADE) * GRADE;
     const gy = Math.round(e.target.y() / GRADE) * GRADE;
@@ -159,8 +154,7 @@ export function PecaView({
         // Distinto do círculo (bomba) e do losango (sensor).
         <Line closed points={hexagono(w / 2)} fill={COR.juncao} stroke={borda} strokeWidth={larguraBorda} />
       ) : peca.tipo === 'quadro' ? (
-        // Quadro de comandos = painel retangular com "luzes" (MCC). Distinto dos
-        // demais pela forma larga + fileira de indicadores no topo.
+        // Quadro de comandos = painel retangular com "luzes" (MCC). Distinto dos demais pela forma larga + fileira de indicadores no topo.
         <>
           <Rect x={-w / 2} y={-h / 2} width={w} height={h} cornerRadius={3} fill={COR.quadro} stroke={borda} strokeWidth={larguraBorda} />
           {[-1, 0, 1].map((i) => (
@@ -168,8 +162,7 @@ export function PecaView({
           ))}
         </>
       ) : peca.tipo === 'consumo' ? (
-        // Triângulo apontando para baixo (dreno/saída). Laranja quando em déficit
-        // (a bomba que o alimenta não acompanha a demanda).
+        // Triângulo apontando para baixo (dreno/saída). Laranja quando em déficit (a bomba que o alimenta não acompanha a demanda).
         <Line
           closed
           points={[-w / 2, -h / 2, w / 2, -h / 2, 0, h / 2]}
@@ -200,7 +193,7 @@ export function PecaView({
         y={h / 2 + 4}
       />
 
-      {/* Alça de saída para iniciar conexões (só em edição). O quadro de comandos
+      {/* Alça de saída para iniciar conexões (só em edição). O quadro de comandos 
           liga por associação (props), não por setas — não tem alça. */}
       {!emExecucao && peca.tipo !== 'quadro' && (
         <Circle
@@ -253,8 +246,7 @@ function TuboView({
 }) {
   const fluindo = vazao !== undefined && Math.abs(vazao) > 1e-9;
   const registroFechado = props.registro !== undefined && !props.registro.aberto;
-  // Prioridade de cor: ladrão transbordando (laranja) > velocidade acima da
-  // recomendada/subdimensionado (rosa) > fluindo normal (azul) > repouso (cinza).
+  // Prioridade de cor: ladrão transbordando (laranja) > velocidade acima da recomendada/subdimensionado (rosa) > fluindo normal (azul) > repouso (cinza).
   const corTubo =
     props.ladrao && ladraoAtivo
       ? '#f59e0b'
@@ -310,8 +302,7 @@ function TuboView({
 }
 
 /**
- * Bomba. Simples: um círculo. Em REVEZAMENTO: um círculo dividido ao meio com
- * as metades "1" (esquerda) e "2" (direita) — ao ligar, a metade que assumiu
+ * Bomba. Simples: um círculo. Em REVEZAMENTO: um círculo dividido ao meio com as metades "1" (esquerda) e "2" (direita) — ao ligar, a metade que assumiu
  * acende e a outra fica apagada; desligada, ambas apagadas.
  */
 function BombaView({
@@ -333,12 +324,10 @@ function BombaView({
   }
   const ligada = props.ligada ?? false;
   const ativa = props.unidadeAtiva === 2 ? 2 : 1;
-  // Metade acende só quando é a ativa E a bomba está ligada; a seco pinta de
-  // vermelho escuro (está tentando rodar sem água).
+  // Metade acende só quando é a ativa E a bomba está ligada; a seco pinta de vermelho escuro (está tentando rodar sem água).
   const corMetade = (n: 1 | 2): string =>
     ativa === n && ligada ? (aSeco ? '#8a3535' : '#38bdf8') : COR.bomba;
-  // O número da unidade ATIVA fica em branco vivo e maior; a inativa apaga —
-  // deixa claro QUAL metade está rodando (além da cor da metade).
+  // O número da unidade ATIVA fica em branco vivo e maior; a inativa apaga — deixa claro QUAL metade está rodando (além da cor da metade).
   const ativoAgora = (n: 1 | 2): boolean => ativa === n && ligada;
   const corNum = (n: 1 | 2): string => (ativoAgora(n) ? '#ffffff' : '#5f6f7d');
   const tamNum = (n: 1 | 2): number => (ativoAgora(n) ? 14 : 11);
@@ -400,8 +389,7 @@ function Reservatorio({
 }) {
   const frac = props.alturaMaxima > 0 ? Math.min(1, (props.nivel ?? 0) / props.alturaMaxima) : 0;
   const alturaAgua = h * frac;
-  // Cilindro (tanque) vs retangular (caixa) ganham silhuetas distintas: o
-  // cilindro tem cantos arredondados e uma boca elíptica no topo; a caixa é
+  // Cilindro (tanque) vs retangular (caixa) ganham silhuetas distintas: o cilindro tem cantos arredondados e uma boca elíptica no topo; a caixa é
   // angulosa (cantos retos). A água segue o mesmo raio de canto na base.
   const cil = props.formato === 'cilindro';
   const raioCanto = cil ? 14 : 2;

@@ -1,6 +1,5 @@
 /**
- * Formulários do inspetor por tipo de peça (reservatório, tubo, bomba, fonte,
- * consumo, sensor, junção). Extraídos de Inspector.tsx para enxugá-lo — cada um
+ * Formulários do inspetor por tipo de peça (reservatório, tubo, bomba, fonte, consumo, sensor, junção). Extraídos de Inspector.tsx para enxugá-lo — cada um
  * edita as props do seu tipo; os blocos compartilhados vêm de `campos.tsx`.
  */
 import {
@@ -63,8 +62,7 @@ export function ReservatorioForm({
   unidades: Unidades;
 }) {
   const { t, i18n } = useTranslation();
-  // Capacidade (litragem) derivada da geometria informada (raio/lados × altura
-  // máxima), na unidade de volume do usuário. Só informativo — atualiza sozinho.
+  // Capacidade (litragem) derivada da geometria informada (raio/lados × altura máxima), na unidade de volume do usuário. Só informativo — atualiza sozinho.
   const capacidade = volumeMaximoM3(props, unidades) / m3PorVolume(unidades);
   const nivelAtual = volumeMaximoM3({ ...props, alturaMaxima: props.nivel ?? 0 }, unidades) / m3PorVolume(unidades);
   const fmt = (n: number): string => fmtNumero(n, i18n.language, { maximumFractionDigits: 0 });
@@ -126,14 +124,12 @@ export function TuboForm({
   const { t, i18n } = useTranslation();
   const temBoia = props.boia !== undefined;
   const temLadrao = props.ladrao !== undefined;
-  // Vazão máxima recomendada = área × velocidade de referência (configurável em
-  // ⚙ Opções, padrão 3 m/s). Acima disso o tubo é sinalizado na simulação.
+  // Vazão máxima recomendada = área × velocidade de referência (configurável em ⚙ Opções, padrão 3 m/s). Acima disso o tubo é sinalizado na simulação.
   const vazaoMaxRec =
     props.diametro > 0 ? vazaoDeM3(vazaoMaxRecomendadaM3(props.diametro, velRef), unidades) : 0;
   return (
     <>
-      {/* Bitola pré-configurada: seleciona o DN e grava o diâmetro INTERNO
-          tabelado (usado no cálculo de vazão). "Personalizado" libera o mm. */}
+      {/* Bitola pré-configurada: seleciona o DN e grava o diâmetro INTERNO tabelado (usado no cálculo de vazão). "Personalizado" libera o mm. */}
       <div className="field">
         <label>{t('form.bitola')}</label>
         <select
@@ -176,8 +172,7 @@ export function TuboForm({
           />
         </p>
       )}
-      {/* Perda de carga (Hazen-Williams): comprimento e C só aparecem com o
-          atrito ligado (ver ⚙ Opções). Defaults: 1 m e C=140 quando em branco. */}
+      {/* Perda de carga (Hazen-Williams): comprimento e C só aparecem com o atrito ligado (ver ⚙ Opções). Defaults: 1 m e C=140 quando em branco. */}
       {atrito && (
         <>
           <Num
@@ -213,8 +208,7 @@ export function TuboForm({
         onChange={(v) => upd({ alturaSaida: v })}
       />
       {/* Com boia, o registro manual perde o sentido (a boia governa a abertura).
-          Abrir/fechar o registro é um COMANDO de operação — fica ativo também na
-          execução (não leva `disabled={emExecucao}`). */}
+          Abrir/fechar o registro é um COMANDO de operação — fica ativo também na execução (não leva `disabled={emExecucao}`). */}
       {!temBoia && (
         <Switch
           checked={props.registro?.aberto ?? true}
@@ -262,8 +256,7 @@ export function TuboForm({
 }
 
 /**
- * Boia mecânica (válvula de nível embutida na aresta). Monitora o reservatório
- * de destino: fecha ao encher (nível ≥ máximo), abre ao baixar (nível ≤ mínimo).
+ * Boia mecânica (válvula de nível embutida na aresta). Monitora o reservatório de destino: fecha ao encher (nível ≥ máximo), abre ao baixar (nível ≤ mínimo).
  * Sem histerese/delay (isso é exclusivo do sensor eletrônico).
  */
 export function BoiaFields({
@@ -317,8 +310,7 @@ export function BoiaFields({
 
 export function BombaForm({ props, emExecucao, upd, u, projeto, pecaId, dispatch }: { props: PropsBomba; emExecucao: boolean; upd: Upd; u: UniLabel; projeto: ProjetoSimulacao; pecaId: string; dispatch: React.Dispatch<Acao> }) {
   const { t } = useTranslation();
-  // Quadros do projeto e o que rege esta bomba (se algum). O seletor abaixo é a
-  // ESCOLHA de "qual quadro" — a bomba pertence a no máximo um. Ao escolher, o
+  // Quadros do projeto e o que rege esta bomba (se algum). O seletor abaixo é a ESCOLHA de "qual quadro" — a bomba pertence a no máximo um. Ao escolher, o
   // canal é movido para o quadro alvo (fonte da verdade = canais do quadro).
   const quadros = projeto.pecas.filter(isQuadro);
   const regidaPor = quadroDaBomba(projeto, pecaId);
@@ -339,8 +331,7 @@ export function BombaForm({ props, emExecucao, upd, u, projeto, pecaId, dispatch
   return (
     <>
       <Num label={t('form.vazaoNominal')} unidade={u.vazao} value={props.vazaoNominal} disabled={emExecucao} onChange={(v) => upd({ vazaoNominal: v })} />
-      {/* Altura nominal deriva a curva automaticamente; entre dois reservatórios
-          a altura real da instalação reduz a vazão. Projetos antigos com `curva.k`
+      {/* Altura nominal deriva a curva automaticamente; entre dois reservatórios a altura real da instalação reduz a vazão. Projetos antigos com `curva.k`
           aparecem aqui como a altura equivalente (vazaoNominal/k). */}
       <Num
         label={t('form.alturaNominal')}
@@ -495,8 +486,7 @@ export function ConsumoForm({
 }
 
 export function FonteForm({ props, emExecucao, upd, u }: { props: PropsFonte; emExecucao: boolean; upd: Upd; u: UniLabel }) {
-  // A boia é uma válvula de NÍVEL que fica no cano/entrada do tanque — por isso é
-  // configurada no tubo, não na fonte (suprimento externo). Aqui só o gerador de
+  // A boia é uma válvula de NÍVEL que fica no cano/entrada do tanque — por isso é configurada no tubo, não na fonte (suprimento externo). Aqui só o gerador de
   // vazão de abastecimento.
   return <GeradorForm gerador={props.gerador} emExecucao={emExecucao} u={u} upd={(g) => upd({ gerador: g })} />;
 }
@@ -524,13 +514,11 @@ export function SensorForm({
   const alternarAlvo = (id: string, marcado: boolean): void =>
     upd({ bombasAlvo: marcado ? [...alvos, id] : alvos.filter((x) => x !== id) });
   const reversa = props.reversa ?? false;
-  // Membro de um quadro (simétrico à bomba): o seletor escolhe "qual quadro"; o
-  // vínculo direto (bombasAlvo) fica inativo. Ao remover, limpa também os canais
+  // Membro de um quadro (simétrico à bomba): o seletor escolhe "qual quadro"; o vínculo direto (bombasAlvo) fica inativo. Ao remover, limpa também os canais
   // que apontavam para esta boia.
   const quadros = projeto.pecas.filter(isQuadro);
   const membroDe = quadroDoSensor(projeto, pecaId);
-  // "Seguido?": alguma bomba do quadro (canal 'auto') efetivamente segue esta
-  // boia? (canal sem seleção segue todos os membros — o fallback do motor.)
+  // "Seguido?": alguma bomba do quadro (canal 'auto') efetivamente segue esta boia? (canal sem seleção segue todos os membros — o fallback do motor.)
   const membroSeguido =
     membroDe != null &&
     (membroDe.props as PropsQuadro).canais.some((c) => {
@@ -560,8 +548,7 @@ export function SensorForm({
   };
   return (
     <>
-      {/* Habilitar/desabilitar o sensor é um COMANDO de operação — ativo também
-          na execução. Desabilitado, ele não emite decisão (nem direto, nem via
+      {/* Habilitar/desabilitar o sensor é um COMANDO de operação — ativo também na execução. Desabilitado, ele não emite decisão (nem direto, nem via
           quadro). */}
       <Switch
         checked={props.ativo ?? true}
@@ -587,13 +574,12 @@ export function SensorForm({
         </div>
       )}
       {membroDe ? (
-        // Membro de um quadro → TODOS os ajustes (níveis, reverso, histerese,
-        // delay) são feitos no inspetor do quadro. Aqui só a nota de vínculo.
+        // Membro de um quadro → TODOS os ajustes (níveis, reverso, histerese, delay) são feitos no inspetor do quadro. Aqui só a nota de vínculo.
         <>
           <p className="telemetry" style={{ margin: 0 }}>
             🎛️ {t('form.sensorRegido', { nome: nomePeca(membroDe) })}
           </p>
-          {/* Aviso: membro do quadro mas nenhuma bomba (canal 'auto') o segue —
+          {/* Aviso: membro do quadro mas nenhuma bomba (canal 'auto') o segue — 
               e o vínculo direto está inativo → o sensor não tem efeito. */}
           {!membroSeguido && (
             <p className="telemetry" style={{ margin: 0, color: '#e0863b' }}>
@@ -658,8 +644,7 @@ export function SensorForm({
 }
 
 /**
- * Quadro de comandos (MCC): uma linha por bomba controlada — modo (Automático/
- * Manual/Desligado) e, no automático, qual boia/sensor respeitar. Quem estiver
+ * Quadro de comandos (MCC): uma linha por bomba controlada — modo (Automático/Manual/Desligado) e, no automático, qual boia/sensor respeitar. Quem estiver
  * aqui passa a obedecer o quadro (o controle direto da bomba/sensor fica inativo).
  */
 export function QuadroForm({
@@ -678,11 +663,9 @@ export function QuadroForm({
   dispatch: React.Dispatch<Acao>;
 }) {
   const { t } = useTranslation();
-  // Arraste-e-solte a sequência de sensores dentro de um canal (desktop). Guarda
-  // qual item (canal + posição) está sendo arrastado; ▲▼ são a reserva acessível.
+  // Arraste-e-solte a sequência de sensores dentro de um canal (desktop). Guarda qual item (canal + posição) está sendo arrastado; ▲▼ são a reserva acessível.
   const [arrastando, setArrastando] = useState<{ canal: number; pos: number } | null>(null);
-  // Sensores-membro deste quadro (escolhidos no inspetor de cada sensor). Aqui é
-  // onde TODOS os ajustes deles (níveis, reverso, histerese, delay) são feitos —
+  // Sensores-membro deste quadro (escolhidos no inspetor de cada sensor). Aqui é onde TODOS os ajustes deles (níveis, reverso, histerese, delay) são feitos —
   // gravados de volta nas props do próprio sensor via `dispatch` (cross-piece).
   const membrosSensor = (props.sensores ?? [])
     .map((id) => projeto.pecas.find((p) => p.id === id))
@@ -719,8 +702,7 @@ export function QuadroForm({
     const atuais = sensoresDoCanalUI(c);
     const pos = atuais.indexOf(sid);
     if (pos < 0) return;
-    // Remove o operador adjacente ao sensor retirado (o gap antes dele, ou o
-    // primeiro se ele era o primeiro) para manter o alinhamento posicional.
+    // Remove o operador adjacente ao sensor retirado (o gap antes dele, ou o primeiro se ele era o primeiro) para manter o alinhamento posicional.
     const ops = operadoresDoCanal(c, logica).filter((_, k) => k !== (pos > 0 ? pos - 1 : 0));
     gravarSequencia(i, atuais.filter((x) => x !== sid), ops);
   };
@@ -742,8 +724,7 @@ export function QuadroForm({
     ops[gap] = valor;
     atualiza(i, { operadores: ops });
   };
-  // Cor por membro: cada boia/sensor e cada bomba ganha um tom distinto, reusado
-  // como etiqueta ao lado da caixa de seleção do sensor no canal da bomba.
+  // Cor por membro: cada boia/sensor e cada bomba ganha um tom distinto, reusado como etiqueta ao lado da caixa de seleção do sensor no canal da bomba.
   const idsMembros = [...membrosSensor.map((s) => s.id), ...canais.map((c) => c.bomba)];
   const corMembro = (id: string): string =>
     CORES_MEMBRO[Math.max(0, idsMembros.indexOf(id)) % CORES_MEMBRO.length]!;
@@ -848,8 +829,7 @@ export function QuadroForm({
                 <p className="telemetry" style={{ margin: 0 }}>{t('form.quadroSemSensor')}</p>
               ) : (
                 <>
-                  {/* Sequência ORDENADA dos sensores seguidos. Entre pares
-                      consecutivos, um operador E/OU independente. Avaliação
+                  {/* Sequência ORDENADA dos sensores seguidos. Entre pares consecutivos, um operador E/OU independente. Avaliação
                       esquerda→direita (= de cima para baixo). */}
                   <ol className="quadro-seq">
                     {seguidos.map((sid, pos) => {

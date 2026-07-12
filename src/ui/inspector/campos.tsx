@@ -1,6 +1,5 @@
 /**
- * Blocos compartilhados dos formulários do inspetor: o campo numérico `Num` e os
- * tipos `Upd`/`UniLabel`. Separados para os formulários por tipo (forms.tsx)
+ * Blocos compartilhados dos formulários do inspetor: o campo numérico `Num` e os tipos `Upd`/`UniLabel`. Separados para os formulários por tipo (forms.tsx)
  * reusarem sem inchar o Inspector principal.
  */
 

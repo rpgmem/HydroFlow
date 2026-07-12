@@ -1,6 +1,5 @@
 /**
- * Rótulos de unidades para exibição na UI. O motor trata os números na unidade
- * de comprimento escolhida (volume = área·altura), então estas funções servem
+ * Rótulos de unidades para exibição na UI. O motor trata os números na unidade de comprimento escolhida (volume = área·altura), então estas funções servem
  * apenas para rotular os campos e a telemetria.
  */
 import type { Unidades } from './types';

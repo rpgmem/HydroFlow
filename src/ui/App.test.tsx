@@ -29,7 +29,7 @@ function adicionar(rotulo: string): string {
   return novo;
 }
 
-describe('editor — criação de peças (Sprint 3)', () => {
+describe('editor — criação de peças', () => {
   it('adiciona uma peça ao clicar na paleta', () => {
     render(<App />);
     const antes = idsPecas().length;
@@ -38,7 +38,7 @@ describe('editor — criação de peças (Sprint 3)', () => {
   });
 });
 
-describe('editor — conexão de peças (Sprint 3)', () => {
+describe('editor — conexão de peças', () => {
   it('NÃO conecta ao apenas clicar em duas peças (conexão é deliberada)', () => {
     render(<App />);
     const arestasAntes = screen.queryAllByTestId('arrow').length;
@@ -73,7 +73,7 @@ describe('editor — conexão de peças (Sprint 3)', () => {
   });
 });
 
-describe('editor — movimentação de peças (Sprint 3)', () => {
+describe('editor — movimentação de peças', () => {
   it('atualiza a posição no drag-end', () => {
     render(<App />);
     const id = adicionar('Bomba');
@@ -84,7 +84,7 @@ describe('editor — movimentação de peças (Sprint 3)', () => {
   });
 });
 
-describe('inspetor — edição de props (Sprint 3/4)', () => {
+describe('inspetor — edição de props', () => {
   it('edita uma propriedade da peça selecionada', () => {
     render(<App />);
     const id = adicionar('Reservatório');
@@ -136,7 +136,7 @@ describe('inspetor — edição de props (Sprint 3/4)', () => {
   });
 });
 
-describe('modo execução — validação e transição (Sprint 4)', () => {
+describe('modo execução — validação e transição', () => {
   it('entra em execução com o projeto de exemplo válido', () => {
     render(<App />);
     fireEvent.click(screen.getByText('▶ Executar'));
@@ -271,7 +271,7 @@ describe('novos recursos de UI', () => {
   });
 });
 
-describe('persistência — salvar (Sprint 5)', () => {
+describe('persistência — salvar', () => {
   it('dispara o download ao clicar em Salvar', () => {
     // jsdom não implementa URL.createObjectURL/anchor.click totalmente.
     const createUrl = vi.fn(() => 'blob:x');

@@ -1,12 +1,10 @@
 /**
- * HydroFlow — Geometria de reservatórios (Sprint 2)
+ * HydroFlow — Geometria de reservatórios
  *
- * v1 assume seção transversal CONSTANTE (cilindro reto ou prisma retangular),
- * portanto a relação nível↔volume é linear: V = A·h. Seções variáveis (cone,
+ * v1 assume seção transversal CONSTANTE (cilindro reto ou prisma retangular), portanto a relação nível↔volume é linear: V = A·h. Seções variáveis (cone,
  * esfera, cilindro deitado) estão fora de escopo (seção 9 da especificação).
  *
- * UNIDADES: a física é calculada em SI (metros, m³, s). Os valores das peças
- * ficam nas unidades escolhidas pelo usuário e são convertidos aqui:
+ * UNIDADES: a física é calculada em SI (metros, m³, s). Os valores das peças ficam nas unidades escolhidas pelo usuário e são convertidos aqui:
  *  - comprimentos (raio, largura, nível, cota…) → metros via `metrosPorComprimento`
  *  - volume/vazão exibidos em litros ou m³ via `m3PorVolume`
  *  - DIÂMETRO de tubo é sempre em MILÍMETROS.
@@ -74,10 +72,8 @@ export function vazaoDeM3(vazaoM3: number, u: Unidades): number {
 }
 
 /**
- * Velocidade máxima recomendada de escoamento em tubos (m/s). Regra clássica de
- * projeto (limita perda de carga, ruído e golpe de aríete). As "vazões máximas
- * recomendadas" das tabelas de bitola correspondem exatamente a esta velocidade
- * aplicada ao diâmetro interno.
+ * Velocidade máxima recomendada de escoamento em tubos (m/s). Regra clássica de projeto (limita perda de carga, ruído e golpe de aríete). As "vazões máximas
+ * recomendadas" das tabelas de bitola correspondem exatamente a esta velocidade aplicada ao diâmetro interno.
  */
 export const VELOCIDADE_MAX_RECOMENDADA_MS = 3.0;
 
@@ -87,8 +83,7 @@ export function velocidadeTuboMs(qM3: number, diametroMM: number): number {
   return a > 0 ? Math.abs(qM3) / a : 0;
 }
 
-/** Vazão máxima recomendada (m³/s) de um tubo: área × velocidade de referência
- *  (padrão 3 m/s, ou a `velRef` configurada no projeto). */
+/** Vazão máxima recomendada (m³/s) de um tubo: área × velocidade de referência (padrão 3 m/s, ou a `velRef` configurada no projeto). */
 export function vazaoMaxRecomendadaM3(
   diametroMM: number,
   velRef: number = VELOCIDADE_MAX_RECOMENDADA_MS,

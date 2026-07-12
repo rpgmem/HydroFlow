@@ -1,6 +1,5 @@
 /**
- * Menu ⚙ Opções: consolida configurações que não são "peças" — idioma, unidades
- * do projeto, tema de exibição e a física opcional (perda de carga por atrito).
+ * Menu ⚙ Opções: consolida configurações que não são "peças" — idioma, unidades do projeto, tema de exibição e a física opcional (perda de carga por atrito).
  * Dropdown recolhível na toolbar (inline no desktop, colapsado no ⋯ no mobile).
  */
 import { useState } from 'react';
