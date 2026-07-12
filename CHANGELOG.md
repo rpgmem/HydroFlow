@@ -2,6 +2,21 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
+## [1.62.0] — Catálogo de modelos de bomba (presets)
+
+### Adicionado
+
+- **Catálogo de bombas** (`src/domain/bombasCatalogo.ts`) com dois grupos —
+  **Superfície** (periférica/centrífuga/injetora/multiestágio) e **Submergível**
+  (submersível/submersa). Como a bitola dos tubos, escolher um **Modelo** no
+  inspetor da bomba preenche `vazaoNominal`, `alturaNominal` e `npshRequerido`;
+  editar as specs na mão limpa o modelo (→ "Personalizado"). Um readout mostra a
+  potência (CV) e a aplicação típica.
+- Valores JÁ EM SI: a vazão vem em m³/s (fonte legível como `m³/h ÷ 3600`); altura
+  e NPSH em metros. Submergíveis com **NPSH 0,30 m** (garante operação afogada);
+  injetora sem NPSH (N/A). Metadados (tipo, fase, aplicação, faixa) só para exibição.
+- **Domínio:** `PropsBomba.modeloBomba?` (preset de UI; o motor lê só as specs).
+
 ## [1.61.0] — Polimento do inspetor (accordion) + pentágono da válvula de alívio
 
 ### Alterado

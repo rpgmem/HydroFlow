@@ -30,6 +30,7 @@ import { COMPRIMENTO_PADRAO_M } from '../../engine/hidraulica';
 import { pressaoHidrostaticaKPa, reynolds, regimeReynolds, muAgua, sobrepressaoGolpeKPa, celeridadeGolpeMs, ATENUACAO_GOLPE_LENTO } from '../../engine/fisica';
 import { CATALOGO_TUBOS, CATEGORIAS_TUBO, bitolaPorDn, rotuloBitola } from '../../domain/tubosCatalogo';
 import { MATERIAIS_TUBO, ORDEM_MATERIAIS } from '../../domain/materiais';
+import { CATALOGO_BOMBAS, GRUPOS_BOMBA, modeloBombaPorId } from '../../domain/bombasCatalogo';
 import { fmtNumero } from '../../i18n';
 import type { Acao } from '../../state/store';
 import { useState, type ReactNode } from 'react';
@@ -491,9 +492,35 @@ export function BombaForm({ props, emExecucao, upd, u, projeto, pecaId, dispatch
       dispatch({ tipo: 'ATUALIZAR_PROPS', id: alvo.id, props: { canais: [...alvo.props.canais.filter((c) => c.bomba !== pecaId), { bomba: pecaId, modo: 'auto' }] } as never });
     }
   };
+  // Modelo do catálogo (preset): preenche vazão/altura/NPSH. Editar as specs na mão limpa o modelo.
+  const modelo = modeloBombaPorId(props.modeloBomba);
+  const escolherModelo = (id: string): void => {
+    const m = modeloBombaPorId(id);
+    if (m) upd({ modeloBomba: m.id, vazaoNominal: m.vazaoNominal, alturaNominal: m.alturaNominal, npshRequerido: m.npshRequerido });
+    else upd({ modeloBomba: undefined });
+  };
   return (
     <>
-      <Num label={t('form.vazaoNominal')} unidade={u.vazao} unidades={projeto.unidades} dim="vazao" value={props.vazaoNominal} disabled={emExecucao} onChange={(v) => upd({ vazaoNominal: v })} />
+      {/* Modelo pré-configurado (catálogo): preenche vazão, altura e NPSH. */}
+      <div className="field">
+        <label>{t('form.modeloBomba')}</label>
+        <select
+          value={props.modeloBomba ?? ''}
+          disabled={emExecucao}
+          aria-label={t('form.modeloBomba')}
+          onChange={(e) => escolherModelo(e.target.value)}
+        >
+          <option value="">{t('form.personalizado')}</option>
+          {GRUPOS_BOMBA.map((g) => (
+            <optgroup key={g} label={t(`form.grupoBomba_${g}`)}>
+              {CATALOGO_BOMBAS.filter((m) => m.grupo === g).map((m) => (
+                <option key={m.id} value={m.id}>{m.nome}</option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+      </div>
+      <Num label={t('form.vazaoNominal')} unidade={u.vazao} unidades={projeto.unidades} dim="vazao" value={props.vazaoNominal} disabled={emExecucao} onChange={(v) => upd({ vazaoNominal: v, modeloBomba: undefined })} />
       {/* Altura nominal deriva a curva automaticamente; entre dois reservatórios a altura real da instalação reduz a vazão. Projetos antigos com `curva.k`
           aparecem aqui como a altura equivalente (vazaoNominal/k). */}
       <Num
@@ -504,11 +531,16 @@ export function BombaForm({ props, emExecucao, upd, u, projeto, pecaId, dispatch
         value={props.alturaNominal ?? (props.curva && props.curva.k > 0 ? props.vazaoNominal / props.curva.k : 0)}
         disabled={emExecucao}
         step={0.5}
-        onChange={(v) => upd({ alturaNominal: v > 0 ? v : undefined, curva: undefined })}
+        onChange={(v) => upd({ alturaNominal: v > 0 ? v : undefined, curva: undefined, modeloBomba: undefined })}
       />
       <p className="telemetry" style={{ marginTop: -4 }}>
         {t('form.alturaNominalDica')}
       </p>
+      {modelo && (
+        <p className="telemetry" style={{ marginTop: -4 }}>
+          {t('form.bombaModeloInfo', { potencia: modelo.potenciaCV, aplicacao: modelo.aplicacao })}
+        </p>
+      )}
       {/* Seletor de quadro: só aparece se existir algum quadro no projeto. */}
       {quadros.length > 0 && (
         <div className="field">
@@ -557,7 +589,7 @@ export function BombaForm({ props, emExecucao, upd, u, projeto, pecaId, dispatch
           value={props.npshRequerido ?? 0}
           disabled={emExecucao}
           step={0.1}
-          onChange={(v) => upd({ npshRequerido: v > 0 ? v : undefined })}
+          onChange={(v) => upd({ npshRequerido: v > 0 ? v : undefined, modeloBomba: undefined })}
         />
         <p className="telemetry" style={{ marginTop: -4 }}>
           {t('form.npshRequeridoDica')}
