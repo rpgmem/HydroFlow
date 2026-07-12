@@ -206,6 +206,6 @@ Export/import manual via `.json`: **Salvar** baixa `{nome}.json`; **Carregar** v
 
 ## Fora de escopo
 
-CFD real (Navier-Stokes) · perda de carga por atrito de **Darcy-Weisbach** (há um modelo **opcional** de Hazen-Williams; ver a seção de Física) · evaporação/temperatura · reservatórios de seção variável (cone, esfera) · prioridade manual entre sensores · backend/nuvem · app mobile/desktop nativo.
+CFD real (Navier-Stokes) · perda de carga por atrito de **[Darcy-Weisbach](https://pt.wikipedia.org/wiki/Equa%C3%A7%C3%A3o_de_Darcy-Weisbach)** (há um modelo **opcional** de Hazen-Williams; ver a seção de Física) · evaporação/temperatura · reservatórios de seção variável (cone, esfera) · prioridade manual entre sensores · backend/nuvem · app mobile/desktop nativo.
 
 Ver [`CHANGELOG.md`](./CHANGELOG.md) para a evolução.
