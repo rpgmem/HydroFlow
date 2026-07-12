@@ -36,7 +36,7 @@ import {
 } from '../domain/types';
 
 /** Uma entrada do log de eventos (acionamentos e alertas ao longo da execução). */
-export type TipoEvento = 'bomba' | 'sensor' | 'seco' | 'ladrao' | 'deficit' | 'overflow' | 'velocidade' | 'refluxo' | 'golpe' | 'comando';
+export type TipoEvento = 'bomba' | 'sensor' | 'seco' | 'ladrao' | 'deficit' | 'overflow' | 'velocidade' | 'refluxo' | 'golpe' | 'cavitacao' | 'comando';
 export interface EventoLog {
   /** Tempo de simulação (s) em que o evento ocorreu. */
   tempo: number;
@@ -69,6 +69,7 @@ export interface EstadoApp {
   ladroesAtivos: string[];
   tubosVelozes: string[];
   golpeAriete: string[];
+  cavitacao: string[];
   refluxos: string[];
   consumoInsuficiente: string[];
   sensores: Record<string, Decisao>;
@@ -141,6 +142,7 @@ export function estadoInicial(projeto: ProjetoSimulacao): EstadoApp {
     ladroesAtivos: [],
     tubosVelozes: [],
     golpeAriete: [],
+    cavitacao: [],
     refluxos: [],
     consumoInsuficiente: [],
     sensores: {},
@@ -263,6 +265,8 @@ function derivarEventos(anterior: EstadoApp, r: ResultadoTick): EventoLog[] {
       ev.push({ tempo: t, tipo: 'golpe', chave: 'log.golpeOcorreu', params: { nome: rot(id) } });
     }
   }
+  // Cavitação: risco surgindo (bomba entrou na lista de NPSH insuficiente).
+  entraram(r.cavitacao, anterior.cavitacao, 'cavitacao', 'log.cavitacao');
 
   return ev;
 }
@@ -623,6 +627,8 @@ function reducerBase(estado: EstadoApp, acao: Acao): EstadoApp {
         boiasFechadas: [],
         ladroesAtivos: [],
         tubosVelozes: [],
+        golpeAriete: [],
+        cavitacao: [],
         refluxos: [],
         consumoInsuficiente: [],
         sensores: {},
@@ -651,6 +657,8 @@ function reducerBase(estado: EstadoApp, acao: Acao): EstadoApp {
         boiasFechadas: [],
         ladroesAtivos: [],
         tubosVelozes: [],
+        golpeAriete: [],
+        cavitacao: [],
         refluxos: [],
         consumoInsuficiente: [],
         sensores: {},
@@ -677,6 +685,7 @@ function reducerBase(estado: EstadoApp, acao: Acao): EstadoApp {
         ladroesAtivos: r.ladroesAtivos,
         tubosVelozes: r.tubosVelozes,
         golpeAriete: r.golpeAriete,
+        cavitacao: r.cavitacao,
         refluxos: r.refluxos,
         consumoInsuficiente: r.consumoInsuficiente,
         sensores: r.sensores,

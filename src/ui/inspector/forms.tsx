@@ -451,6 +451,21 @@ export function BombaForm({ props, emExecucao, upd, u, projeto, pecaId, dispatch
       <p className="telemetry" style={{ marginTop: -4 }}>
         {t('form.alturaNominalDica')}
       </p>
+      {/* NPSH requerido (m): dado de catálogo. Informado, liga o alerta de
+          cavitação — a bomba usa a própria `cota` (Inspetor) na carga de sucção. */}
+      <Num
+        label={t('form.npshRequerido')}
+        unidade={u.comp}
+        unidades={projeto.unidades}
+        dim="comp"
+        value={props.npshRequerido ?? 0}
+        disabled={emExecucao}
+        step={0.1}
+        onChange={(v) => upd({ npshRequerido: v > 0 ? v : undefined })}
+      />
+      <p className="telemetry" style={{ marginTop: -4 }}>
+        {t('form.npshRequeridoDica')}
+      </p>
       {/* Seletor de quadro: só aparece se existir algum quadro no projeto. */}
       {quadros.length > 0 && (
         <div className="field">

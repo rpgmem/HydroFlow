@@ -102,3 +102,32 @@ export function sobrepressaoGolpeKPa(
 ): number {
   return (DENSIDADE_AGUA_KGM3 * celeridade * Math.abs(vMs)) / 1000;
 }
+
+/**
+ * Pressão de vapor de saturação da água (kPa) em função da temperatura (°C),
+ * pela equação de Tetens: P = 0,61078·exp(17,27·T/(T + 237,3)). Em 20 °C ≈
+ * 2,34 kPa. É a pressão em que a água "ferve" na temperatura dada — o piso de
+ * pressão abaixo do qual há cavitação na sucção da bomba.
+ */
+export function pvaporAguaKPa(tC: number = TEMPERATURA_PADRAO_C): number {
+  return 0.61078 * Math.exp((17.27 * tC) / (tC + 237.3));
+}
+
+/**
+ * NPSH disponível (m) na sucção de uma bomba — a energia líquida acima da
+ * pressão de vapor na entrada, em metros de coluna d'água:
+ *   NPSH_disp = (P_atm − P_vapor)/(ρ·g) + carga_sucção
+ * `cargaSuccaoM` é a carga de sucção já LÍQUIDA das perdas: (cota + nível da
+ * fonte) − cota da bomba − perdas por atrito na sucção (m). Positiva quando a
+ * fonte está acima da bomba (afogada), negativa em sucção negativa (bomba
+ * acima). Abaixo do NPSH REQUERIDO pela bomba, há risco de cavitação.
+ */
+export function npshDisponivelM(
+  cargaSuccaoM: number,
+  pvaporKPa: number,
+  pAtmKPa: number = PRESSAO_ATM_KPA,
+  g: number = G_PADRAO_MS2,
+): number {
+  const hAtmVapor = ((pAtmKPa - pvaporKPa) * 1000) / (DENSIDADE_AGUA_KGM3 * g);
+  return hAtmVapor + cargaSuccaoM;
+}

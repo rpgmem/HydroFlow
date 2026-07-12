@@ -47,6 +47,7 @@ const SECOES: { titulo: string; itens: string[] }[] = [
       'ajuda.fisica3',
       'ajuda.fisica4',
       'ajuda.fisicaGolpe',
+      'ajuda.fisicaNPSH',
       'ajuda.fisica5',
       'ajuda.fisica6',
     ],
@@ -73,6 +74,7 @@ const LINKS: Record<string, string[]> = {
   'ajuda.fisica3': ['ajuda.linkPerdaCarga', 'ajuda.linkHazenWilliams', 'ajuda.linkDarcy'],
   'ajuda.fisica4': ['ajuda.linkValvulaRetencao'],
   'ajuda.fisicaGolpe': ['ajuda.linkGolpe', 'ajuda.linkJoukowsky'],
+  'ajuda.fisicaNPSH': ['ajuda.linkNPSH', 'ajuda.linkPressaoVapor'],
   'ajuda.fisica6': ['ajuda.linkG'],
 };
 

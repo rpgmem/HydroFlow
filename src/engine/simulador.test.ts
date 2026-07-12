@@ -190,6 +190,50 @@ describe('golpe de aríete (risco)', () => {
 });
 
 // ===========================================================================
+// Cavitação (NPSH): bomba ligada com NPSH disponível abaixo do requerido
+// ===========================================================================
+describe('cavitação (NPSH)', () => {
+  // Bomba 'P' ligada, aspirando do reservatório 'A' e recalcando ao 'B'.
+  // `cotaBomba` = elevação da bomba; `npshReq` = NPSH requerido (m).
+  const cenario = (cotaBomba: number, npshReq: number | undefined, nivelA = 1) =>
+    tick(
+      projeto(
+        [
+          res('A', { cota: 0, nivel: nivelA }),
+          res('B', { cota: 0, nivel: 0 }),
+          { ...bomba('P', { modoControle: 'ligado', npshRequerido: npshReq }), cota: cotaBomba },
+        ],
+        [criarConexao('A', 'P'), criarConexao('P', 'B')],
+      ),
+    );
+
+  it('sinaliza a bomba muito acima da fonte (sucção negativa) quando o NPSH cai abaixo do requerido', () => {
+    // Fonte na base (carga ~1 m), bomba 8 m acima → carga de sucção ≈ −7 m;
+    // NPSH_disp ≈ 10,1 − 7 = 3,1 m < 5 m requerido → cavita.
+    expect(cenario(8, 5).cavitacao).toContain('P');
+  });
+  it('sucção afogada (fonte acima) → NPSH alto, sem alerta', () => {
+    expect(cenario(0, 5, 3).cavitacao).not.toContain('P');
+  });
+  it('sem NPSH requerido informado, não há checagem (opt-in)', () => {
+    expect(cenario(8, undefined).cavitacao).toHaveLength(0);
+  });
+  it('bomba desligada não cavita', () => {
+    const r = tick(
+      projeto(
+        [
+          res('A', { cota: 0, nivel: 1 }),
+          res('B', {}),
+          { ...bomba('P', { modoControle: 'desligado', npshRequerido: 5 }), cota: 8 },
+        ],
+        [criarConexao('A', 'P'), criarConexao('P', 'B')],
+      ),
+    );
+    expect(r.cavitacao).toHaveLength(0);
+  });
+});
+
+// ===========================================================================
 // Tubos em série (uma cadeia carrega UM fluxo, limitado pelo gargalo)
 // ===========================================================================
 describe('tubos em série entre reservatórios', () => {
