@@ -27,6 +27,8 @@ export interface Unidades {
   comprimento: 'cm' | 'm';
   /** Preferência de EXIBIÇÃO de pressão (armazenamento é sempre kPa). Ausente = 'kPa'. */
   pressao?: 'kPa' | 'mca' | 'psi';
+  /** Preferência de EXIBIÇÃO de temperatura (armazenamento é sempre °C). Ausente = 'C'. */
+  temperatura?: 'C' | 'F' | 'K';
 }
 
 export interface ConfiguracaoSimulacao {
@@ -44,6 +46,11 @@ export interface ConfiguracaoSimulacao {
    * Acima dela um tubo é sinalizado como subdimensionado; também define a "vazão máxima recomendada". Ausente → `VELOCIDADE_MAX_RECOMENDADA_MS` (3 m/s).
    */
   velocidadeRef?: number;
+  /**
+   * Temperatura da água (°C) — afeta a viscosidade (número de Reynolds) e a
+   * pressão de vapor (NPSH). Ausente → 20 °C.
+   */
+  temperaturaC?: number;
 }
 
 /**

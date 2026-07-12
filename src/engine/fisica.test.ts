@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { pressaoHidrostaticaKPa, PRESSAO_ATM_KPA } from './fisica';
-import { exibirPressao, pressaoParaSI, labelPressao } from '../domain/unidades';
+import { pressaoHidrostaticaKPa, PRESSAO_ATM_KPA, muAgua, reynolds, regimeReynolds } from './fisica';
+import { velocidadeTuboMs } from './geometria';
+import {
+  exibirPressao,
+  pressaoParaSI,
+  labelPressao,
+  exibirTemperatura,
+  temperaturaParaSI,
+  labelTemperatura,
+} from '../domain/unidades';
 
 describe('pressaoHidrostaticaKPa (Teorema de Stevin)', () => {
   it('10 m de coluna ≈ 98,1 kPa (≈ 1 atm)', () => {
@@ -38,5 +46,47 @@ describe('conversão de pressão (kPa canônico ↔ exibição)', () => {
     const u = { volume: 'm3', comprimento: 'm' } as const;
     expect(exibirPressao(50, u)).toBeCloseTo(50);
     expect(labelPressao(u)).toBe('kPa');
+  });
+});
+
+describe('viscosidade e número de Reynolds', () => {
+  it('μ da água ≈ 1,00e-3 Pa·s a 20 °C e cai com a temperatura', () => {
+    expect(muAgua(20)).toBeCloseTo(1.0e-3, 4);
+    expect(muAgua(50)).toBeLessThan(muAgua(20)); // água mais quente é menos viscosa
+  });
+  it('Re = ρ·v·D/μ', () => {
+    // v=2 m/s, D=100 mm, μ(20°C) → Re ≈ 1000·2·0,1/1,0e-3 ≈ 200000
+    expect(reynolds(2, 100, muAgua(20))).toBeCloseTo(2e5, -3);
+    expect(reynolds(0, 100)).toBe(0);
+  });
+  it('classifica o regime', () => {
+    expect(regimeReynolds(1500)).toBe('laminar');
+    expect(regimeReynolds(3000)).toBe('transicao');
+    expect(regimeReynolds(50000)).toBe('turbulento');
+  });
+  it('integra com a velocidade do tubo', () => {
+    const v = velocidadeTuboMs(0.02, 100); // 0,02 m³/s num tubo de 100 mm
+    expect(regimeReynolds(reynolds(v, 100, muAgua(20)))).toBe('turbulento');
+  });
+});
+
+describe('conversão de temperatura (°C canônico ↔ exibição)', () => {
+  it('°C é identidade', () => {
+    const u = { volume: 'm3', comprimento: 'm', temperatura: 'C' } as const;
+    expect(exibirTemperatura(20, u)).toBeCloseTo(20);
+    expect(temperaturaParaSI(20, u)).toBeCloseTo(20);
+    expect(labelTemperatura(u)).toBe('°C');
+  });
+  it('°F: 20 °C = 68 °F (round-trip)', () => {
+    const u = { volume: 'm3', comprimento: 'm', temperatura: 'F' } as const;
+    expect(exibirTemperatura(20, u)).toBeCloseTo(68);
+    expect(temperaturaParaSI(68, u)).toBeCloseTo(20);
+    expect(labelTemperatura(u)).toBe('°F');
+  });
+  it('K: 20 °C = 293,15 K (round-trip)', () => {
+    const u = { volume: 'm3', comprimento: 'm', temperatura: 'K' } as const;
+    expect(exibirTemperatura(20, u)).toBeCloseTo(293.15);
+    expect(temperaturaParaSI(293.15, u)).toBeCloseTo(20);
+    expect(labelTemperatura(u)).toBe('K');
   });
 });

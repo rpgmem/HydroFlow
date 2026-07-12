@@ -95,3 +95,39 @@ export function exibirPressao(kpa: number, u: Unidades): number {
 export function pressaoParaSI(valor: number, u: Unidades): number {
   return valor * kPaPorPressao(u);
 }
+
+// --- Temperatura: armazenamento canônico em °C; exibição em °C/°F/K ----------
+
+/** Rótulo da unidade de temperatura exibida. */
+export function labelTemperatura(u: Unidades): string {
+  switch (u.temperatura) {
+    case 'F':
+      return '°F';
+    case 'K':
+      return 'K';
+    default:
+      return '°C';
+  }
+}
+/** Temperatura SI (°C) → valor exibido na unidade `u`. */
+export function exibirTemperatura(celsius: number, u: Unidades): number {
+  switch (u.temperatura) {
+    case 'F':
+      return celsius * (9 / 5) + 32;
+    case 'K':
+      return celsius + 273.15;
+    default:
+      return celsius;
+  }
+}
+/** Valor de temperatura na unidade `u` → SI (°C). */
+export function temperaturaParaSI(valor: number, u: Unidades): number {
+  switch (u.temperatura) {
+    case 'F':
+      return (valor - 32) * (5 / 9);
+    case 'K':
+      return valor - 273.15;
+    default:
+      return valor;
+  }
+}

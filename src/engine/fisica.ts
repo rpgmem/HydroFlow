@@ -15,10 +15,43 @@ export const G_PADRAO_MS2 = 9.81;
 /** Pressão atmosférica ao nível do mar (kPa). */
 export const PRESSAO_ATM_KPA = 101.325;
 
+/** Temperatura padrão da água (°C) quando não configurada. */
+export const TEMPERATURA_PADRAO_C = 20;
+
 /**
  * Pressão hidrostática (kPa) de uma coluna d'água de `colunaM` metros
  * (Teorema de Stevin): ΔP = ρ·g·h. Ex.: 10 m ≈ 98,1 kPa ≈ 1 atm.
  */
 export function pressaoHidrostaticaKPa(colunaM: number, g: number = G_PADRAO_MS2): number {
   return (DENSIDADE_AGUA_KGM3 * g * Math.max(0, colunaM)) / 1000;
+}
+
+/**
+ * Viscosidade dinâmica da água (Pa·s) em função da temperatura (°C). Correlação
+ * empírica (tipo Vogel) válida ~0–100 °C: μ = 2,414e-5·10^(247,8/(T_K − 140)).
+ * Em 20 °C ≈ 1,00e-3 Pa·s.
+ */
+export function muAgua(tC: number = TEMPERATURA_PADRAO_C): number {
+  const tK = tC + 273.15;
+  return 2.414e-5 * Math.pow(10, 247.8 / (tK - 140));
+}
+
+/**
+ * Número de Reynolds (adimensional) de um escoamento em tubo cheio:
+ * Re = ρ·v·D/μ. `vMs` em m/s, `diametroMM` em mm, `muPas` em Pa·s.
+ */
+export function reynolds(
+  vMs: number,
+  diametroMM: number,
+  muPas: number = muAgua(),
+): number {
+  if (muPas <= 0) return 0;
+  return (DENSIDADE_AGUA_KGM3 * Math.abs(vMs) * (diametroMM / 1000)) / muPas;
+}
+
+/** Regime de escoamento pelo número de Reynolds (faixa clássica de tubos). */
+export function regimeReynolds(re: number): 'laminar' | 'transicao' | 'turbulento' {
+  if (re < 2000) return 'laminar';
+  if (re > 4000) return 'turbulento';
+  return 'transicao';
 }

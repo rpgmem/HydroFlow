@@ -7,6 +7,8 @@ import { Trans, useTranslation } from 'react-i18next';
 import type { Acao, EstadoApp } from '../state/store';
 import type { Unidades } from '../domain/types';
 import { rotulosDuplicados } from '../domain/normalizarIds';
+import { exibirTemperatura, temperaturaParaSI, labelTemperatura } from '../domain/unidades';
+import { TEMPERATURA_PADRAO_C } from '../engine/fisica';
 import { IDIOMAS } from '../i18n';
 import { Switch } from './Switch';
 
@@ -30,6 +32,7 @@ export function Opcoes({ estado, dispatch, tema, onAlternarTema, formatoTempo, o
   const u = estado.projeto.unidades;
   const atrito = estado.projeto.configuracaoSimulacao.atrito === true;
   const velRef = estado.projeto.configuracaoSimulacao.velocidadeRef ?? 3;
+  const tempC = estado.projeto.configuracaoSimulacao.temperaturaC ?? TEMPERATURA_PADRAO_C;
   const idiomaAtual = (i18n.resolvedLanguage ?? i18n.language ?? 'pt').split('-')[0];
 
   return (
@@ -106,6 +109,20 @@ export function Opcoes({ estado, dispatch, tema, onAlternarTema, formatoTempo, o
                 <option value="psi">psi</option>
               </select>
             </div>
+            <div className="field">
+              <label>{t('opcoes.temperatura')}</label>
+              <select
+                aria-label={t('opcoes.temperaturaLabel')}
+                value={u.temperatura ?? 'C'}
+                onChange={(e) =>
+                  dispatch({ tipo: 'SET_UNIDADES', unidades: { ...u, temperatura: e.target.value as Unidades['temperatura'] } })
+                }
+              >
+                <option value="C">°C</option>
+                <option value="F">°F</option>
+                <option value="K">K</option>
+              </select>
+            </div>
 
             <p className="opcoes-sec">{t('opcoes.exibicao')}</p>
             <Switch checked={tema === 'claro'} onChange={onAlternarTema} ariaLabel={t('opcoes.temaClaro')}>
@@ -154,6 +171,24 @@ export function Opcoes({ estado, dispatch, tema, onAlternarTema, formatoTempo, o
             </div>
             <p className="telemetry" style={{ margin: '2px 0 0' }}>
               <Trans i18nKey="opcoes.velocidadeRefDica" components={{ 1: <strong /> }} />
+            </p>
+
+            <div className="field" style={{ marginTop: 8 }}>
+              <label>{t('opcoes.temperaturaAgua')} ({labelTemperatura(u)})</label>
+              <input
+                type="number"
+                step={1}
+                disabled={emExecucao}
+                aria-label={t('opcoes.temperaturaAguaLabel')}
+                value={Number(exibirTemperatura(tempC, u).toFixed(2))}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  if (Number.isFinite(v)) dispatch({ tipo: 'SET_TEMPERATURA', temperaturaC: temperaturaParaSI(v, u) });
+                }}
+              />
+            </div>
+            <p className="telemetry" style={{ margin: '2px 0 0' }}>
+              <Trans i18nKey="opcoes.temperaturaDica" components={{ 1: <strong /> }} />
             </p>
 
             <p className="opcoes-sec">{t('opcoes.projeto')}</p>

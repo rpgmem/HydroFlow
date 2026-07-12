@@ -109,6 +109,7 @@ export type Acao =
   | { tipo: 'SET_UNIDADES'; unidades: ProjetoSimulacao['unidades'] }
   | { tipo: 'SET_ATRITO'; atrito: boolean }
   | { tipo: 'SET_VELOCIDADE_REF'; velocidadeRef: number }
+  | { tipo: 'SET_TEMPERATURA'; temperaturaC: number }
   | { tipo: 'CARREGAR_PROJETO'; projeto: ProjetoSimulacao }
   | { tipo: 'ENTRAR_EXECUCAO' }
   | { tipo: 'SAIR_EXECUCAO' }
@@ -177,6 +178,7 @@ const ACOES_ESTRUTURAIS = new Set<Acao['tipo']>([
   'SET_UNIDADES',
   'SET_ATRITO',
   'SET_VELOCIDADE_REF',
+  'SET_TEMPERATURA',
   'DUPLICAR_PECA',
   'NORMALIZAR_IDS',
 ]);
@@ -321,6 +323,7 @@ const ACOES_UNDOAVEIS = new Set<Acao['tipo']>([
   'SET_UNIDADES',
   'SET_ATRITO',
   'SET_VELOCIDADE_REF',
+  'SET_TEMPERATURA',
 ]);
 
 const MAX_UNDO = 60;
@@ -528,6 +531,18 @@ function reducerBase(estado: EstadoApp, acao: Acao): EstadoApp {
           configuracaoSimulacao: {
             ...estado.projeto.configuracaoSimulacao,
             velocidadeRef: acao.velocidadeRef,
+          },
+        },
+      };
+
+    case 'SET_TEMPERATURA':
+      return {
+        ...estado,
+        projeto: {
+          ...estado.projeto,
+          configuracaoSimulacao: {
+            ...estado.projeto.configuracaoSimulacao,
+            temperaturaC: acao.temperaturaC,
           },
         },
       };
