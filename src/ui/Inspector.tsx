@@ -16,7 +16,7 @@ import {
   type Peca,
   type ProjetoSimulacao,
 } from '../domain/types';
-import { labelComprimento, labelVazao } from '../domain/unidades';
+import { labelComprimento, labelVazao, exibirComprimento, exibirVazao } from '../domain/unidades';
 import { VELOCIDADE_MAX_RECOMENDADA_MS } from '../engine/geometria';
 import { Sparkline } from './Sparkline';
 import { Num, type UniLabel } from './inspector/campos';
@@ -75,13 +75,15 @@ export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatc
 
       {vazao !== undefined && Math.abs(vazao) > 1e-9 && (
         <p className="telemetry" style={{ marginTop: 0 }}>
-          {t('inspector.vazaoAtual')}<strong>{vazao.toFixed(2)} {u.vazao}</strong>
+          {t('inspector.vazaoAtual')}<strong>{exibirVazao(vazao, projeto.unidades).toFixed(2)} {u.vazao}</strong>
         </p>
       )}
 
       {emExecucao && historico && historico.length >= 2 && (
         <Sparkline
-          dados={historico}
+          dados={historico.map((v) =>
+            isReservatorio(peca) ? exibirComprimento(v, projeto.unidades) : exibirVazao(v, projeto.unidades),
+          )}
           titulo={isReservatorio(peca) ? t('inspector.nivel') : t('inspector.vazao')}
           unidade={isReservatorio(peca) ? u.comp : u.vazao}
         />
@@ -107,6 +109,8 @@ export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatc
         <Num
           label={t('inspector.cota')}
           unidade={u.comp}
+          unidades={projeto.unidades}
+          dim="comp"
           value={peca.cota ?? 0}
           disabled={emExecucao}
           onChange={(v) => dispatch({ tipo: 'ATUALIZAR_COTA', id: peca.id, cota: v })}
@@ -117,8 +121,8 @@ export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatc
         )}
         {isTubo(peca) && <TuboForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} atrito={projeto.configuracaoSimulacao.atrito === true} velRef={projeto.configuracaoSimulacao.velocidadeRef ?? VELOCIDADE_MAX_RECOMENDADA_MS} />}
         {isBomba(peca) && <BombaForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} projeto={projeto} pecaId={peca.id} dispatch={dispatch} />}
-        {isFonte(peca) && <FonteForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
-        {isConsumo(peca) && <ConsumoForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} />}
+        {isFonte(peca) && <FonteForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} />}
+        {isConsumo(peca) && <ConsumoForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} />}
         {isSensor(peca) && <SensorForm props={peca.props} emExecucao={emExecucao} projeto={projeto} upd={upd} u={u} pecaId={peca.id} dispatch={dispatch} />}
         {isJuncao(peca) && <JuncaoForm props={peca.props} emExecucao={emExecucao} upd={upd} />}
         {isQuadro(peca) && <QuadroForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} projeto={projeto} dispatch={dispatch} />}

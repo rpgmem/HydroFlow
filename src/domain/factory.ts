@@ -95,11 +95,12 @@ export function criarPeca(
       // diâmetro em milímetros (50 mm — cano comum).
       return { ...base, props: { diametro: 50, registro: { aberto: true } } };
     case 'bomba':
-      return { ...base, props: { vazaoNominal: 10, sensores: [], ligada: false } };
+      // vazões em SI (m³/s): 0,01 m³/s = 10 L/s.
+      return { ...base, props: { vazaoNominal: 0.01, sensores: [], ligada: false } };
     case 'fonte':
-      return { ...base, props: { gerador: { perfil: 'fixo', vazao: 10 } } };
+      return { ...base, props: { gerador: { perfil: 'fixo', vazao: 0.01 } } };
     case 'consumo':
-      return { ...base, props: { gerador: { perfil: 'fixo', vazao: 5 }, aberto: true } };
+      return { ...base, props: { gerador: { perfil: 'fixo', vazao: 0.005 }, aberto: true } };
     case 'sensor':
       return { ...base, props: { bombasAlvo: [], nivelMinimo: 1, nivelMaximo: 4 } };
     case 'juncao':

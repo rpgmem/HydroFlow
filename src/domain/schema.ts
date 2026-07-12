@@ -5,7 +5,9 @@
  * Toda a superfície de parsing é envolvida em try/catch e retorna um `ResultadoParse` discriminado em vez de lançar exceções para o chamador.
  */
 
-import { SCHEMA_VERSION, type ProjetoSimulacao, type TipoPeca } from './types';
+import { SCHEMA_VERSION, type ProjetoSimulacao, type TipoPeca, type Unidades } from './types';
+import { converterMagnitudesParaSI } from './migracao';
+import { metrosPorComprimento, m3PorVolume } from './unidades';
 
 export interface ErroValidacao {
   caminho: string; // ex.: "pecas[2].props.alturaMaxima"
@@ -185,23 +187,40 @@ function validarConexao(
   }
 }
 
+/** `versao` tem MAJOR.MINOR estritamente menor que (major, minor)? */
+function minorMenorQue(versao: unknown, major: number, minor: number): boolean {
+  if (typeof versao !== 'string') return false;
+  const m = /^(\d+)\.(\d+)/.exec(versao);
+  if (!m) return false;
+  const [maj, min] = [Number(m[1]), Number(m[2])];
+  return maj < major || (maj === major && min < minor);
+}
+
 /**
- * Migração de estrutura in-place, idempotente e detectada pela FORMA (não só
- * pela versão) — roda antes da validação para que saves antigos cheguem no
- * formato atual.
+ * Migração de estrutura in-place — roda antes da validação para que saves
+ * antigos cheguem no formato atual.
  *
- * 1.0.0 → 1.1.0: a elevação do reservatório saiu de `props.cotaBase` para
- * `peca.cota` (agora um campo comum a todas as peças).
+ * - 1.0.0 → 1.1.0 (detectado pela FORMA, idempotente): a elevação do
+ *   reservatório saiu de `props.cotaBase` para `peca.cota` (campo comum).
+ * - 1.1.0 → 1.2.0 (detectado pela VERSÃO): as magnitudes passaram a ser
+ *   gravadas em SI; converte os valores antigos das unidades de exibição
+ *   salvas para SI.
  */
 function migrarEstrutura(dado: Record<string, unknown>): void {
-  if (!Array.isArray(dado.pecas)) return;
-  for (const p of dado.pecas) {
-    if (!isRecord(p)) continue;
-    const props = p.props;
-    if (isRecord(props) && props.cotaBase !== undefined) {
-      if (p.cota === undefined) p.cota = props.cotaBase;
-      delete props.cotaBase;
+  if (Array.isArray(dado.pecas)) {
+    for (const p of dado.pecas) {
+      if (!isRecord(p)) continue;
+      const props = p.props;
+      if (isRecord(props) && props.cotaBase !== undefined) {
+        if (p.cota === undefined) p.cota = props.cotaBase;
+        delete props.cotaBase;
+      }
     }
+  }
+  // Canonicalização de unidades (< 1.2.0): usa a unidade de EXIBIÇÃO salva.
+  if (minorMenorQue(dado.versao, 1, 2) && isRecord(dado.unidades)) {
+    const u = dado.unidades as unknown as Unidades;
+    converterMagnitudesParaSI(dado, metrosPorComprimento(u), m3PorVolume(u));
   }
 }
 

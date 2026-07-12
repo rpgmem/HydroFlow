@@ -45,7 +45,7 @@ import {
   VELOCIDADE_MAX_RECOMENDADA_MS,
 } from './geometria';
 import { COMPRIMENTO_PADRAO_M } from './hidraulica';
-import { metrosPorComprimento } from '../domain/unidades';
+import { metrosPorComprimento, UNIDADES_CANONICAS } from '../domain/unidades';
 import { arbitrarBomba, avaliarSensor, avaliarSequencia, boiaAberta, type Decisao } from './arbitragem';
 import { resolverGravidadeComJuncoes } from './redeJuncoes';
 import { GrafoIndex, type FluxoResolvido } from './grafo';
@@ -242,7 +242,9 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   }
 
   // ---- (3) Cálculo de vazão de cada aresta condutora (em m³/s) ---------
-  const u = proj.unidades;
+  // As magnitudes do projeto são canônicas (SI); o motor ignora a preferência
+  // de EXIBIÇÃO (`proj.unidades`) e calcula sempre em SI.
+  const u = UNIDADES_CANONICAS;
   const fluxos: FluxoResolvido[] = [];
   const vazoesM3: Record<string, number> = {};
   const consumoInsuficiente: string[] = [];

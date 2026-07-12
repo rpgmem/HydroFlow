@@ -25,6 +25,8 @@ import type {
   PropsTubo,
 } from './types';
 import { SCHEMA_VERSION } from './types';
+import { converterMagnitudesParaSI } from './migracao';
+import { metrosPorComprimento, m3PorVolume } from './unidades';
 
 type Peca = ProjetoSimulacao['pecas'][number];
 
@@ -52,7 +54,10 @@ function quadro(id: string, rotulo: string, x: number, y: number, props: PropsQu
 }
 
 export function projetoExemplo(): ProjetoSimulacao {
-  return {
+  // Autorado em LITROS (por legibilidade das vazões); o armazenamento é
+  // canônico em SI — a conversão abaixo grava m³/s mantendo `unidades` como
+  // preferência de EXIBIÇÃO (litros).
+  const proj: ProjetoSimulacao = {
     nome: 'Reservatórios empilhados',
     versao: SCHEMA_VERSION,
     unidades: { volume: 'litros', comprimento: 'm' },
@@ -263,4 +268,10 @@ export function projetoExemplo(): ProjetoSimulacao {
       { id: 'c_33', origem: 'cavalete_bomba_recalque', destino: 'inferior_75_000_l' },
     ],
   };
+  converterMagnitudesParaSI(
+    proj as unknown as Record<string, unknown>,
+    metrosPorComprimento(proj.unidades),
+    m3PorVolume(proj.unidades),
+  );
+  return proj;
 }

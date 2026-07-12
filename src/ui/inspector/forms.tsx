@@ -24,7 +24,7 @@ import {
 } from '../../domain/types';
 import { Trans, useTranslation } from 'react-i18next';
 import { vazaoDeM3, vazaoMaxRecomendadaM3, volumeMaximoM3 } from '../../engine/geometria';
-import { labelVolume, m3PorVolume } from '../../domain/unidades';
+import { labelVolume, m3PorVolume, UNIDADES_CANONICAS } from '../../domain/unidades';
 import { CATALOGO_TUBOS, CATEGORIAS_TUBO, bitolaPorDn, rotuloBitola } from '../../domain/tubosCatalogo';
 import { fmtNumero } from '../../i18n';
 import type { Acao } from '../../state/store';
@@ -63,8 +63,9 @@ export function ReservatorioForm({
 }) {
   const { t, i18n } = useTranslation();
   // Capacidade (litragem) derivada da geometria informada (raio/lados × altura máxima), na unidade de volume do usuário. Só informativo — atualiza sozinho.
-  const capacidade = volumeMaximoM3(props, unidades) / m3PorVolume(unidades);
-  const nivelAtual = volumeMaximoM3({ ...props, alturaMaxima: props.nivel ?? 0 }, unidades) / m3PorVolume(unidades);
+  // props em SI → volume em m³ (unidade canônica) e depois exibido na unidade do usuário.
+  const capacidade = volumeMaximoM3(props, UNIDADES_CANONICAS) / m3PorVolume(unidades);
+  const nivelAtual = volumeMaximoM3({ ...props, alturaMaxima: props.nivel ?? 0 }, UNIDADES_CANONICAS) / m3PorVolume(unidades);
   const fmt = (n: number): string => fmtNumero(n, i18n.language, { maximumFractionDigits: 0 });
   return (
     <>
@@ -81,15 +82,15 @@ export function ReservatorioForm({
         </select>
       </div>
       {props.formato === 'cilindro' ? (
-        <Num label={t('form.raio')} unidade={u.comp} value={props.raio} disabled={emExecucao} onChange={(v) => upd({ raio: v })} />
+        <Num label={t('form.raio')} unidade={u.comp} unidades={unidades} dim="comp" value={props.raio} disabled={emExecucao} onChange={(v) => upd({ raio: v })} />
       ) : (
         <>
-          <Num label={t('form.largura')} unidade={u.comp} value={props.largura} disabled={emExecucao} onChange={(v) => upd({ largura: v })} />
-          <Num label={t('form.comprimento')} unidade={u.comp} value={props.comprimento} disabled={emExecucao} onChange={(v) => upd({ comprimento: v })} />
+          <Num label={t('form.largura')} unidade={u.comp} unidades={unidades} dim="comp" value={props.largura} disabled={emExecucao} onChange={(v) => upd({ largura: v })} />
+          <Num label={t('form.comprimento')} unidade={u.comp} unidades={unidades} dim="comp" value={props.comprimento} disabled={emExecucao} onChange={(v) => upd({ comprimento: v })} />
         </>
       )}
-      <Num label={t('form.alturaMaxima')} unidade={u.comp} value={props.alturaMaxima} disabled={emExecucao} onChange={(v) => upd({ alturaMaxima: v })} />
-      <Num label={t('form.nivelAtual')} unidade={u.comp} value={props.nivel} disabled={emExecucao} onChange={(v) => upd({ nivel: v })} />
+      <Num label={t('form.alturaMaxima')} unidade={u.comp} unidades={unidades} dim="comp" value={props.alturaMaxima} disabled={emExecucao} onChange={(v) => upd({ alturaMaxima: v })} />
+      <Num label={t('form.nivelAtual')} unidade={u.comp} unidades={unidades} dim="comp" value={props.nivel} disabled={emExecucao} onChange={(v) => upd({ nivel: v })} />
       {capacidade > 0 && (
         <p className="telemetry" style={{ marginTop: -4 }}>
           <Trans
@@ -177,6 +178,8 @@ export function TuboForm({
           <Num
             label={t('form.comprimento')}
             unidade={u.comp}
+            unidades={unidades}
+            dim="comp"
             value={props.comprimento ?? 0}
             disabled={emExecucao}
             onChange={(v) => upd({ comprimento: v })}
@@ -195,6 +198,8 @@ export function TuboForm({
       <Num
         label={t('form.alturaEntrada')}
         unidade={u.comp}
+        unidades={unidades}
+        dim="comp"
         value={props.alturaEntrada ?? 0}
         disabled={emExecucao}
         onChange={(v) => upd({ alturaEntrada: v })}
@@ -202,6 +207,8 @@ export function TuboForm({
       <Num
         label={t('form.alturaSaida')}
         unidade={u.comp}
+        unidades={unidades}
+        dim="comp"
         value={props.alturaSaida ?? 0}
         disabled={emExecucao}
         onChange={(v) => upd({ alturaSaida: v })}
@@ -227,7 +234,7 @@ export function TuboForm({
       </Switch>
       {/* Boia e ladrão são mutuamente exclusivos (papéis de válvula distintos). */}
       {!temLadrao && (
-        <BoiaFields boia={props.boia} upd={upd} unidade={u.comp} emExecucao={emExecucao} aoAtivar={{ registro: { aberto: true } }} />
+        <BoiaFields boia={props.boia} upd={upd} unidade={u.comp} unidades={unidades} emExecucao={emExecucao} aoAtivar={{ registro: { aberto: true } }} />
       )}
       {!temBoia && (
         <>
@@ -243,6 +250,8 @@ export function TuboForm({
             <Num
               label={t('form.ladraoNivel')}
               unidade={u.comp}
+              unidades={unidades}
+              dim="comp"
               value={props.ladrao?.nivel}
               disabled={emExecucao}
               onChange={(v) => upd({ ladrao: { nivel: v } })}
@@ -262,12 +271,14 @@ export function BoiaFields({
   boia,
   upd,
   unidade,
+  unidades,
   emExecucao = false,
   aoAtivar = {},
 }: {
   boia: NivelControle | undefined;
   upd: Upd;
   unidade?: string;
+  unidades?: Unidades;
   emExecucao?: boolean;
   aoAtivar?: Record<string, unknown>;
 }) {
@@ -290,6 +301,8 @@ export function BoiaFields({
           <Num
             label={t('form.boiaAbre')}
             unidade={unidade}
+            unidades={unidades}
+            dim="comp"
             value={boia.nivelMinimo}
             disabled={emExecucao}
             onChange={(v) => upd({ boia: { ...boia, nivelMinimo: v } })}
@@ -297,6 +310,8 @@ export function BoiaFields({
           <Num
             label={t('form.boiaFecha')}
             unidade={unidade}
+            unidades={unidades}
+            dim="comp"
             value={boia.nivelMaximo}
             disabled={emExecucao}
             onChange={(v) => upd({ boia: { ...boia, nivelMaximo: v } })}
@@ -329,12 +344,14 @@ export function BombaForm({ props, emExecucao, upd, u, projeto, pecaId, dispatch
   };
   return (
     <>
-      <Num label={t('form.vazaoNominal')} unidade={u.vazao} value={props.vazaoNominal} disabled={emExecucao} onChange={(v) => upd({ vazaoNominal: v })} />
+      <Num label={t('form.vazaoNominal')} unidade={u.vazao} unidades={projeto.unidades} dim="vazao" value={props.vazaoNominal} disabled={emExecucao} onChange={(v) => upd({ vazaoNominal: v })} />
       {/* Altura nominal deriva a curva automaticamente; entre dois reservatórios a altura real da instalação reduz a vazão. Projetos antigos com `curva.k`
           aparecem aqui como a altura equivalente (vazaoNominal/k). */}
       <Num
         label={t('form.alturaNominal')}
-        unidade="m"
+        unidade={u.comp}
+        unidades={projeto.unidades}
+        dim="comp"
         value={props.alturaNominal ?? (props.curva && props.curva.k > 0 ? props.vazaoNominal / props.curva.k : 0)}
         disabled={emExecucao}
         step={0.5}
@@ -466,16 +483,18 @@ export function ConsumoForm({
   emExecucao,
   upd,
   u,
+  unidades,
 }: {
   props: PropsConsumo;
   emExecucao: boolean;
   upd: Upd;
   u: UniLabel;
+  unidades: Unidades;
 }) {
   const { t } = useTranslation();
   return (
     <>
-      <GeradorForm gerador={props.gerador} emExecucao={emExecucao} u={u} upd={(g) => upd({ gerador: g })} />
+      <GeradorForm gerador={props.gerador} emExecucao={emExecucao} u={u} unidades={unidades} upd={(g) => upd({ gerador: g })} />
       {/* Abrir/fechar a saída é um COMANDO de operação — ativo também na execução. */}
       <Switch
         checked={props.aberto ?? true}
@@ -488,10 +507,10 @@ export function ConsumoForm({
   );
 }
 
-export function FonteForm({ props, emExecucao, upd, u }: { props: PropsFonte; emExecucao: boolean; upd: Upd; u: UniLabel }) {
+export function FonteForm({ props, emExecucao, upd, u, unidades }: { props: PropsFonte; emExecucao: boolean; upd: Upd; u: UniLabel; unidades: Unidades }) {
   // A boia é uma válvula de NÍVEL que fica no cano/entrada do tanque — por isso é configurada no tubo, não na fonte (suprimento externo). Aqui só o gerador de
   // vazão de abastecimento.
-  return <GeradorForm gerador={props.gerador} emExecucao={emExecucao} u={u} upd={(g) => upd({ gerador: g })} />;
+  return <GeradorForm gerador={props.gerador} emExecucao={emExecucao} u={u} unidades={unidades} upd={(g) => upd({ gerador: g })} />;
 }
 
 export function SensorForm({
@@ -625,6 +644,8 @@ export function SensorForm({
           <Num
             label={reversa ? t('form.nivelMinDesliga') : t('form.nivelMinLiga')}
             unidade={u.comp}
+            unidades={projeto.unidades}
+            dim="comp"
             value={props.nivelMinimo}
             disabled={emExecucao}
             onChange={(v) => upd({ nivelMinimo: v })}
@@ -632,6 +653,8 @@ export function SensorForm({
           <Num
             label={reversa ? t('form.nivelMaxLiga') : t('form.nivelMaxDesliga')}
             unidade={u.comp}
+            unidades={projeto.unidades}
+            dim="comp"
             value={props.nivelMaximo}
             disabled={emExecucao}
             onChange={(v) => upd({ nivelMaximo: v })}
@@ -773,6 +796,8 @@ export function QuadroForm({
             <Num
               label={rev ? t('form.nivelMinDesliga') : t('form.nivelMinLiga')}
               unidade={u.comp}
+              unidades={projeto.unidades}
+              dim="comp"
               disabled={emExecucao}
               value={sp.nivelMinimo}
               onChange={(v) => updSensor(s.id, { nivelMinimo: v })}
@@ -780,6 +805,8 @@ export function QuadroForm({
             <Num
               label={rev ? t('form.nivelMaxLiga') : t('form.nivelMaxDesliga')}
               unidade={u.comp}
+              unidades={projeto.unidades}
+              dim="comp"
               disabled={emExecucao}
               value={sp.nivelMaximo}
               onChange={(v) => updSensor(s.id, { nivelMaximo: v })}

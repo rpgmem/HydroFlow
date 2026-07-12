@@ -3,7 +3,7 @@
  * (só os parâmetros do perfil escolhido). Fixo, trapezoidal (com presets) e senoidal. Toda a configuração é estrutural → travada em execução.
  */
 import { useTranslation } from 'react-i18next';
-import type { Gerador, PerfilVazao } from '../../domain/types';
+import type { Gerador, PerfilVazao, Unidades } from '../../domain/types';
 import { ORDEM_PRESETS, PRESETS_TRAPEZOIDAIS, paramsPadrao, vazaoRef } from '../../domain/geradorVazao';
 import { Num, type UniLabel } from './campos';
 import { WaveformPreview } from './WaveformPreview';
@@ -15,11 +15,13 @@ export function GeradorForm({
   gerador,
   emExecucao,
   u,
+  unidades,
   upd,
 }: {
   gerador: Gerador;
   emExecucao: boolean;
   u: UniLabel;
+  unidades: Unidades;
   upd: (g: Gerador) => void;
 }) {
   const { t } = useTranslation();
@@ -67,13 +69,13 @@ export function GeradorForm({
       <WaveformPreview gerador={gerador} unidade={u.vazao} />
 
       {gerador.perfil === 'fixo' && (
-        <Num label={t('form.vazaoConstante')} unidade={u.vazao} value={gerador.vazao} disabled={emExecucao} onChange={(v) => set({ vazao: v })} />
+        <Num label={t('form.vazaoConstante')} unidade={u.vazao} unidades={unidades} dim="vazao" value={gerador.vazao} disabled={emExecucao} onChange={(v) => set({ vazao: v })} />
       )}
 
       {gerador.perfil === 'senoidal' && (
         <>
-          <Num label={t('form.vazaoMin')} unidade={u.vazao} value={gerador.min} disabled={emExecucao} onChange={(v) => set({ min: v })} />
-          <Num label={t('form.vazaoMax')} unidade={u.vazao} value={gerador.max} disabled={emExecucao} onChange={(v) => set({ max: v })} />
+          <Num label={t('form.vazaoMin')} unidade={u.vazao} unidades={unidades} dim="vazao" value={gerador.min} disabled={emExecucao} onChange={(v) => set({ min: v })} />
+          <Num label={t('form.vazaoMax')} unidade={u.vazao} unidades={unidades} dim="vazao" value={gerador.max} disabled={emExecucao} onChange={(v) => set({ max: v })} />
           <Num label={t('form.periodo')} value={gerador.periodo} disabled={emExecucao} step={1} onChange={(v) => set({ periodo: v })} />
         </>
       )}
@@ -94,8 +96,8 @@ export function GeradorForm({
               {!gerador.preset && <option value="">{t('presets.personalizado')}</option>}
             </select>
           </div>
-          <Num label={t('form.vazaoMin')} unidade={u.vazao} value={gerador.min} disabled={emExecucao} onChange={(v) => set({ min: v })} />
-          <Num label={t('form.vazaoMax')} unidade={u.vazao} value={gerador.max} disabled={emExecucao} onChange={(v) => set({ max: v })} />
+          <Num label={t('form.vazaoMin')} unidade={u.vazao} unidades={unidades} dim="vazao" value={gerador.min} disabled={emExecucao} onChange={(v) => set({ min: v })} />
+          <Num label={t('form.vazaoMax')} unidade={u.vazao} unidades={unidades} dim="vazao" value={gerador.max} disabled={emExecucao} onChange={(v) => set({ max: v })} />
           <Num label={t('form.periodo')} value={gerador.periodo} disabled={emExecucao} step={1} onChange={(v) => set({ periodo: v })} />
           {/* Avançado: as 4 frações do período (editar limpa o preset → "personalizado"). */}
           <details className="avancado">
@@ -110,8 +112,8 @@ export function GeradorForm({
 
       {gerador.perfil === 'escalonada' && (
         <>
-          <Num label={t('form.vazaoMin')} unidade={u.vazao} value={gerador.min} disabled={emExecucao} onChange={(v) => set({ min: v })} />
-          <Num label={t('form.vazaoMax')} unidade={u.vazao} value={gerador.max} disabled={emExecucao} onChange={(v) => set({ max: v })} />
+          <Num label={t('form.vazaoMin')} unidade={u.vazao} unidades={unidades} dim="vazao" value={gerador.min} disabled={emExecucao} onChange={(v) => set({ min: v })} />
+          <Num label={t('form.vazaoMax')} unidade={u.vazao} unidades={unidades} dim="vazao" value={gerador.max} disabled={emExecucao} onChange={(v) => set({ max: v })} />
           <Num label={t('form.periodo')} value={gerador.periodo} disabled={emExecucao} step={1} onChange={(v) => set({ periodo: v })} />
           <Num label={t('form.degraus')} value={gerador.degraus} disabled={emExecucao} step={1} onChange={(v) => set({ degraus: v })} />
         </>
@@ -119,8 +121,8 @@ export function GeradorForm({
 
       {gerador.perfil === 'amortecida' && (
         <>
-          <Num label={t('form.base')} unidade={u.vazao} value={gerador.base} disabled={emExecucao} onChange={(v) => set({ base: v })} />
-          <Num label={t('form.amplitude')} unidade={u.vazao} value={gerador.amplitude} disabled={emExecucao} onChange={(v) => set({ amplitude: v })} />
+          <Num label={t('form.base')} unidade={u.vazao} unidades={unidades} dim="vazao" value={gerador.base} disabled={emExecucao} onChange={(v) => set({ base: v })} />
+          <Num label={t('form.amplitude')} unidade={u.vazao} unidades={unidades} dim="vazao" value={gerador.amplitude} disabled={emExecucao} onChange={(v) => set({ amplitude: v })} />
           <Num label={t('form.periodo')} value={gerador.periodo} disabled={emExecucao} step={1} onChange={(v) => set({ periodo: v })} />
           <Num label={t('form.tau')} value={gerador.tau} disabled={emExecucao} step={1} onChange={(v) => set({ tau: v })} />
         </>
@@ -128,8 +130,8 @@ export function GeradorForm({
 
       {gerador.perfil === 'aleatoria' && (
         <>
-          <Num label={t('form.vazaoMin')} unidade={u.vazao} value={gerador.min} disabled={emExecucao} onChange={(v) => set({ min: v })} />
-          <Num label={t('form.vazaoMax')} unidade={u.vazao} value={gerador.max} disabled={emExecucao} onChange={(v) => set({ max: v })} />
+          <Num label={t('form.vazaoMin')} unidade={u.vazao} unidades={unidades} dim="vazao" value={gerador.min} disabled={emExecucao} onChange={(v) => set({ min: v })} />
+          <Num label={t('form.vazaoMax')} unidade={u.vazao} unidades={unidades} dim="vazao" value={gerador.max} disabled={emExecucao} onChange={(v) => set({ max: v })} />
           <Num label={t('form.granularidade')} value={gerador.granularidade} disabled={emExecucao} step={1} onChange={(v) => set({ granularidade: v })} />
           <Num label={t('form.semente')} value={gerador.semente} disabled={emExecucao} step={1} onChange={(v) => set({ semente: v })} />
         </>
@@ -137,8 +139,8 @@ export function GeradorForm({
 
       {gerador.perfil === 'degrau' && (
         <>
-          <Num label={t('form.degrauV0')} unidade={u.vazao} value={gerador.v0} disabled={emExecucao} onChange={(v) => set({ v0: v })} />
-          <Num label={t('form.degrauV1')} unidade={u.vazao} value={gerador.v1} disabled={emExecucao} onChange={(v) => set({ v1: v })} />
+          <Num label={t('form.degrauV0')} unidade={u.vazao} unidades={unidades} dim="vazao" value={gerador.v0} disabled={emExecucao} onChange={(v) => set({ v0: v })} />
+          <Num label={t('form.degrauV1')} unidade={u.vazao} unidades={unidades} dim="vazao" value={gerador.v1} disabled={emExecucao} onChange={(v) => set({ v1: v })} />
           <Num label={t('form.instante')} value={gerador.instante} disabled={emExecucao} step={1} onChange={(v) => set({ instante: v })} />
           <Num label={t('form.rampa')} value={gerador.rampa} disabled={emExecucao} step={1} onChange={(v) => set({ rampa: v })} />
         </>
@@ -146,8 +148,8 @@ export function GeradorForm({
 
       {gerador.perfil === 'pulso' && (
         <>
-          <Num label={t('form.base')} unidade={u.vazao} value={gerador.base} disabled={emExecucao} onChange={(v) => set({ base: v })} />
-          <Num label={t('form.amplitude')} unidade={u.vazao} value={gerador.amplitude} disabled={emExecucao} onChange={(v) => set({ amplitude: v })} />
+          <Num label={t('form.base')} unidade={u.vazao} unidades={unidades} dim="vazao" value={gerador.base} disabled={emExecucao} onChange={(v) => set({ base: v })} />
+          <Num label={t('form.amplitude')} unidade={u.vazao} unidades={unidades} dim="vazao" value={gerador.amplitude} disabled={emExecucao} onChange={(v) => set({ amplitude: v })} />
           <Num label={t('form.inicio')} value={gerador.inicio} disabled={emExecucao} step={1} onChange={(v) => set({ inicio: v })} />
           <Num label={t('form.pulsoLargura')} value={gerador.largura} disabled={emExecucao} step={1} onChange={(v) => set({ largura: v })} />
         </>
@@ -162,24 +164,24 @@ export function GeradorForm({
               <option value="decaimento">{t('form.expDecaimento')}</option>
             </select>
           </div>
-          <Num label={t('form.base')} unidade={u.vazao} value={gerador.base} disabled={emExecucao} onChange={(v) => set({ base: v })} />
-          <Num label={t('form.alvo')} unidade={u.vazao} value={gerador.alvo} disabled={emExecucao} onChange={(v) => set({ alvo: v })} />
+          <Num label={t('form.base')} unidade={u.vazao} unidades={unidades} dim="vazao" value={gerador.base} disabled={emExecucao} onChange={(v) => set({ base: v })} />
+          <Num label={t('form.alvo')} unidade={u.vazao} unidades={unidades} dim="vazao" value={gerador.alvo} disabled={emExecucao} onChange={(v) => set({ alvo: v })} />
           <Num label={t('form.tau')} value={gerador.tau} disabled={emExecucao} step={1} onChange={(v) => set({ tau: v })} />
         </>
       )}
 
       {gerador.perfil === 'diaria' && (
         <>
-          <Num label={t('form.diariaBase')} unidade={u.vazao} value={gerador.base} disabled={emExecucao} onChange={(v) => set({ base: v })} />
+          <Num label={t('form.diariaBase')} unidade={u.vazao} unidades={unidades} dim="vazao" value={gerador.base} disabled={emExecucao} onChange={(v) => set({ base: v })} />
           <strong style={{ fontSize: 13 }}>🌅 {t('form.picoManha')}</strong>
           <Num label={t('form.diaHora')} value={gerador.pmHora} disabled={emExecucao} step={0.5} onChange={(v) => set({ pmHora: v })} />
-          <Num label={t('form.diaValor')} unidade={u.vazao} value={gerador.pmValor} disabled={emExecucao} onChange={(v) => set({ pmValor: v })} />
+          <Num label={t('form.diaValor')} unidade={u.vazao} unidades={unidades} dim="vazao" value={gerador.pmValor} disabled={emExecucao} onChange={(v) => set({ pmValor: v })} />
           <Num label={t('form.diaSubida')} value={gerador.pmSubida} disabled={emExecucao} step={0.5} onChange={(v) => set({ pmSubida: v })} />
           <Num label={t('form.diaPatamar')} value={gerador.pmPatamar} disabled={emExecucao} step={0.5} onChange={(v) => set({ pmPatamar: v })} />
           <Num label={t('form.diaDescida')} value={gerador.pmDescida} disabled={emExecucao} step={0.5} onChange={(v) => set({ pmDescida: v })} />
           <strong style={{ fontSize: 13 }}>🌆 {t('form.picoNoite')}</strong>
           <Num label={t('form.diaHora')} value={gerador.pnHora} disabled={emExecucao} step={0.5} onChange={(v) => set({ pnHora: v })} />
-          <Num label={t('form.diaValor')} unidade={u.vazao} value={gerador.pnValor} disabled={emExecucao} onChange={(v) => set({ pnValor: v })} />
+          <Num label={t('form.diaValor')} unidade={u.vazao} unidades={unidades} dim="vazao" value={gerador.pnValor} disabled={emExecucao} onChange={(v) => set({ pnValor: v })} />
           <Num label={t('form.diaSubida')} value={gerador.pnSubida} disabled={emExecucao} step={0.5} onChange={(v) => set({ pnSubida: v })} />
           <Num label={t('form.diaPatamar')} value={gerador.pnPatamar} disabled={emExecucao} step={0.5} onChange={(v) => set({ pnPatamar: v })} />
           <Num label={t('form.diaDescida')} value={gerador.pnDescida} disabled={emExecucao} step={0.5} onChange={(v) => set({ pnDescida: v })} />

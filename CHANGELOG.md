@@ -2,7 +2,22 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
-## [1.48.0] — Cota universal (elevação) em todas as peças
+## [1.49.0] — Unidades canônicas (SI): trocar a unidade preserva o valor físico
+
+Segunda etapa da fundação de física avançada ([#65](https://github.com/rpgmem/HydroFlow/issues/65)).
+
+### Alterado
+
+- **Armazenamento canônico em SI** (metros, m³, m³/s): todas as magnitudes do
+  projeto passam a ser gravadas em unidade canônica. O campo `unidades` vira
+  apenas a **preferência de EXIBIÇÃO** — a UI converte SI↔exibição e o motor
+  calcula sempre em SI. Assim, **trocar a unidade de exibição preserva o valor
+  físico** (antes o número era reinterpretado, mudando o significado).
+- **Schema `1.1.0` → `1.2.0`** com migração automática ao carregar: converte as
+  magnitudes de projetos antigos (das unidades de exibição salvas) para SI —
+  comprimentos, vazões/volumes, níveis, `curva.k` (unidade composta) e
+  `vazaoAlocada`. Tempos, frações, contagens e diâmetros (mm) não são tocados.
+  Projetos salvos anteriormente abrem com o mesmo comportamento físico.
 
 Primeira etapa da fundação de física avançada ([#65](https://github.com/rpgmem/HydroFlow/issues/65)).
 

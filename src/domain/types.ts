@@ -8,7 +8,7 @@
  */
 
 /** Versão atual do schema serializado em arquivos `.json`. */
-export const SCHEMA_VERSION = '1.1.0';
+export const SCHEMA_VERSION = '1.2.0';
 
 export type TipoPeca =
   | 'reservatorio'
