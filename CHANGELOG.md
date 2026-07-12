@@ -2,6 +2,24 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
+## [1.47.0] — Links da Wikipedia nos termos físicos (Ajuda e README)
+
+### Adicionado
+
+- **Links de referência** nos termos físicos da **Ajuda** e do **README**, com a URL
+  correta por idioma (pt → pt.wikipedia, en → en.wikipedia): Torricelli, vazão,
+  continuidade, **vasos comunicantes**, Gauss-Seidel, conservação de massa,
+  Hazen-Williams, **perda de carga**, **bomba (centrífuga)**, válvula de retenção,
+  aceleração da gravidade (g), **carga hidráulica**, **Navier-Stokes**,
+  **Darcy-Weisbach** e **CFD (Fluidodinâmica Computacional)** — a sigla agora
+  aparece por extenso na introdução. (Carga hidráulica aponta para o artigo em
+  inglês por não haver equivalente na Wikipédia em português.)
+
+### Corrigido
+
+- **`checkValve`** deixou de aparecer em inglês na interface em português: agora é
+  **"Válvula de retenção"**.
+
 ## [1.46.0] — Ícone da Ajuda, velocidade no mobile e mais física na Ajuda
 
 ### Adicionado
