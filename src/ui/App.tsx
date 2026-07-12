@@ -7,6 +7,7 @@ import '../i18n'; // inicializa o i18next antes de qualquer useTranslation()
 import { reducer, estadoInicial } from '../state/store';
 import { projetoExemplo } from '../domain/exemplo';
 import { serializarProjeto, type ErroValidacao } from '../domain/schema';
+import { avisosCoerencia } from '../engine/coerencia';
 import { carregarAutosave, limparAutosave, salvarAutosave } from '../persistence/autosave';
 import { useSimulationLoop } from './useSimulationLoop';
 import { Toolbar } from './Toolbar';
@@ -156,6 +157,12 @@ export function App() {
     () => emExecucao || serializarProjeto(estado.projeto) !== exemploSerial.current,
     [estado.projeto, emExecucao],
   );
+  // Avisos de COERÊNCIA (não-bloqueantes) — só na edição: comprimento < desnível
+  // e tomada acima do topo do reservatório. Recalculados ao mudar o projeto.
+  const avisos = useMemo(
+    () => (emExecucao ? [] : avisosCoerencia(estado.projeto)),
+    [estado.projeto, emExecucao],
+  );
   // Erro de validação: usa a chave i18n quando houver (resolvendo o tipo da peça em `pecas.<tipo>`); senão cai na mensagem em Português (ex.: erros de schema
   // no import, ainda não internacionalizados).
   const traduzErro = (e: ErroValidacao): string => {
@@ -253,6 +260,17 @@ export function App() {
               <button style={{ marginTop: 8 }} onClick={() => setErroImport(null)}>
                 {t('app.fechar')}
               </button>
+            </div>
+          )}
+          {/* Avisos de coerência (não-bloqueantes): só na edição, âmbar. */}
+          {avisos.length > 0 && !emExecucao && (
+            <div className="avisos" role="note">
+              <strong>{t('app.avisosCoerencia')}</strong>
+              <ul>
+                {avisos.map((a, i) => (
+                  <li key={i}>{traduzErro(a)}</li>
+                ))}
+              </ul>
             </div>
           )}
         </div>

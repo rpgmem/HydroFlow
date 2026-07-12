@@ -133,6 +133,8 @@ export const pt = {
     golpeSurge: 'Golpe (parada súbita): <1>ΔP ≈ {{surge}} {{unidade}}</1> (teto {{teto}})',
     golpeLento: '— fechamento lento (atenuado; só linha de bomba é abrupta)',
     pressaoNominal: 'Pressão nominal (teto do golpe)',
+    desnivelPontas: 'Desnível entre as pontas: <1>{{desnivel}} {{unidade}}</1>',
+    usarDesnivel: 'usar como comprimento mínimo',
     coefC: 'Coeficiente C (Hazen-Williams)',
     material: 'Material',
     rugosidade: 'Rugosidade ε (Darcy-Weisbach)',
@@ -438,6 +440,7 @@ export const pt = {
     fecharAviso: 'Fechar aviso',
     falhaCarregar: 'Falha ao carregar arquivo',
     validacaoBloqueou: 'Validação bloqueou a execução',
+    avisosCoerencia: 'Avisos de coerência (não bloqueiam a execução):',
     fechar: 'Fechar',
     abrirInspetor: 'Abrir inspetor de propriedades',
     rodape: '<0>HydroFlow</0> — simulador hidráulico simplificado (Torricelli + continuidade de volume)',
@@ -489,6 +492,10 @@ export const pt = {
     vazaoAlocada: 'soma de vazaoAlocada ({{soma}}) excede vazaoFixa ({{vazaoFixa}})',
     motoPerpetuo: 'ciclo fechado com bomba e sem dreno/saída (moto-perpétuo não é permitido)',
     quadroSemEfeito: 'quadro "{{id}}" não comanda nenhuma bomba (sem efeito)',
+  },
+  coerencia: {
+    tomadaAcima: '{{nome}}: tomada a {{tomada}} m acima do topo do reservatório ({{topo}} m) — a água não alcança o bocal',
+    comprimentoCurto: '{{nome}}: comprimento {{comprimento}} m menor que o desnível entre as pontas ({{desnivel}} m)',
   },
 };
 

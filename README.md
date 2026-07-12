@@ -199,6 +199,8 @@ Executada apenas na transição **edição → execução** (não incrementalmen
 **Bloqueia:** nó órfão · aresta sem origem/destino · ciclo bomba→…→origem sem dreno (moto-perpétuo) · fonte com `Σ vazaoAlocada > vazaoFixa`.
 **Permite:** fonte com múltiplos destinos · múltiplos sensores por bomba · um sensor regendo várias bombas.
 
+**Avisos de coerência (não bloqueiam):** na edição, um painel âmbar sinaliza incoerências de dimensionamento — o `comprimento` de um tubo **menor que o desnível** entre suas pontas (com atrito ligado) e uma **tomada acima do topo** do reservatório conectado. O inspetor do tubo mostra o **desnível entre as pontas** e oferece **usá-lo como comprimento mínimo**. Só considera pontas de elevação conhecida (reservatório/bomba); junção/ambiente não disparam.
+
 ## Modos de operação
 
 - **`edicao`** — grafo mutável (add/remove peça, conexão, mover no canvas).

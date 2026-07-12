@@ -297,6 +297,42 @@ button.ativo {
   padding-left: 18px;
 }
 
+/* Avisos de coerência (não-bloqueantes): âmbar, discretos, acima do rodapé. */
+.avisos {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(120, 90, 10, 0.85);
+  border: 1px solid #d9a441;
+  border-radius: 8px;
+  padding: 10px 12px;
+  max-height: 32%;
+  overflow-y: auto;
+  font-size: 12px;
+}
+
+.avisos ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+/* Botão-texto inline (ex.: "usar o desnível como mínimo" no inspetor). */
+.link-inline {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent-2);
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}
+.link-inline:disabled {
+  color: inherit;
+  text-decoration: none;
+  cursor: default;
+}
+
 .hint {
   position: absolute;
   top: 10px;
@@ -1045,7 +1081,8 @@ button.ativo {
   .fab-inspetor,
   .drawer-backdrop,
   .excluir-conexao,
-  .errors {
+  .errors,
+  .avisos {
     display: none !important;
   }
 

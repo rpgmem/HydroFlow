@@ -132,6 +132,8 @@ export const en: Dicionario = {
     golpeSurge: 'Surge (sudden stop): <1>ΔP ≈ {{surge}} {{unidade}}</1> (limit {{teto}})',
     golpeLento: '— slow closure (attenuated; only pump lines are abrupt)',
     pressaoNominal: 'Nominal pressure (surge limit)',
+    desnivelPontas: 'Drop between ends: <1>{{desnivel}} {{unidade}}</1>',
+    usarDesnivel: 'use as minimum length',
     coefC: 'C coefficient (Hazen-Williams)',
     material: 'Material',
     rugosidade: 'Roughness ε (Darcy-Weisbach)',
@@ -433,6 +435,7 @@ export const en: Dicionario = {
     fecharAviso: 'Close notice',
     falhaCarregar: 'Failed to load file',
     validacaoBloqueou: 'Validation blocked the run',
+    avisosCoerencia: 'Coherence warnings (they don’t block the run):',
     fechar: 'Close',
     abrirInspetor: 'Open the properties inspector',
     rodape: '<0>HydroFlow</0> — simplified hydraulic simulator (Torricelli + volume continuity)',
@@ -482,5 +485,9 @@ export const en: Dicionario = {
     vazaoAlocada: 'sum of allocated flow ({{soma}}) exceeds fixed flow ({{vazaoFixa}})',
     motoPerpetuo: 'closed loop with a pump and no drain/outlet (perpetual motion not allowed)',
     quadroSemEfeito: 'panel "{{id}}" controls no pump (no effect)',
+  },
+  coerencia: {
+    tomadaAcima: '{{nome}}: tap {{tomada}} m above the reservoir top ({{topo}} m) — water never reaches the mouth',
+    comprimentoCurto: '{{nome}}: length {{comprimento}} m is shorter than the drop between its ends ({{desnivel}} m)',
   },
 };

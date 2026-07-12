@@ -5,6 +5,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GrafoIndex, coletarTubosDeBomba } from '../engine/grafo';
+import { desnivelTuboM } from '../engine/coerencia';
 import type { Acao } from '../state/store';
 import {
   isAlivio,
@@ -49,8 +50,9 @@ interface Props {
 
 export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatch }: Props) {
   const { t } = useTranslation();
+  const idx = useMemo(() => new GrafoIndex(projeto), [projeto]);
   // Tubos em linha de bomba (parada abrupta → golpe cheio); os demais são atenuados.
-  const tubosBomba = useMemo(() => coletarTubosDeBomba(new GrafoIndex(projeto)), [projeto]);
+  const tubosBomba = useMemo(() => coletarTubosDeBomba(idx), [idx]);
   if (!peca) {
     return (
       <div className="panel right">
@@ -126,7 +128,7 @@ export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatc
         {isReservatorio(peca) && (
           <ReservatorioForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} />
         )}
-        {isTubo(peca) && <TuboForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} atrito={projeto.configuracaoSimulacao.atrito === true} modeloAtrito={projeto.configuracaoSimulacao.modeloAtrito ?? 'hazen-williams'} velRef={projeto.configuracaoSimulacao.velocidadeRef ?? VELOCIDADE_MAX_RECOMENDADA_MS} vazao={vazao} temperaturaC={projeto.configuracaoSimulacao.temperaturaC ?? TEMPERATURA_PADRAO_C} limiteGolpeKPa={projeto.configuracaoSimulacao.limiteGolpeArieteKPa ?? LIMITE_GOLPE_PADRAO_KPA} golpeAbrupto={tubosBomba.has(peca.id)} />}
+        {isTubo(peca) && <TuboForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} atrito={projeto.configuracaoSimulacao.atrito === true} modeloAtrito={projeto.configuracaoSimulacao.modeloAtrito ?? 'hazen-williams'} velRef={projeto.configuracaoSimulacao.velocidadeRef ?? VELOCIDADE_MAX_RECOMENDADA_MS} vazao={vazao} temperaturaC={projeto.configuracaoSimulacao.temperaturaC ?? TEMPERATURA_PADRAO_C} limiteGolpeKPa={projeto.configuracaoSimulacao.limiteGolpeArieteKPa ?? LIMITE_GOLPE_PADRAO_KPA} golpeAbrupto={tubosBomba.has(peca.id)} desnivelM={desnivelTuboM(idx, peca)} />}
         {isBomba(peca) && <BombaForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} projeto={projeto} pecaId={peca.id} dispatch={dispatch} />}
         {isFonte(peca) && <FonteForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} />}
         {isConsumo(peca) && <ConsumoForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} />}
