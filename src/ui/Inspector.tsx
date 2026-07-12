@@ -19,7 +19,7 @@ import {
 import { labelComprimento, labelVazao } from '../domain/unidades';
 import { VELOCIDADE_MAX_RECOMENDADA_MS } from '../engine/geometria';
 import { Sparkline } from './Sparkline';
-import type { UniLabel } from './inspector/campos';
+import { Num, type UniLabel } from './inspector/campos';
 import {
   BombaForm,
   ConsumoForm,
@@ -103,6 +103,14 @@ export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatc
             }
           />
         </div>
+
+        <Num
+          label={t('inspector.cota')}
+          unidade={u.comp}
+          value={peca.cota ?? 0}
+          disabled={emExecucao}
+          onChange={(v) => dispatch({ tipo: 'ATUALIZAR_COTA', id: peca.id, cota: v })}
+        />
 
         {isReservatorio(peca) && (
           <ReservatorioForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} />

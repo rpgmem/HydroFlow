@@ -101,6 +101,7 @@ export type Acao =
   | { tipo: 'ATUALIZAR_PROPS'; id: string; props: Partial<PropsPorTipo> }
   | { tipo: 'DUPLICAR_PECA'; id: string }
   | { tipo: 'RENOMEAR_PECA'; id: string; rotulo: string }
+  | { tipo: 'ATUALIZAR_COTA'; id: string; cota: number }
   | { tipo: 'NORMALIZAR_IDS' }
   | { tipo: 'SELECIONAR'; id: string | null }
   | { tipo: 'SELECIONAR_CONEXAO'; id: string | null }
@@ -313,6 +314,7 @@ const ACOES_UNDOAVEIS = new Set<Acao['tipo']>([
   'REMOVER_CONEXAO',
   'ATUALIZAR_PROPS',
   'RENOMEAR_PECA',
+  'ATUALIZAR_COTA',
   'DUPLICAR_PECA',
   'NORMALIZAR_IDS',
   'SET_NOME',
@@ -474,6 +476,15 @@ function reducerBase(estado: EstadoApp, acao: Acao): EstadoApp {
         projeto: atualizarPeca(estado.projeto, acao.id, (p) => ({
           ...p,
           rotulo: acao.rotulo,
+        })),
+      };
+
+    case 'ATUALIZAR_COTA':
+      return {
+        ...estado,
+        projeto: atualizarPeca(estado.projeto, acao.id, (p) => ({
+          ...p,
+          cota: acao.cota,
         })),
       };
 

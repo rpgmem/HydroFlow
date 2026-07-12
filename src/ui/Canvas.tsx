@@ -597,8 +597,8 @@ function linhasTooltip(peca: Peca, estado: EstadoApp): string[] {
   if (isReservatorio(peca)) {
     const p = peca.props;
     linhas.push(t('canvas.tipNivel', { nivel: (p.nivel ?? 0).toFixed(2), max: p.alturaMaxima, unidade: compL }));
-    linhas.push(t('canvas.tipCotaBase', { cota: p.cotaBase, unidade: compL }));
-    linhas.push(t('canvas.tipCarga', { carga: (p.cotaBase + (p.nivel ?? 0)).toFixed(2), unidade: compL }));
+    linhas.push(t('canvas.tipCotaBase', { cota: peca.cota ?? 0, unidade: compL }));
+    linhas.push(t('canvas.tipCarga', { carga: ((peca.cota ?? 0) + (p.nivel ?? 0)).toFixed(2), unidade: compL }));
   } else if (isTubo(peca)) {
     const p = peca.props;
     linhas.push(`Ø ${p.diametro} mm${p.bitola ? ` (${p.bitola})` : ''}`);

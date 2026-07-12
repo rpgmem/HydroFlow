@@ -27,13 +27,13 @@ export interface FluxoResolvido {
   vazao: number;
 }
 
-/** Carga hidráulica total de um reservatório em METROS: (cotaBase + nível)·kL. */
+/** Carga hidráulica total de um reservatório em METROS: (cota + nível)·kL. */
 export function cargaM(peca: PecaDe<'reservatorio'>, kL: number): number {
-  return (peca.props.cotaBase + (peca.props.nivel ?? 0)) * kL;
+  return ((peca.cota ?? 0) + (peca.props.nivel ?? 0)) * kL;
 }
 
 /**
- * Reservatório VAZIO: sem coluna d'água na origem não há o que escoar, ainda que a carga (cotaBase + nível) seja positiva pela elevação. Evita vazão "fantasma"
+ * Reservatório VAZIO: sem coluna d'água na origem não há o que escoar, ainda que a carga (cota + nível) seja positiva pela elevação. Evita vazão "fantasma"
  * saindo de um tanque vazio.
  */
 export function reservatorioVazio(r: PecaDe<'reservatorio'>): boolean {

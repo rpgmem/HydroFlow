@@ -28,8 +28,8 @@ import { SCHEMA_VERSION } from './types';
 
 type Peca = ProjetoSimulacao['pecas'][number];
 
-function reservatorio(id: string, rotulo: string, x: number, y: number, props: PropsReservatorio): Peca {
-  return { id, tipo: 'reservatorio', x, y, portas: ['topo', 'base'], props, rotulo };
+function reservatorio(id: string, rotulo: string, x: number, y: number, cota: number, props: PropsReservatorio): Peca {
+  return { id, tipo: 'reservatorio', x, y, cota, portas: ['topo', 'base'], props, rotulo };
 }
 
 function tubo(id: string, rotulo: string, x: number, y: number, props: PropsTubo): Peca {
@@ -62,25 +62,22 @@ export function projetoExemplo(): ProjetoSimulacao {
     configuracaoSimulacao: { dt: 0.1, g: 9.81, atrito: true },
     pecas: [
       // ---- Reservatórios empilhados (coluna x=480) --------------------------
-      reservatorio('inferior_75_000_l', 'Inferior (75.000 L)', 480, 560, {
+      reservatorio('inferior_75_000_l', 'Inferior (75.000 L)', 480, 560, 0, {
         formato: 'cilindro',
         raio: 1.6,
         alturaMaxima: 9.5,
-        cotaBase: 0,
         nivel: 2.5,
       } as PropsReservatorio),
-      reservatorio('c2_meio_55_000_l', 'C2 Meio (55.000 L)', 480, 280, {
+      reservatorio('c2_meio_55_000_l', 'C2 Meio (55.000 L)', 480, 280, 9.5, {
         formato: 'cilindro',
         raio: 1.6,
         alturaMaxima: 6.8387,
-        cotaBase: 9.5,
         nivel: 2.5,
       } as PropsReservatorio),
-      reservatorio('c1_superior_55_000_l', 'C1 Superior (55.000 L)', 480, 100, {
+      reservatorio('c1_superior_55_000_l', 'C1 Superior (55.000 L)', 480, 100, 16.3387, {
         formato: 'cilindro',
         raio: 1.6,
         alturaMaxima: 6.8387,
-        cotaBase: 16.3387,
         nivel: 2.5,
       } as PropsReservatorio),
       // ---- Abastecimento e recalque -----------------------------------------

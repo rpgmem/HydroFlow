@@ -19,11 +19,11 @@ function projetoMinimo(): ProjetoSimulacao {
         tipo: 'reservatorio',
         x: 0,
         y: 0,
+        cota: 0,
         props: {
           formato: 'cilindro',
           raio: 1,
           alturaMaxima: 5,
-          cotaBase: 0,
           nivel: 2,
         },
       },
@@ -69,6 +69,33 @@ describe('parsing de schema válido', () => {
     const r = validarProjeto(p);
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.avisos.length).toBeGreaterThan(0);
+  });
+
+  it('migra 1.0.0: props.cotaBase → peca.cota', () => {
+    // Projeto no formato antigo: a elevação vinha dentro de props.cotaBase.
+    const antigo = {
+      nome: 'Antigo',
+      versao: '1.0.0',
+      unidades: { volume: 'litros', comprimento: 'm' },
+      configuracaoSimulacao: { dt: 0.1, g: 9.81 },
+      pecas: [
+        {
+          id: 'r1',
+          tipo: 'reservatorio',
+          x: 0,
+          y: 0,
+          props: { formato: 'cilindro', raio: 1, alturaMaxima: 5, cotaBase: 7.5, nivel: 2 },
+        },
+      ],
+      conexoes: [],
+    };
+    const r = validarProjeto(antigo);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      const p0 = r.projeto.pecas[0]!;
+      expect(p0.cota).toBe(7.5);
+      expect((p0.props as Record<string, unknown>).cotaBase).toBeUndefined();
+    }
   });
 });
 
