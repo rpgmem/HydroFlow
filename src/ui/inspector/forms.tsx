@@ -26,7 +26,7 @@ import {
 import { Trans, useTranslation } from 'react-i18next';
 import { vazaoDeM3, vazaoMaxRecomendadaM3, velocidadeTuboMs, volumeMaximoM3 } from '../../engine/geometria';
 import { labelVolume, m3PorVolume, UNIDADES_CANONICAS, exibirPressao, labelPressao } from '../../domain/unidades';
-import { pressaoHidrostaticaKPa, reynolds, regimeReynolds, muAgua, sobrepressaoGolpeKPa } from '../../engine/fisica';
+import { pressaoHidrostaticaKPa, reynolds, regimeReynolds, muAgua, sobrepressaoGolpeKPa, celeridadeGolpeMs } from '../../engine/fisica';
 import { CATALOGO_TUBOS, CATEGORIAS_TUBO, bitolaPorDn, rotuloBitola } from '../../domain/tubosCatalogo';
 import { MATERIAIS_TUBO, ORDEM_MATERIAIS } from '../../domain/materiais';
 import { fmtNumero } from '../../i18n';
@@ -156,7 +156,7 @@ export function TuboForm({
   const vMs = vazao !== undefined && props.diametro > 0 ? velocidadeTuboMs(vazao, props.diametro) : 0;
   const re = emExecucao && vMs > 1e-6 ? reynolds(vMs, props.diametro, muAgua(temperaturaC)) : null;
   // Golpe de aríete: sobrepressão de Joukowsky numa parada súbita e o teto vigente.
-  const surgeKPa = emExecucao && vMs > 1e-6 ? sobrepressaoGolpeKPa(vMs) : null;
+  const surgeKPa = emExecucao && vMs > 1e-6 ? sobrepressaoGolpeKPa(vMs, celeridadeGolpeMs(props.material)) : null;
   const tetoGolpe = props.pressaoNominal ?? limiteGolpeKPa;
   return (
     <>

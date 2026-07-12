@@ -46,6 +46,22 @@ describe('projeto de exemplo (reservatórios empilhados)', () => {
     }
   });
 
+  it('a boia_manual (PVC, ~1,3 m/s no pico) não dispara golpe de aríete', () => {
+    // Regressão: com a celeridade de PVC (~500 m/s), a sobrepressão de Joukowsky
+    // no cano de enchimento (v ≲ 1,3 m/s → ~650 kPa) fica abaixo do teto (PN10 =
+    // 1000 kPa). Antes (celeridade 1000 m/s) o alerta piscava com a senoide.
+    let estado = projetoExemplo();
+    let tempo = 0;
+    let disparou = false;
+    for (let i = 0; i < 200 && !disparou; i++) {
+      const r = rodarTicks(estado, 5, tempo);
+      estado = r.projeto;
+      tempo = r.tempo;
+      if (r.golpeAriete.includes('boia_manual')) disparou = true;
+    }
+    expect(disparou).toBe(false);
+  });
+
   it('o sensor reverso do inferior desliga a bomba quando a sucção esvazia', () => {
     // Proteção da origem: forçando o inferior no mínimo do sensor reverso (2 m),
     // o 'desligar' vence e a bomba para — sem rodar a seco.
