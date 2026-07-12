@@ -25,6 +25,7 @@ import {
   isSensor,
   isTubo,
   type Peca,
+  type PropsBomba,
 } from '../domain/types';
 import type { Acao, EstadoApp } from '../state/store';
 
@@ -66,6 +67,16 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
   const vistaAntesImpressao = useRef<{ scale: number; x: number; y: number } | null>(null);
 
   const pecaPorId = new Map(estado.projeto.pecas.map((p) => [p.id, p]));
+  // Revezamento EFETIVO de cada bomba: quando regida por um quadro, quem manda é o
+  // canal (canal.revezamento); senão, o próprio `props.revezamento`. Assim o desenho
+  // (círculo simples × dividido em "1/2") acompanha a fonte da verdade real.
+  const revezaCanalPorBomba = new Map<string, boolean>();
+  for (const p of estado.projeto.pecas) {
+    if (!isQuadro(p)) continue;
+    for (const c of p.props.canais) {
+      if (c.bomba && !revezaCanalPorBomba.has(c.bomba)) revezaCanalPorBomba.set(c.bomba, c.revezamento ?? false);
+    }
+  }
   const centro = (id: string): { x: number; y: number } => {
     const p = pecaPorId.get(id);
     return p ? { x: p.x, y: p.y } : { x: 0, y: 0 };
@@ -435,6 +446,11 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
               consumoInsuficiente={consumoDeficitSet.has(peca.id)}
               temaClaro={temaClaro}
               sensorEstado={emExecucao ? estado.sensores[peca.id] : undefined}
+              revezamentoEfetivo={
+                peca.tipo === 'bomba'
+                  ? (revezaCanalPorBomba.get(peca.id) ?? (peca.props as PropsBomba).revezamento ?? false)
+                  : undefined
+              }
               onSelect={() => dispatch({ tipo: 'SELECIONAR', id: peca.id })}
               onMove={(x, y) => dispatch({ tipo: 'MOVER_PECA', id: peca.id, x, y })}
               onStartConnection={iniciarConexao}

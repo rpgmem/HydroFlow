@@ -2,6 +2,19 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
+## [1.44.0] — Números na bomba + revezamento só no quadro
+
+### Alterado
+
+- **Bombas mostram o número da unidade no editor**: a bomba única exibe **"1"** e a
+  dupla exibe **"1" / "2"** já no modo edição (antes a única não mostrava número).
+- **Revezamento no canvas segue a fonte da verdade real**: quando a bomba é regida
+  por um quadro, o desenho (círculo simples × dividido) usa o revezamento do
+  **canal do quadro**, não o `props.revezamento` congelado da bomba.
+- **Inspetor da bomba**: o switch **"Bomba dupla (revezamento)"** some quando a bomba
+  é regida por um quadro — o controle fica **só no quadro** (fonte da verdade),
+  evitando um toggle que não tinha efeito.
+
 ## [1.43.0] — Correção do sinal de fluxo + normalizar renumera conexões
 
 ### Corrigido
