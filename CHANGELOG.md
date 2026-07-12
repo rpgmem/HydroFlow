@@ -2,6 +2,27 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
+## [1.57.0] — Celeridade do golpe de aríete por material
+
+### Alterado
+
+- A **celeridade** da onda de golpe (Joukowsky `ΔP = ρ·a·v`) passa a depender do
+  **material** do tubo. O padrão cai de `1000` → **`500 m/s`** (PVC/plástico, o
+  caso comum em redes prediais — o plástico é elástico e amortece o golpe);
+  materiais rígidos usam valores maiores (aço ~1200, ferro ~1100, cobre ~1300,
+  concreto ~1000). Antes, a celeridade fixa de 1000 m/s (tubo rígido)
+  **superestimava** a sobrepressão em ~2× para o PVC, acendendo o alerta em
+  velocidades normais (> 1 m/s). Agora o alerta só dispara acima de ~2 m/s em
+  PVC, alinhado ao limite de dimensionamento (3 m/s).
+- `src/engine/fisica.ts` ganha `CELERIDADE_MATERIAL_MS` e `celeridadeGolpeMs(material)`;
+  o motor e a telemetria do inspetor passam a celeridade do material ao Joukowsky.
+
+### Corrigido
+
+- No projeto exemplo, a `boia_manual` (PVC, ~1,3 m/s no pico da concessionária
+  senoidal) **parava de piscar** o alerta de golpe a cada ciclo — a sobrepressão
+  real de um cano de PVC (~650 kPa) fica abaixo do teto PN10. Regressão coberta por teste.
+
 ## [1.56.2] — Coerência do comprimento da sucção do incêndio (exemplo)
 
 ### Corrigido

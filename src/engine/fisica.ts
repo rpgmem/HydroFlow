@@ -93,9 +93,32 @@ export function fatorAtritoDW(re: number, epsMM: number, diametroMM: number): nu
 /**
  * Celeridade da onda de pressão (m/s) para o golpe de aríete — velocidade com
  * que a sobrepressão se propaga no tubo. Depende da elasticidade do fluido e do
- * tubo; ~1000 m/s é um valor típico para água em tubo relativamente rígido.
+ * tubo. PADRÃO = 500 m/s (PVC/plástico, o caso comum em redes prediais): o
+ * plástico é elástico e AMORTECE o golpe. Tubos rígidos (metal/concreto)
+ * propagam bem mais rápido — ver `CELERIDADE_MATERIAL_MS`.
  */
-export const CELERIDADE_GOLPE_MS = 1000;
+export const CELERIDADE_GOLPE_MS = 500;
+
+/**
+ * Celeridade do golpe por material (m/s). Plástico (PVC) é elástico e absorve o
+ * golpe (~500); metálicos/rígidos propagam mais rápido (~1000–1300). Valores de
+ * ordem de grandeza típicos para água. Chaves = `PropsTubo.material`.
+ */
+export const CELERIDADE_MATERIAL_MS: Record<string, number> = {
+  pvc: 500,
+  cobre: 1300,
+  aco: 1200,
+  ferro: 1100,
+  concreto: 1000,
+};
+
+/**
+ * Celeridade do golpe (m/s) para um material de tubo. Sem material informado →
+ * `CELERIDADE_GOLPE_MS` (500, PVC/plástico — o caso comum).
+ */
+export function celeridadeGolpeMs(material?: string): number {
+  return (material !== undefined && CELERIDADE_MATERIAL_MS[material]) || CELERIDADE_GOLPE_MS;
+}
 
 /** Limite de pressão padrão para o alerta de golpe (kPa) — ordem de PN10 = 1000 kPa. */
 export const LIMITE_GOLPE_PADRAO_KPA = 1000;

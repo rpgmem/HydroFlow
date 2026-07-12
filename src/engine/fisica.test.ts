@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pressaoHidrostaticaKPa, colunaPressaoM, PRESSAO_ATM_KPA, muAgua, reynolds, regimeReynolds, sobrepressaoGolpeKPa, fatorAtritoDW, pvaporAguaKPa, npshDisponivelM } from './fisica';
+import { pressaoHidrostaticaKPa, colunaPressaoM, PRESSAO_ATM_KPA, muAgua, reynolds, regimeReynolds, sobrepressaoGolpeKPa, celeridadeGolpeMs, fatorAtritoDW, pvaporAguaKPa, npshDisponivelM } from './fisica';
 import { velocidadeTuboMs } from './geometria';
 import {
   exibirPressao,
@@ -65,9 +65,21 @@ describe('viscosidade e número de Reynolds', () => {
     expect(regimeReynolds(50000)).toBe('turbulento');
   });
   it('sobrepressão de Joukowsky ΔP = ρ·a·v (parada súbita)', () => {
-    expect(sobrepressaoGolpeKPa(2)).toBeCloseTo(2000); // 1000·1000·2/1000 = 2000 kPa
-    expect(sobrepressaoGolpeKPa(1)).toBeCloseTo(1000); // 1 m/s ≈ PN10
+    // Celeridade PADRÃO agora é 500 m/s (PVC/plástico).
+    expect(sobrepressaoGolpeKPa(2)).toBeCloseTo(1000); // 1000·500·2/1000 = 1000 kPa
+    expect(sobrepressaoGolpeKPa(1)).toBeCloseTo(500); // 500 kPa
     expect(sobrepressaoGolpeKPa(0)).toBe(0);
+    // Celeridade explícita (ex.: tubo rígido a 1000 m/s).
+    expect(sobrepressaoGolpeKPa(2, 1000)).toBeCloseTo(2000);
+  });
+  it('celeridade por material: plástico amortece, metal/concreto propagam mais', () => {
+    expect(celeridadeGolpeMs()).toBe(500); // sem material → PVC/plástico
+    expect(celeridadeGolpeMs('pvc')).toBe(500);
+    expect(celeridadeGolpeMs('aco')).toBeGreaterThan(celeridadeGolpeMs('pvc'));
+    expect(celeridadeGolpeMs('ferro')).toBeGreaterThan(500);
+    expect(celeridadeGolpeMs('concreto')).toBeGreaterThanOrEqual(1000);
+    // Material desconhecido → cai no padrão (PVC).
+    expect(celeridadeGolpeMs('desconhecido')).toBe(500);
   });
   it('integra com a velocidade do tubo', () => {
     const v = velocidadeTuboMs(0.02, 100); // 0,02 m³/s num tubo de 100 mm

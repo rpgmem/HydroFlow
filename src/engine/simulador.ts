@@ -48,6 +48,7 @@ import {
 import { COMPRIMENTO_PADRAO_M } from './hidraulica';
 import {
   sobrepressaoGolpeKPa,
+  celeridadeGolpeMs,
   LIMITE_GOLPE_PADRAO_KPA,
   muAgua,
   TEMPERATURA_PADRAO_C,
@@ -361,7 +362,8 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     const v = velocidadeTuboMs(vazoesM3[p.id] ?? 0, p.props.diametro);
     if (v <= 1e-6) continue;
     const teto = p.props.pressaoNominal ?? limiteGolpe;
-    if (sobrepressaoGolpeKPa(v) > teto) golpeAriete.push(p.id);
+    // Celeridade conforme o material do tubo (PVC amortece; metal/concreto propagam mais).
+    if (sobrepressaoGolpeKPa(v, celeridadeGolpeMs(p.props.material)) > teto) golpeAriete.push(p.id);
   }
 
   // Risco de cavitação (NPSH): para cada bomba LIGADA com NPSH requerido
