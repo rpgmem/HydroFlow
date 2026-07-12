@@ -27,6 +27,15 @@ export function pressaoHidrostaticaKPa(colunaM: number, g: number = G_PADRAO_MS2
 }
 
 /**
+ * Altura da coluna d'água (m) equivalente a uma pressão (kPa) — o inverso do
+ * Teorema de Stevin: h = P/(ρ·g). Ex.: 98,1 kPa ≈ 10 m. Usada para converter o
+ * setpoint da válvula de alívio em altura de coluna.
+ */
+export function colunaPressaoM(pKPa: number, g: number = G_PADRAO_MS2): number {
+  return (Math.max(0, pKPa) * 1000) / (DENSIDADE_AGUA_KGM3 * g);
+}
+
+/**
  * Viscosidade dinâmica da água (Pa·s) em função da temperatura (°C). Correlação
  * empírica (tipo Vogel) válida ~0–100 °C: μ = 2,414e-5·10^(247,8/(T_K − 140)).
  * Em 20 °C ≈ 1,00e-3 Pa·s.

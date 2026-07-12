@@ -23,6 +23,7 @@
  */
 
 import {
+  isAlivio,
   isBomba,
   isConsumo,
   isFonte,
@@ -59,6 +60,7 @@ import { arbitrarBomba, avaliarSensor, avaliarSequencia, boiaAberta, type Decisa
 import { resolverGravidadeComJuncoes } from './redeJuncoes';
 import { GrafoIndex, cargaM, reservatorioVazio, type FluxoResolvido } from './grafo';
 import {
+  calcularAlivio,
   calcularBomba,
   calcularConsumo,
   calcularFonte,
@@ -88,6 +90,8 @@ export interface ResultadoTick {
   golpeAriete: string[];
   /** Bombas com RISCO de cavitação: o NPSH disponível na sucção caiu abaixo do NPSH requerido. */
   cavitacao: string[];
+  /** Válvulas de alívio DESCARREGANDO neste tick (pressão local acima do setpoint). */
+  aliviosAtivos: string[];
   /** Tubos com fluxo contrário à seta (refluxo) neste tick — inesperado. */
   refluxos: string[];
   /** Consumos cuja demanda excede a vazão da bomba que os alimenta (déficit). */
@@ -268,6 +272,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   const refluxos: string[] = []; // tubos com fluxo contrário à seta (inesperado)
 
   const ladroesAtivos: string[] = [];
+  const aliviosAtivos: string[] = []; // válvulas de alívio descarregando neste tick
   const cadeiaResolvida = new Set<string>();
   // Junções que bifurcam/unem: resolvidas ANTES como uma REDE de vazão, para dividir/somar o fluxo conservando massa no nó. Terminais (consumo/fonte/
   // bomba) ligados a uma junção entram como NÓS DE VAZÃO da própria rede — assim um consumo puxando de uma união pode forçar refluxo do ramo mais alto,
@@ -297,6 +302,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     if (isBomba(p)) vazoesM3[p.id] = calcularBomba(idx, p, g, u, tempoAtual, fluxos, vazoesM3, consumoInsuficiente, bombasASeco, atrito, modeloAtrito, muPas);
     else if (isFonte(p)) vazoesM3[p.id] = calcularFonte(idx, p, u, tempoAtual, fluxos, vazoesM3);
     else if (isConsumo(p)) vazoesM3[p.id] = calcularConsumo(idx, p, g, u, tempoAtual, fluxos, vazoesM3, atrito, modeloAtrito, muPas);
+    else if (isAlivio(p)) vazoesM3[p.id] = calcularAlivio(idx, p, g, u, fluxos, vazoesM3, aliviosAtivos, atrito, modeloAtrito, muPas);
   }
   // Tubos por gravidade / ladrão: só os que ainda não foram atribuídos por um elemento ativo (um cano alimentado por fonte/bomba tem sua vazão dada pelo
   // driver).
@@ -407,6 +413,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     tubosVelozes,
     golpeAriete,
     cavitacao,
+    aliviosAtivos,
     refluxos,
     consumoInsuficiente,
     sensores,
@@ -489,6 +496,7 @@ export function rodarTicks(
     tubosVelozes: [],
     golpeAriete: [],
     cavitacao: [],
+    aliviosAtivos: [],
     refluxos: [],
     consumoInsuficiente: [],
     sensores: {},

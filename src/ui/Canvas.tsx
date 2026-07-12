@@ -107,6 +107,7 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
   const tuboVelozSet = new Set(estado.tubosVelozes);
   const golpeArieteSet = new Set(estado.golpeAriete);
   const cavitacaoSet = new Set(estado.cavitacao);
+  const alivioAtivoSet = new Set(estado.aliviosAtivos);
   const consumoDeficitSet = new Set(estado.consumoInsuficiente);
 
   // Tecla Delete/Backspace exclui a conexão selecionada (fora de execução).
@@ -468,6 +469,7 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
               tuboVeloz={tuboVelozSet.has(peca.id)}
               golpeAriete={golpeArieteSet.has(peca.id)}
               cavitando={cavitacaoSet.has(peca.id)}
+              aliviando={alivioAtivoSet.has(peca.id)}
               consumoInsuficiente={consumoDeficitSet.has(peca.id)}
               temaClaro={temaClaro}
               sensorEstado={emExecucao ? estado.sensores[peca.id] : undefined}

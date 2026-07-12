@@ -20,6 +20,7 @@ import {
   type PropsReservatorio,
   type PropsSensor,
   type PropsTubo,
+  type PropsAlivio,
   type Unidades,
 } from '../../domain/types';
 import { Trans, useTranslation } from 'react-i18next';
@@ -617,6 +618,37 @@ export function FonteForm({ props, emExecucao, upd, u, unidades }: { props: Prop
   // A boia é uma válvula de NÍVEL que fica no cano/entrada do tanque — por isso é configurada no tubo, não na fonte (suprimento externo). Aqui só o gerador de
   // vazão de abastecimento.
   return <GeradorForm gerador={props.gerador} emExecucao={emExecucao} u={u} unidades={unidades} upd={(g) => upd({ gerador: g })} />;
+}
+
+export function AlivioForm({ props, emExecucao, upd, unidades }: { props: PropsAlivio; emExecucao: boolean; upd: Upd; unidades: Unidades }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {/* Setpoint de abertura (kPa canônico; exibido na unidade de pressão do projeto). */}
+      <Num
+        label={t('form.pressaoAbertura')}
+        unidade={labelPressao(unidades)}
+        unidades={unidades}
+        dim="pressao"
+        value={props.pressaoAbertura}
+        disabled={emExecucao}
+        step={10}
+        onChange={(v) => upd({ pressaoAbertura: v })}
+      />
+      {/* Orifício de descarga (sempre em mm, como os diâmetros de tubo). */}
+      <Num
+        label={t('form.diametroOrificio')}
+        unidade="mm"
+        value={props.diametro ?? 25}
+        disabled={emExecucao}
+        step={1}
+        onChange={(v) => upd({ diametro: v > 0 ? v : undefined })}
+      />
+      <p className="telemetry" style={{ marginTop: -4 }}>
+        {t('form.alivioDica')}
+      </p>
+    </>
+  );
 }
 
 export function SensorForm({

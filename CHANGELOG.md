@@ -2,6 +2,34 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
+## [1.56.0] — Válvula de alívio (peça nova)
+
+Oitava e última etapa da fundação de física avançada ([#65](https://github.com/rpgmem/HydroFlow/issues/65)).
+
+### Adicionado
+
+- **Válvula de alívio** (peça nova `alivio`) — proteção de pressão ligada a
+  jusante de um reservatório. Abre e descarrega ao ambiente quando a pressão
+  local (coluna acima da `cota` da válvula) passa do setpoint `pressaoAbertura`
+  (kPa). A descarga é **Torricelli pelo orifício** (`diametro`, default 25 mm)
+  sobre o excedente acima do setpoint — **autolimitante**: drena a origem até a
+  pressão voltar ao setpoint. Fica **vermelha** no canvas e registra no log ao abrir.
+- `src/engine/fisica.ts` ganha `colunaPressaoM(P)` (inverso de Stevin, converte
+  o setpoint em altura de coluna).
+- **Stack completo de peça nova:** domínio (tipo/props/guard/factory/schema),
+  motor (`calcularAlivio` em `vazaoPecas.ts` + campo `aliviosAtivos`), UI
+  (paleta, canvas — triângulo para cima, inspetor, legenda), i18n pt/en, Ajuda
+  e README com link.
+
+### Notas
+
+- A válvula NÃO altera a lógica das outras peças — só protege o reservatório de
+  origem drenando o excedente. Reivindica os tubos do caminho (como o consumo)
+  para não serem tratados como dreno livre.
+- Conclui o roteiro de física avançada da issue #65 (unidades canônicas, cota
+  universal, Stevin, Reynolds+temperatura, golpe de aríete, Darcy-Weisbach,
+  NPSH/cavitação e válvula de alívio).
+
 ## [1.55.0] — NPSH / cavitação (alerta)
 
 Sétima etapa da fundação de física avançada ([#65](https://github.com/rpgmem/HydroFlow/issues/65)).

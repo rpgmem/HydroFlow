@@ -36,7 +36,7 @@ import {
 } from '../domain/types';
 
 /** Uma entrada do log de eventos (acionamentos e alertas ao longo da execução). */
-export type TipoEvento = 'bomba' | 'sensor' | 'seco' | 'ladrao' | 'deficit' | 'overflow' | 'velocidade' | 'refluxo' | 'golpe' | 'cavitacao' | 'comando';
+export type TipoEvento = 'bomba' | 'sensor' | 'seco' | 'ladrao' | 'deficit' | 'overflow' | 'velocidade' | 'refluxo' | 'golpe' | 'cavitacao' | 'alivio' | 'comando';
 export interface EventoLog {
   /** Tempo de simulação (s) em que o evento ocorreu. */
   tempo: number;
@@ -70,6 +70,7 @@ export interface EstadoApp {
   tubosVelozes: string[];
   golpeAriete: string[];
   cavitacao: string[];
+  aliviosAtivos: string[];
   refluxos: string[];
   consumoInsuficiente: string[];
   sensores: Record<string, Decisao>;
@@ -143,6 +144,7 @@ export function estadoInicial(projeto: ProjetoSimulacao): EstadoApp {
     tubosVelozes: [],
     golpeAriete: [],
     cavitacao: [],
+    aliviosAtivos: [],
     refluxos: [],
     consumoInsuficiente: [],
     sensores: {},
@@ -250,6 +252,7 @@ function derivarEventos(anterior: EstadoApp, r: ResultadoTick): EventoLog[] {
   };
   entraram(r.bombasASeco, anterior.bombasASeco, 'seco', 'log.seco');
   entraram(r.ladroesAtivos, anterior.ladroesAtivos, 'ladrao', 'log.ladrao');
+  entraram(r.aliviosAtivos, anterior.aliviosAtivos, 'alivio', 'log.alivio');
   const velRef = r.projeto.configuracaoSimulacao.velocidadeRef ?? 3;
   entraram(r.tubosVelozes, anterior.tubosVelozes, 'velocidade', 'log.velocidade', { velRef });
   entraram(r.refluxos, anterior.refluxos, 'refluxo', 'log.refluxo');
@@ -629,6 +632,7 @@ function reducerBase(estado: EstadoApp, acao: Acao): EstadoApp {
         tubosVelozes: [],
         golpeAriete: [],
         cavitacao: [],
+        aliviosAtivos: [],
         refluxos: [],
         consumoInsuficiente: [],
         sensores: {},
@@ -659,6 +663,7 @@ function reducerBase(estado: EstadoApp, acao: Acao): EstadoApp {
         tubosVelozes: [],
         golpeAriete: [],
         cavitacao: [],
+        aliviosAtivos: [],
         refluxos: [],
         consumoInsuficiente: [],
         sensores: {},
@@ -686,6 +691,7 @@ function reducerBase(estado: EstadoApp, acao: Acao): EstadoApp {
         tubosVelozes: r.tubosVelozes,
         golpeAriete: r.golpeAriete,
         cavitacao: r.cavitacao,
+        aliviosAtivos: r.aliviosAtivos,
         refluxos: r.refluxos,
         consumoInsuficiente: r.consumoInsuficiente,
         sensores: r.sensores,

@@ -32,6 +32,7 @@ export function tamanhoPeca(tipo: Peca['tipo']): { w: number; h: number } {
     case 'consumo':
     case 'sensor':
     case 'juncao':
+    case 'alivio':
       // Componentes pontuais: mesmo diâmetro para todos (forma + cor distinguem).
       return { w: TAMANHO_NO, h: TAMANHO_NO };
     case 'quadro':

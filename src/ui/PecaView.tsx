@@ -39,6 +39,8 @@ interface Props {
   golpeAriete: boolean;
   /** Bomba com risco de cavitação (NPSH disponível abaixo do requerido) neste tick. */
   cavitando: boolean;
+  /** Válvula de alívio descarregando (pressão acima do setpoint) neste tick. */
+  aliviando: boolean;
   /** Consumo cuja demanda excede a vazão da bomba (déficit) neste tick. */
   consumoInsuficiente: boolean;
   /** Modo impressão: rótulos em cor escura (legíveis sobre fundo branco). */
@@ -78,6 +80,7 @@ const COR: Record<Peca['tipo'], string> = {
   sensor: '#3b3b6d',
   juncao: '#0d9488',
   quadro: '#e0863b',
+  alivio: '#7a4a52',
 };
 
 export function PecaView({
@@ -93,6 +96,7 @@ export function PecaView({
   tuboVeloz,
   golpeAriete,
   cavitando,
+  aliviando,
   consumoInsuficiente,
   temaClaro,
   sensorEstado,
@@ -184,6 +188,16 @@ export function PecaView({
           fill={consumoInsuficiente ? '#f59e0b' : COR.consumo}
           stroke={consumoInsuficiente ? COR_FECHADO : borda}
           strokeWidth={consumoInsuficiente ? 2 : larguraBorda}
+        />
+      ) : peca.tipo === 'alivio' ? (
+        // Válvula de alívio = triângulo apontando para CIMA (alívio/escape), o
+        // oposto do dreno do consumo. Fica VERMELHO quando está descarregando.
+        <Line
+          closed
+          points={[-w / 2, h / 2, w / 2, h / 2, 0, -h / 2]}
+          fill={aliviando ? '#ef4444' : COR.alivio}
+          stroke={aliviando ? COR_FECHADO : borda}
+          strokeWidth={aliviando ? 2 : larguraBorda}
         />
       ) : (
         <Rect
@@ -402,6 +416,7 @@ function icone(tipo: Peca['tipo']): string {
     sensor: '📡',
     juncao: '⌥',
     quadro: '🎛️',
+    alivio: '🔺',
   }[tipo];
 }
 
