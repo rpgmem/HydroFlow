@@ -30,6 +30,7 @@ const SECOES: { titulo: string; itens: string[] }[] = [
       'ajuda.pecaSensor',
       'ajuda.pecaJuncao',
       'ajuda.pecaQuadro',
+      'ajuda.pecaAlivio',
     ],
   },
   {
@@ -48,6 +49,7 @@ const SECOES: { titulo: string; itens: string[] }[] = [
       'ajuda.fisica4',
       'ajuda.fisicaGolpe',
       'ajuda.fisicaNPSH',
+      'ajuda.fisicaAlivio',
       'ajuda.fisica5',
       'ajuda.fisica6',
     ],
@@ -75,6 +77,7 @@ const LINKS: Record<string, string[]> = {
   'ajuda.fisica4': ['ajuda.linkValvulaRetencao'],
   'ajuda.fisicaGolpe': ['ajuda.linkGolpe', 'ajuda.linkJoukowsky'],
   'ajuda.fisicaNPSH': ['ajuda.linkNPSH', 'ajuda.linkPressaoVapor'],
+  'ajuda.fisicaAlivio': ['ajuda.linkAlivio'],
   'ajuda.fisica6': ['ajuda.linkG'],
 };
 

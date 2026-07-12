@@ -32,6 +32,7 @@ const TIPOS_VALIDOS: readonly TipoPeca[] = [
   'sensor',
   'juncao',
   'quadro',
+  'alivio',
 ];
 
 /** Compara apenas o componente MAJOR do semver (ex.: "1.x" ⇔ "1.y"). */
@@ -152,6 +153,13 @@ function validarPeca(peca: unknown, idx: number, erros: ErroValidacao[]): void {
       erros.push({
         caminho: `${base}.props.canais`,
         mensagem: 'canais (lista de {bomba, modo, sensores?, operadores?, revezamento?, unidade?}) obrigatória',
+      });
+    }
+  } else if (peca.tipo === 'alivio') {
+    if (!isFiniteNumber(props.pressaoAbertura) || (props.pressaoAbertura as number) <= 0) {
+      erros.push({
+        caminho: `${base}.props.pressaoAbertura`,
+        mensagem: 'pressaoAbertura (kPa) deve ser > 0',
       });
     }
   }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pressaoHidrostaticaKPa, PRESSAO_ATM_KPA, muAgua, reynolds, regimeReynolds, sobrepressaoGolpeKPa, fatorAtritoDW, pvaporAguaKPa, npshDisponivelM } from './fisica';
+import { pressaoHidrostaticaKPa, colunaPressaoM, PRESSAO_ATM_KPA, muAgua, reynolds, regimeReynolds, sobrepressaoGolpeKPa, fatorAtritoDW, pvaporAguaKPa, npshDisponivelM } from './fisica';
 import { velocidadeTuboMs } from './geometria';
 import {
   exibirPressao,
@@ -89,6 +89,17 @@ describe('fator de atrito de Darcy (fatorAtritoDW)', () => {
   });
   it('Re ≤ 0 → 0', () => {
     expect(fatorAtritoDW(0, 0.0015, 100)).toBe(0);
+  });
+});
+
+describe('coluna de pressão (colunaPressaoM)', () => {
+  it('é o inverso do Teorema de Stevin (round-trip)', () => {
+    expect(colunaPressaoM(pressaoHidrostaticaKPa(7))).toBeCloseTo(7, 6);
+    // 10 m de coluna ≈ 98,1 kPa → volta a ~10 m.
+    expect(colunaPressaoM(98.1)).toBeCloseTo(10, 1);
+  });
+  it('pressão ≤ 0 → 0 m', () => {
+    expect(colunaPressaoM(-5)).toBe(0);
   });
 });
 

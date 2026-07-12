@@ -5,6 +5,7 @@
 import { useTranslation } from 'react-i18next';
 import type { Acao } from '../state/store';
 import {
+  isAlivio,
   isBomba,
   isConsumo,
   isFonte,
@@ -22,6 +23,7 @@ import { TEMPERATURA_PADRAO_C, LIMITE_GOLPE_PADRAO_KPA } from '../engine/fisica'
 import { Sparkline } from './Sparkline';
 import { Num, type UniLabel } from './inspector/campos';
 import {
+  AlivioForm,
   BombaForm,
   ConsumoForm,
   FonteForm,
@@ -127,6 +129,7 @@ export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatc
         {isSensor(peca) && <SensorForm props={peca.props} emExecucao={emExecucao} projeto={projeto} upd={upd} u={u} pecaId={peca.id} dispatch={dispatch} />}
         {isJuncao(peca) && <JuncaoForm props={peca.props} emExecucao={emExecucao} upd={upd} />}
         {isQuadro(peca) && <QuadroForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} projeto={projeto} dispatch={dispatch} />}
+        {isAlivio(peca) && <AlivioForm props={peca.props} emExecucao={emExecucao} upd={upd} unidades={projeto.unidades} />}
       </fieldset>
 
       {!emExecucao && (

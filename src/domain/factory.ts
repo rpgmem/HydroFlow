@@ -64,6 +64,8 @@ export function portasPadrao(tipo: TipoPeca): string[] {
       return ['saida'];
     case 'consumo':
       return ['entrada'];
+    case 'alivio':
+      return ['entrada']; // recebe do reservatório/tubo; descarrega ao ambiente
     case 'sensor':
       return ['sonda'];
     case 'quadro':
@@ -107,6 +109,9 @@ export function criarPeca(
       return { ...base, props: {} };
     case 'quadro':
       return { ...base, props: { canais: [] } };
+    case 'alivio':
+      // Setpoint padrão ~300 kPa (≈ 30 m.c.a.); orifício de descarga 25 mm.
+      return { ...base, cota: 0, props: { pressaoAbertura: 300, diametro: 25 } };
   }
 }
 

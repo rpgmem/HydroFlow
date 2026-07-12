@@ -18,7 +18,8 @@ export type TipoPeca =
   | 'consumo'
   | 'sensor'
   | 'juncao'
-  | 'quadro';
+  | 'quadro'
+  | 'alivio';
 
 export type ModoSistema = 'edicao' | 'execucao';
 
@@ -302,6 +303,24 @@ export interface PropsJuncao {
 }
 
 /**
+ * Válvula de alívio: peça de PROTEÇÃO que limita a pressão. Ligada a jusante de
+ * um reservatório (por um tubo ou direto), ela ABRE e descarrega ao ambiente
+ * quando a pressão local — coluna acima da própria `cota` — passa de
+ * `pressaoAbertura` (kPa). A descarga é autolimitante (Torricelli pelo orifício,
+ * sobre o excedente acima do setpoint): drena até a pressão voltar ao setpoint.
+ * Só protege o reservatório de origem; não altera a lógica das outras peças.
+ */
+export interface PropsAlivio {
+  /** Pressão de abertura / setpoint (kPa). Acima dela a válvula descarrega. */
+  pressaoAbertura: number;
+  /**
+   * Diâmetro do orifício de descarga em MILÍMETROS — define a vazão de alívio
+   * (Torricelli pela área). Ausente → 25 mm.
+   */
+  diametro?: number;
+}
+
+/**
  * Um canal do QUADRO DE COMANDOS: rege UMA bomba. `modo` = 'auto' (segue os `sensores` escolhidos), 'manual' (forçada ligada) ou 'desligado'. No 'auto' a
  * bomba segue os sensores-membro marcados em `sensores` (multi-seleção), combinados pela lógica E/OU do quadro; sem sensores, liga só se houver consumo
  * (demanda > 0) à jusante. `revezamento`/`unidade` controlam uma bomba dupla — o quadro assume o revezamento (o toggle direto da bomba fica inativo).
@@ -367,7 +386,8 @@ export type PropsPorTipo =
   | PropsConsumo
   | PropsSensor
   | PropsJuncao
-  | PropsQuadro;
+  | PropsQuadro
+  | PropsAlivio;
 
 // ---------------------------------------------------------------------------
 // Entidades principais
@@ -432,7 +452,9 @@ export type PecaDe<T extends TipoPeca> = Peca & {
               ? PropsSensor
               : T extends 'juncao'
                 ? PropsJuncao
-                : PropsQuadro;
+                : T extends 'quadro'
+                  ? PropsQuadro
+                  : PropsAlivio;
 };
 
 export const isReservatorio = (p: Peca): p is PecaDe<'reservatorio'> =>
@@ -445,3 +467,4 @@ export const isConsumo = (p: Peca): p is PecaDe<'consumo'> =>
 export const isSensor = (p: Peca): p is PecaDe<'sensor'> => p.tipo === 'sensor';
 export const isJuncao = (p: Peca): p is PecaDe<'juncao'> => p.tipo === 'juncao';
 export const isQuadro = (p: Peca): p is PecaDe<'quadro'> => p.tipo === 'quadro';
+export const isAlivio = (p: Peca): p is PecaDe<'alivio'> => p.tipo === 'alivio';

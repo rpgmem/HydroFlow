@@ -83,6 +83,14 @@ function FormaQuadro() {
     </Swatch>
   );
 }
+function FormaAlivio() {
+  // triângulo apontando para cima (alívio/escape) — o oposto do dreno do consumo
+  return (
+    <Swatch>
+      <polygon points="-9,7 9,7 0,-9" fill="#7a4a52" stroke={stroke} />
+    </Swatch>
+  );
+}
 
 /** Bolinha de cor para a seção de estados. */
 function Cor({ c }: { c: string }) {
@@ -98,6 +106,7 @@ const PECAS: { forma: React.ReactNode; k: string }[] = [
   { forma: <FormaFonte />, k: 'pecas.fonte' },
   { forma: <FormaConsumo />, k: 'pecas.consumo' },
   { forma: <FormaQuadro />, k: 'legenda.quadro' },
+  { forma: <FormaAlivio />, k: 'pecas.alivio' },
 ];
 
 const VALVULAS: { c: string; k: string }[] = [
@@ -115,6 +124,7 @@ const ESTADOS: { c: string; k: string }[] = [
   { c: '#f43f5e', k: 'legenda.velocidade' },
   { c: '#5b2b2b', k: 'legenda.seco' },
   { c: '#8a5a00', k: 'legenda.cavitacao' },
+  { c: '#ef4444', k: 'legenda.alivio' },
   { c: '#f59e0b', k: 'legenda.deficit' },
 ];
 

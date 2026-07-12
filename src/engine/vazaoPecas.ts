@@ -19,7 +19,7 @@ import {
   HW_C_PADRAO,
   type ModeloAtrito,
 } from './hidraulica';
-import { RUGOSIDADE_PADRAO_MM } from './fisica';
+import { RUGOSIDADE_PADRAO_MM, pressaoHidrostaticaKPa, colunaPressaoM } from './fisica';
 import { metrosPorComprimento } from '../domain/unidades';
 import { boiaAberta } from './arbitragem';
 import { valorNoTempo } from '../domain/geradorVazao';
@@ -265,6 +265,83 @@ export function calcularBomba(
   }
   if (total > 0) anotarTubos(vazoes, upPath.tubos, total); // canos de sucção
   return total;
+}
+
+/** Diâmetro padrão do orifício de descarga da válvula de alívio (mm). */
+const DIAMETRO_ALIVIO_PADRAO_MM = 25;
+
+/**
+ * Válvula de alívio: descarrega ao ambiente quando a pressão local (coluna
+ * acima da própria `cota`) passa do setpoint `pressaoAbertura`. A vazão é a do
+ * orifício (Torricelli) sobre o EXCEDENTE de carga acima do setpoint — ou seja,
+ * autolimitante: drena o reservatório de origem até a pressão voltar ao setpoint.
+ * Limitada também pela capacidade do cano de alimentação (se houver). Reivindica
+ * os tubos do caminho (como o consumo) para que não sejam tratados como dreno livre.
+ */
+export function calcularAlivio(
+  idx: GrafoIndex,
+  valvula: PecaDe<'alivio'>,
+  g: number,
+  u: Unidades,
+  fluxos: FluxoResolvido[],
+  vazoes: Record<string, number>,
+  aliviosAtivos: string[],
+  atrito: boolean,
+  modelo: ModeloAtrito,
+  muPas: number,
+): number {
+  const cp = idx.resolverFluxo(valvula.id, 'up');
+  const reivindicar = (q: number): void => {
+    if (cp.tubos.length > 0) anotarTubos(vazoes, cp.tubos, q);
+  };
+  if (!cp.res) return 0; // sem reservatório de origem → nada a aliviar
+  if (!cp.aberto || reservatorioVazio(cp.res)) {
+    reivindicar(0);
+    return 0;
+  }
+  const kL = metrosPorComprimento(u);
+  // Pressão local = coluna d'água acima da cota da válvula.
+  const headM = cargaM(cp.res, kL) - (valvula.cota ?? 0) * kL;
+  const setpoint = valvula.props.pressaoAbertura;
+  if (pressaoHidrostaticaKPa(headM, g) <= setpoint) {
+    reivindicar(0); // pressão abaixo do setpoint → válvula fechada
+    return 0;
+  }
+  // Aberta: descarrega o excedente de carga acima da altura do setpoint.
+  const excessoM = headM - colunaPressaoM(setpoint, g);
+  if (excessoM <= 1e-9) {
+    reivindicar(0);
+    return 0;
+  }
+  const diamOrificio = valvula.props.diametro ?? DIAMETRO_ALIVIO_PADRAO_MM;
+  let q = areaTuboM2(diamOrificio) * Math.sqrt(2 * g * excessoM); // Torricelli pelo orifício
+  // Cano de alimentação também estrangula (como no consumo).
+  if (cp.tubos.length > 0) {
+    let capMin = Infinity;
+    for (const tid of cp.tubos) {
+      const t = idx.porId.get(tid);
+      if (t && isTubo(t)) {
+        const cap = vazaoGravidadeM3(
+          atrito,
+          areaTuboM2(t.props.diametro),
+          t.props.diametro,
+          (t.props.comprimento ?? COMPRIMENTO_PADRAO_M) * kL,
+          t.props.coefC ?? HW_C_PADRAO,
+          excessoM,
+          g,
+          { modelo, rugosidadeMM: t.props.rugosidade ?? RUGOSIDADE_PADRAO_MM, muPas },
+        );
+        capMin = Math.min(capMin, cap);
+      }
+    }
+    q = Math.min(q, capMin);
+  }
+  reivindicar(q);
+  if (q > 0) {
+    fluxos.push({ origem: cp.res.id, destino: null, vazao: q });
+    aliviosAtivos.push(valvula.id);
+  }
+  return q;
 }
 
 export function calcularFonte(

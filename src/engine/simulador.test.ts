@@ -234,6 +234,49 @@ describe('cavitação (NPSH)', () => {
 });
 
 // ===========================================================================
+// Válvula de alívio (descarrega ao ambiente acima do setpoint)
+// ===========================================================================
+describe('válvula de alívio', () => {
+  // Reservatório 'A' → tubo 'T' → válvula 'V'. `nivel` alto gera pressão na base;
+  // a válvula (cota 0) abre quando a pressão passa de `pressaoAbertura` (kPa).
+  const cenario = (pressaoAbertura: number, cotaV = 0, nivel = 5) =>
+    projeto(
+      [
+        res('A', { cota: 0, nivel, alturaMaxima: 10 }),
+        tubo('T', { diametro: 50 }),
+        { id: 'V', tipo: 'alivio', x: 0, y: 0, cota: cotaV, props: { pressaoAbertura, diametro: 25 } },
+      ],
+      [criarConexao('A', 'T'), criarConexao('T', 'V')],
+    );
+
+  it('abre e descarrega quando a pressão passa do setpoint', () => {
+    // 5 m de coluna ≈ 49 kPa > 30 kPa → abre.
+    const r = tick(cenario(30));
+    expect(r.aliviosAtivos).toContain('V');
+    expect(r.vazoes['V']!).toBeGreaterThan(0);
+    // O tubo carrega a mesma vazão da válvula (não é drenado em dobro).
+    expect(r.vazoes['T']!).toBeCloseTo(r.vazoes['V']!, 9);
+  });
+  it('fica fechada quando a pressão está abaixo do setpoint', () => {
+    // 5 m ≈ 49 kPa < 200 kPa → fechada.
+    const r = tick(cenario(200));
+    expect(r.aliviosAtivos).not.toContain('V');
+    expect(r.vazoes['V'] ?? 0).toBe(0);
+  });
+  it('a cota da válvula reduz a pressão local (acima da coluna → fechada)', () => {
+    // Válvula 4 m acima da base: coluna efetiva ~1 m ≈ 9,8 kPa < 30 → fechada.
+    const r = tick(cenario(30, 4));
+    expect(r.aliviosAtivos).not.toContain('V');
+  });
+  it('é autolimitante: drena a origem enquanto está acima do setpoint', () => {
+    const r = rodarTicks(cenario(30), 100);
+    const nivelA = (r.projeto.pecas.find((x) => x.id === 'A')!.props as PropsReservatorio).nivel!;
+    expect(nivelA).toBeLessThan(5); // a válvula drenou o excedente
+    expect(nivelA).toBeGreaterThan(0); // mas não esvaziou tudo (para no setpoint)
+  });
+});
+
+// ===========================================================================
 // Tubos em série (uma cadeia carrega UM fluxo, limitado pelo gargalo)
 // ===========================================================================
 describe('tubos em série entre reservatórios', () => {
