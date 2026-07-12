@@ -97,6 +97,18 @@ body {
   display: none;
 }
 
+/* Elementos exclusivos do mobile ficam ocultos no desktop (o inverso de .so-desktop). */
+.so-mobile {
+  display: none;
+}
+/* Grupo de botões de velocidade: transparente ao layout (botões fluem inline). */
+.vel-botoes {
+  display: contents;
+}
+.vel-select {
+  font-size: 12px;
+}
+
 /* Ações da peça no inspetor (Duplicar / Remover). */
 .inspetor-acoes {
   display: flex;
@@ -935,6 +947,10 @@ button.ativo {
   /* Barra enxuta no mobile: status edição/execução, desfazer/refazer e voltar-à-edição não aparecem (o celular é superfície de simular/inspecionar). */
   .so-desktop {
     display: none !important;
+  }
+  /* Inverso: elementos só do mobile (ex.: seletor de velocidade compacto). */
+  .so-mobile {
+    display: inline-flex !important;
   }
 
   /* Dica de "arrastar para conectar" não se aplica ao toque; o aviso cobre. */

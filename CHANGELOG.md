@@ -2,6 +2,20 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
+## [1.46.0] — Ícone da Ajuda, velocidade no mobile e mais física na Ajuda
+
+### Adicionado
+
+- **Física na Ajuda**: novos itens sobre **junções** (carga do nó por Gauss-Seidel,
+  conservação de massa), **bomba** (ponto de operação Q = Qₙ·(1 − Δh/Hₙ), acoplado
+  ao atrito da rede), **transbordo + proteção a seco** e **tomada em altura**.
+
+### Alterado
+
+- **Botão de Ajuda** ganhou ícone (❓).
+- **Velocidade no mobile**: os botões 1×/5×/30×/120× viram um **seletor** compacto
+  (poupa espaço); no desktop seguem inline.
+
 ## [1.45.1] — TypeScript 6
 
 ### Alterado

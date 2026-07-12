@@ -30,7 +30,18 @@ const SECOES: { titulo: string; itens: string[] }[] = [
   },
   {
     titulo: 'ajuda.secFisica',
-    itens: ['ajuda.fisica1', 'ajuda.fisica2', 'ajuda.fisica3', 'ajuda.fisica4', 'ajuda.fisica5', 'ajuda.fisica6'],
+    itens: [
+      'ajuda.fisica1',
+      'ajuda.fisica2',
+      'ajuda.fisicaJuncao',
+      'ajuda.fisicaBomba',
+      'ajuda.fisicaTransbordo',
+      'ajuda.fisicaTomada',
+      'ajuda.fisica3',
+      'ajuda.fisica4',
+      'ajuda.fisica5',
+      'ajuda.fisica6',
+    ],
   },
   {
     titulo: 'ajuda.secOpcoes',

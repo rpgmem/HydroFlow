@@ -108,15 +108,28 @@ export function Toolbar({ estado, dispatch, onErroImport, onImprimir, tema, onAl
           <span className="telemetry" style={{ marginLeft: 8 }}>
             {t('toolbar.velocidade')}
           </span>
-          {VELOCIDADES.map((v) => (
-            <button
-              key={v}
-              className={estado.velocidade === v ? 'ativo' : ''}
-              onClick={() => dispatch({ tipo: 'SET_VELOCIDADE', velocidade: v })}
-            >
-              {v}x
-            </button>
-          ))}
+          {/* Desktop: botões inline. Mobile: um seletor compacto (poupa espaço). */}
+          <span className="vel-botoes so-desktop">
+            {VELOCIDADES.map((v) => (
+              <button
+                key={v}
+                className={estado.velocidade === v ? 'ativo' : ''}
+                onClick={() => dispatch({ tipo: 'SET_VELOCIDADE', velocidade: v })}
+              >
+                {v}x
+              </button>
+            ))}
+          </span>
+          <select
+            className="vel-select so-mobile"
+            value={estado.velocidade}
+            aria-label={t('toolbar.velocidade')}
+            onChange={(e) => dispatch({ tipo: 'SET_VELOCIDADE', velocidade: Number(e.target.value) as Velocidade })}
+          >
+            {VELOCIDADES.map((v) => (
+              <option key={v} value={v}>{v}x</option>
+            ))}
+          </select>
           {formatoTempo !== 'horario' && (
             <span className="telemetry" style={{ marginLeft: 8 }}>
               {t('toolbar.tempo')}<strong>{estado.tempo.toFixed(1)}s</strong>
