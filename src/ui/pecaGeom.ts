@@ -8,6 +8,14 @@ import type { Peca } from '../domain/types';
  */
 export const GRADE = 20;
 
+/**
+ * Referência visual do "zero do terreno" (cota 0) no canvas, em coordenadas de
+ * mundo (px). Linha decorativa FIXA — o canvas é esquemático, então ela só serve
+ * de guia de layout (organize as peças acima dela). No projeto exemplo coincide
+ * com a base do reservatório inferior (y=560 + metade da altura 88/2 = 604).
+ */
+export const Y_TERRENO = 604;
+
 /** Diâmetro (px) uniforme dos nós/componentes pontuais (bomba, fonte, consumo, sensor, junção). Padronizado para todos terem a MESMA pegada — a diferença
  *  entre eles vem da forma e da cor, não do tamanho. */
 export const TAMANHO_NO = 46;

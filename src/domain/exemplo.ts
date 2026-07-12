@@ -161,7 +161,7 @@ export function projetoExemplo(): ProjetoSimulacao {
         rotulo: 'Boia Eletrônica (inferior)',
       },
       // ---- Boia manual + bypass + ladrões -----------------------------------
-      tubo('boia_manual', 'Boia Manual', 360, 580, { bitola: 'DN110', diametro: 97.8, registro: { aberto: true }, boia: { nivelMinimo: 7, nivelMaximo: 8.5 }, alturaSaida: 8.5, comprimento: 0 }),
+      tubo('boia_manual', 'Boia Manual', 360, 580, { bitola: 'DN110', diametro: 97.8, registro: { aberto: true }, boia: { nivelMinimo: 7, nivelMaximo: 8.5 }, alturaSaida: 8.5, comprimento: 8.5 }),
       tubo('bypass_boia_manual', 'bypass Boia Manual', 600, 220, { bitola: 'DN32', diametro: 27.8, registro: { aberto: true }, boia: { nivelMinimo: 5, nivelMaximo: 5.5 }, alturaEntrada: 2, alturaSaida: 6 }),
       tubo('ladrao_c1', 'Ladrão (C1)', 360, 80, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true }, ladrao: { nivel: 6.5 } }),
       tubo('ladrao_c2', 'Ladrão (C2)', 360, 260, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true }, ladrao: { nivel: 6.5 } }),

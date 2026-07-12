@@ -2,6 +2,21 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
+## [1.52.0] — Linha do "zero do terreno" no canvas
+
+### Adicionado
+
+- **Linha do terreno (cota 0)** no construtor: uma horizontal tracejada suave,
+  atrás das peças, marcando o zero do terreno como guia de layout (organize as
+  peças acima dela). No projeto exemplo coincide com a base do reservatório
+  inferior.
+
+### Corrigido
+
+- **Projeto exemplo:** o tubo `Boia Manual` tinha `comprimento: 0` (sem perda de
+  carga com o atrito ligado); ajustado para **8,5 m**, coerente com a tomada em
+  8,5 m do reservatório inferior.
+
 ## [1.51.0] — Número de Reynolds e temperatura da água
 
 Quarta etapa da fundação de física avançada ([#65](https://github.com/rpgmem/HydroFlow/issues/65)).

@@ -8,12 +8,12 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Stage, Layer, Line, Arrow } from 'react-konva';
+import { Stage, Layer, Line, Arrow, Text } from 'react-konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 import type { Stage as KonvaStage } from 'konva/lib/Stage';
 import i18n from '../i18n';
 import { PecaView } from './PecaView';
-import { tamanhoPeca } from './pecaGeom';
+import { tamanhoPeca, Y_TERRENO } from './pecaGeom';
 import { criarConexao } from '../domain/factory';
 import { vazaoRef } from '../domain/geradorVazao';
 import {
@@ -374,6 +374,25 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
       >
         {/* Conexões desenhadas atrás das peças. */}
         <Layer>
+          {/* Linha do "zero do terreno" (cota 0): guia visual decorativa, atrás
+              de tudo. Organize as peças acima dela. */}
+          <Line
+            points={[-10000, Y_TERRENO, 10000, Y_TERRENO]}
+            stroke="#8a9b6a"
+            strokeWidth={2}
+            dash={[12, 8]}
+            opacity={0.5}
+            listening={false}
+          />
+          <Text
+            x={120}
+            y={Y_TERRENO + 6}
+            text={t('canvas.terreno')}
+            fontSize={12}
+            fill="#8a9b6a"
+            opacity={0.8}
+            listening={false}
+          />
           {estado.projeto.conexoes.map((c) => {
             const ca = centro(c.origem);
             const cb = centro(c.destino);
