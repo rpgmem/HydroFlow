@@ -2,6 +2,25 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
+## [1.61.0] — Polimento do inspetor (accordion) + pentágono da válvula de alívio
+
+### Alterado
+
+- **Válvula de alívio** desenhada como **pentágono** (forma própria, distinta do
+  triângulo do Consumo) — canvas, legenda e ícone da paleta (⬠).
+- **Inspetor mais simples:** cada peça mais rica ganha uma seção recolhível
+  **"Opções avançadas"** (recolhida por padrão), deixando fora só o essencial:
+  - **Tubo** básico: bitola, registro. Avançado: pressão nominal, atrito
+    (comprimento/material/C/ε), tomadas, retenção, boia, ladrão.
+  - **Bomba** básico: vazão nominal, altura nominal, controle/quadro. Avançado:
+    NPSH requerido, revezamento.
+  - **Sensor** básico: nível mín/máx, bomba(s)-alvo/quadro. Avançado: reverso,
+    histerese, delay.
+  - **Válvula de alívio** básico: pressão de abertura. Avançado: diâmetro do orifício.
+- **Cota (elevação)** deixa de aparecer em **quadro** e **sensor** (onde é no-op).
+- **Diâmetro interno (mm)** do tubo só aparece em **"Personalizado"** — com uma
+  bitola do catálogo, o diâmetro vem tabelado e o campo manual some.
+
 ## [1.60.0] — Comprimento sugerido do tubo na conexão
 
 ### Adicionado

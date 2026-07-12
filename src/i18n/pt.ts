@@ -133,6 +133,7 @@ export const pt = {
     golpeSurge: 'Golpe (parada súbita): <1>ΔP ≈ {{surge}} {{unidade}}</1> (teto {{teto}})',
     golpeLento: '— fechamento lento (atenuado; só linha de bomba é abrupta)',
     pressaoNominal: 'Pressão nominal (teto do golpe)',
+    opcoesAvancadas: 'Opções avançadas',
     desnivelPontas: 'Desnível entre as pontas: <1>{{desnivel}} {{unidade}}</1>',
     usarDesnivel: 'usar como comprimento mínimo',
     coefC: 'Coeficiente C (Hazen-Williams)',

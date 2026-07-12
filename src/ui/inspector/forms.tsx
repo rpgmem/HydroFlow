@@ -32,12 +32,26 @@ import { CATALOGO_TUBOS, CATEGORIAS_TUBO, bitolaPorDn, rotuloBitola } from '../.
 import { MATERIAIS_TUBO, ORDEM_MATERIAIS } from '../../domain/materiais';
 import { fmtNumero } from '../../i18n';
 import type { Acao } from '../../state/store';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Num, type Upd, type UniLabel } from './campos';
 import { Switch } from '../Switch';
 import { GeradorForm } from './GeradorForm';
 
 const nomePeca = (p: Peca): string => (p.rotulo && p.rotulo.trim() ? p.rotulo : p.id);
+
+/**
+ * Seção recolhível "Opções avançadas" (nativa, acessível). Mantém fora dela só o
+ * que um usuário comum precisa para montar um sistema simples; o resto recolhe.
+ */
+function Avancado({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
+  return (
+    <details className="avancado">
+      <summary>{t('form.opcoesAvancadas')}</summary>
+      {children}
+    </details>
+  );
+}
 
 // Paleta de cores dos membros do quadro (boias/sensores e bombas). Tons vivos e
 // distinguíveis; reciclada ciclicamente se houver mais membros que cores.
@@ -194,15 +208,18 @@ export function TuboForm({
           ))}
         </select>
       </div>
-      {/* Editar o diâmetro na mão limpa a bitola (vira "Personalizado"). */}
-      <Num
-        label={t('form.diametroInterno')}
-        unidade="mm"
-        value={props.diametro}
-        disabled={emExecucao}
-        step={0.1}
-        onChange={(v) => upd({ diametro: v, bitola: undefined })}
-      />
+      {/* Diâmetro manual: só em "Personalizado" (sem bitola). Com bitola do
+          catálogo, o diâmetro interno vem tabelado — o campo manual some. */}
+      {!props.bitola && (
+        <Num
+          label={t('form.diametroInterno')}
+          unidade="mm"
+          value={props.diametro}
+          disabled={emExecucao}
+          step={0.1}
+          onChange={(v) => upd({ diametro: v, bitola: undefined })}
+        />
+      )}
       {props.diametro > 0 && (
         <p className="telemetry" style={{ marginTop: -4 }}>
           <Trans
@@ -234,6 +251,18 @@ export function TuboForm({
           {!golpeAbrupto && ' ' + t('form.golpeLento')}
         </p>
       )}
+      {/* Registro manual (comando de operação) — fica no básico. Com boia, some
+          (a boia governa a abertura). Ativo também na execução (sem disabled). */}
+      {!temBoia && (
+        <Switch
+          checked={props.registro?.aberto ?? true}
+          ariaLabel={t('form.registroAberto')}
+          onChange={(v) => upd({ registro: { aberto: v } })}
+        >
+          {t('form.registroAberto')}
+        </Switch>
+      )}
+      <Avancado>
       {/* Pressão nominal do tubo (teto do golpe): em branco = usa o limite global. */}
       <Num
         label={t('form.pressaoNominal')}
@@ -343,17 +372,6 @@ export function TuboForm({
         disabled={emExecucao}
         onChange={(v) => upd({ alturaSaida: v })}
       />
-      {/* Com boia, o registro manual perde o sentido (a boia governa a abertura).
-          Abrir/fechar o registro é um COMANDO de operação — fica ativo também na execução (não leva `disabled={emExecucao}`). */}
-      {!temBoia && (
-        <Switch
-          checked={props.registro?.aberto ?? true}
-          ariaLabel={t('form.registroAberto')}
-          onChange={(v) => upd({ registro: { aberto: v } })}
-        >
-          {t('form.registroAberto')}
-        </Switch>
-      )}
       <Switch
         checked={props.checkValve ?? false}
         disabled={emExecucao}
@@ -389,6 +407,7 @@ export function TuboForm({
           )}
         </>
       )}
+      </Avancado>
     </>
   );
 }
@@ -490,21 +509,6 @@ export function BombaForm({ props, emExecucao, upd, u, projeto, pecaId, dispatch
       <p className="telemetry" style={{ marginTop: -4 }}>
         {t('form.alturaNominalDica')}
       </p>
-      {/* NPSH requerido (m): dado de catálogo. Informado, liga o alerta de
-          cavitação — a bomba usa a própria `cota` (Inspetor) na carga de sucção. */}
-      <Num
-        label={t('form.npshRequerido')}
-        unidade={u.comp}
-        unidades={projeto.unidades}
-        dim="comp"
-        value={props.npshRequerido ?? 0}
-        disabled={emExecucao}
-        step={0.1}
-        onChange={(v) => upd({ npshRequerido: v > 0 ? v : undefined })}
-      />
-      <p className="telemetry" style={{ marginTop: -4 }}>
-        {t('form.npshRequeridoDica')}
-      </p>
       {/* Seletor de quadro: só aparece se existir algum quadro no projeto. */}
       {quadros.length > 0 && (
         <div className="field">
@@ -542,20 +546,35 @@ export function BombaForm({ props, emExecucao, upd, u, projeto, pecaId, dispatch
           </select>
         </div>
       )}
-      {/* Bomba dupla em revezamento: rodízio de desgaste entre duas metades
-          (mesma vazão e tubulação). Padrão = bomba única. Quando a bomba é regida
-          por um quadro, o revezamento é controlado LÁ (canal.revezamento) — o
-          toggle direto some para não confundir (o quadro é a fonte da verdade). */}
-      {!regidaPor && (
-        <Switch
-          checked={props.revezamento ?? false}
+      <Avancado>
+        {/* NPSH requerido (m): dado de catálogo. Informado, liga o alerta de
+            cavitação — a bomba usa a própria `cota` (Inspetor) na carga de sucção. */}
+        <Num
+          label={t('form.npshRequerido')}
+          unidade={u.comp}
+          unidades={projeto.unidades}
+          dim="comp"
+          value={props.npshRequerido ?? 0}
           disabled={emExecucao}
-          ariaLabel={t('form.revezamentoLabel')}
-          onChange={(v) => upd({ revezamento: v })}
-        >
-          {t('form.revezamento')}
-        </Switch>
-      )}
+          step={0.1}
+          onChange={(v) => upd({ npshRequerido: v > 0 ? v : undefined })}
+        />
+        <p className="telemetry" style={{ marginTop: -4 }}>
+          {t('form.npshRequeridoDica')}
+        </p>
+        {/* Bomba dupla em revezamento: rodízio de desgaste entre duas metades
+            (mesma vazão e tubulação). Regida por quadro → controlado LÁ. */}
+        {!regidaPor && (
+          <Switch
+            checked={props.revezamento ?? false}
+            disabled={emExecucao}
+            ariaLabel={t('form.revezamentoLabel')}
+            onChange={(v) => upd({ revezamento: v })}
+          >
+            {t('form.revezamento')}
+          </Switch>
+        )}
+      </Avancado>
     </>
   );
 }
@@ -673,18 +692,20 @@ export function AlivioForm({ props, emExecucao, upd, unidades }: { props: PropsA
         step={10}
         onChange={(v) => upd({ pressaoAbertura: v })}
       />
-      {/* Orifício de descarga (sempre em mm, como os diâmetros de tubo). */}
-      <Num
-        label={t('form.diametroOrificio')}
-        unidade="mm"
-        value={props.diametro ?? 25}
-        disabled={emExecucao}
-        step={1}
-        onChange={(v) => upd({ diametro: v > 0 ? v : undefined })}
-      />
       <p className="telemetry" style={{ marginTop: -4 }}>
         {t('form.alivioDica')}
       </p>
+      <Avancado>
+        {/* Orifício de descarga (sempre em mm, como os diâmetros de tubo). */}
+        <Num
+          label={t('form.diametroOrificio')}
+          unidade="mm"
+          value={props.diametro ?? 25}
+          disabled={emExecucao}
+          step={1}
+          onChange={(v) => upd({ diametro: v > 0 ? v : undefined })}
+        />
+      </Avancado>
     </>
   );
 }
@@ -809,14 +830,6 @@ export function SensorForm({
               })
             )}
           </div>
-          <Switch
-            checked={reversa}
-            disabled={emExecucao}
-            ariaLabel={t('form.reversoLabel')}
-            onChange={(v) => upd({ reversa: v })}
-          >
-            {t('form.reverso')}
-          </Switch>
           <Num
             label={reversa ? t('form.nivelMinDesliga') : t('form.nivelMinLiga')}
             unidade={u.comp}
@@ -835,10 +848,20 @@ export function SensorForm({
             disabled={emExecucao}
             onChange={(v) => upd({ nivelMaximo: v })}
           />
-          <Switch checked={props.histerese ?? false} disabled={emExecucao} ariaLabel={t('form.histerese')} onChange={(v) => upd({ histerese: v })}>
-            {t('form.histerese')}
-          </Switch>
-          <Num label={t('form.delay')} value={props.delay} disabled={emExecucao} onChange={(v) => upd({ delay: v })} />
+          <Avancado>
+            <Switch
+              checked={reversa}
+              disabled={emExecucao}
+              ariaLabel={t('form.reversoLabel')}
+              onChange={(v) => upd({ reversa: v })}
+            >
+              {t('form.reverso')}
+            </Switch>
+            <Switch checked={props.histerese ?? false} disabled={emExecucao} ariaLabel={t('form.histerese')} onChange={(v) => upd({ histerese: v })}>
+              {t('form.histerese')}
+            </Switch>
+            <Num label={t('form.delay')} value={props.delay} disabled={emExecucao} onChange={(v) => upd({ delay: v })} />
+          </Avancado>
         </>
       )}
     </>

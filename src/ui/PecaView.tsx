@@ -190,11 +190,11 @@ export function PecaView({
           strokeWidth={consumoInsuficiente ? 2 : larguraBorda}
         />
       ) : peca.tipo === 'alivio' ? (
-        // Válvula de alívio = triângulo apontando para CIMA (alívio/escape), o
-        // oposto do dreno do consumo. Fica VERMELHO quando está descarregando.
+        // Válvula de alívio = pentágono (forma própria, distinta dos demais).
+        // Fica VERMELHO quando está descarregando.
         <Line
           closed
-          points={[-w / 2, h / 2, w / 2, h / 2, 0, -h / 2]}
+          points={pentagono(w / 2)}
           fill={aliviando ? '#ef4444' : COR.alivio}
           stroke={aliviando ? COR_FECHADO : borda}
           strokeWidth={aliviando ? 2 : larguraBorda}
@@ -397,6 +397,16 @@ function hexagono(R: number): number[] {
   return [-hx, -hy, hx, -hy, R, 0, hx, hy, -hx, hy, -R, 0];
 }
 
+/** Pentágono regular com o vértice apontando para CIMA (circunraio R). */
+function pentagono(R: number): number[] {
+  const pts: number[] = [];
+  for (let i = 0; i < 5; i++) {
+    const a = ((-90 + i * 72) * Math.PI) / 180;
+    pts.push(R * Math.cos(a), R * Math.sin(a));
+  }
+  return pts;
+}
+
 function rotulo(peca: Peca, vazao: number | undefined, unidades: Unidades): string {
   const nome = peca.rotulo && peca.rotulo.trim() ? peca.rotulo : peca.id;
   const base = `${icone(peca.tipo)} ${nome}`;
@@ -416,7 +426,7 @@ function icone(tipo: Peca['tipo']): string {
     sensor: '📡',
     juncao: '⌥',
     quadro: '🎛️',
-    alivio: '🔺',
+    alivio: '⬠',
   }[tipo];
 }
 

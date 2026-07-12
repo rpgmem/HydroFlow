@@ -84,10 +84,15 @@ function FormaQuadro() {
   );
 }
 function FormaAlivio() {
-  // triângulo apontando para cima (alívio/escape) — o oposto do dreno do consumo
+  // pentágono (forma própria) — válvula de alívio
+  const R = 9;
+  const pts = Array.from({ length: 5 }, (_, i) => {
+    const a = ((-90 + i * 72) * Math.PI) / 180;
+    return `${(R * Math.cos(a)).toFixed(2)},${(R * Math.sin(a)).toFixed(2)}`;
+  }).join(' ');
   return (
     <Swatch>
-      <polygon points="-9,7 9,7 0,-9" fill="#7a4a52" stroke={stroke} />
+      <polygon points={pts} fill="#7a4a52" stroke={stroke} />
     </Swatch>
   );
 }
