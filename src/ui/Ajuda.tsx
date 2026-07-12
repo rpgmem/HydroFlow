@@ -72,7 +72,7 @@ const LINKS: Record<string, string[]> = {
   'ajuda.fisicaBomba': ['ajuda.linkBomba'],
   'ajuda.fisica3': ['ajuda.linkPerdaCarga', 'ajuda.linkHazenWilliams'],
   'ajuda.fisica4': ['ajuda.linkValvulaRetencao'],
-  'ajuda.fisicaGolpe': ['ajuda.linkGolpe'],
+  'ajuda.fisicaGolpe': ['ajuda.linkGolpe', 'ajuda.linkJoukowsky'],
   'ajuda.fisica6': ['ajuda.linkG'],
 };
 
