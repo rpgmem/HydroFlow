@@ -2,7 +2,7 @@
 
 Simulador visual de **reservatórios, tubos e bombas**. O usuário monta um sistema hidráulico estilo Lego (drag-and-drop) e simula o comportamento físico **simplificado** do líquido entre as peças.
 
-> Escopo explícito: simulação simplificada (**Torricelli + continuidade de volume**), **não** [CFD (Fluidodinâmica Computacional)](https://pt.wikipedia.org/wiki/Fluidodin%C3%A2mica_computacional)/Navier-Stokes. Ver [Fora de escopo](#fora-de-escopo).
+> Escopo explícito: simulação simplificada (**Torricelli + continuidade de volume**), **não** [CFD (Fluidodinâmica Computacional)](https://pt.wikipedia.org/wiki/Fluidodin%C3%A2mica_computacional)/[Navier-Stokes](https://pt.wikipedia.org/wiki/Equa%C3%A7%C3%B5es_de_Navier-Stokes). Ver [Fora de escopo](#fora-de-escopo).
 
 **🔗 Demo ao vivo:** <https://deeppink-dog-866880.hostingersite.com/hydroflow/>
 
