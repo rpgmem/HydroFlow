@@ -2,6 +2,14 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
+## [1.56.1] — Link de Simon Stevin
+
+### Alterado
+
+- **"Teorema de Stevin"** vira link para **Simon Stevin** (a pessoa) na Ajuda e
+  no README — espelha o padrão do golpe de aríete (conceito + Joukowsky). O link
+  do conceito ("Pressão na base" → pressão hidrostática) segue como antes.
+
 ## [1.56.0] — Válvula de alívio (peça nova)
 
 Oitava e última etapa da fundação de física avançada ([#65](https://github.com/rpgmem/HydroFlow/issues/65)).
