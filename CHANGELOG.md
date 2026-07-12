@@ -2,6 +2,16 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
+## [1.56.2] — Coerência do comprimento da sucção do incêndio (exemplo)
+
+### Corrigido
+
+- No projeto exemplo, o `cavalete_incendio` (sucção da Bomba Incêndio) estava com
+  o comprimento padrão de 1 m, incoerente com o desnível: a bomba puxa do C2 Meio
+  (base na cota 9,5 m). Ajustado para **13,5 m** (~4 m de sucção, como o recalque,
+  + 9,5 m de subida até a base do reservatório). Só afeta o atrito; não muda a
+  topologia nem o comportamento (o ramo de incêndio fica com os hidrantes fechados).
+
 ## [1.56.1] — Link de Simon Stevin
 
 ### Alterado
