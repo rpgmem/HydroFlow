@@ -87,6 +87,9 @@ function validarPeca(peca: unknown, idx: number, erros: ErroValidacao[]): void {
   if (!isFiniteNumber(peca.x) || !isFiniteNumber(peca.y)) {
     erros.push({ caminho: `${base}`, mensagem: 'x/y devem ser números finitos' });
   }
+  if (peca.cota !== undefined && !isFiniteNumber(peca.cota)) {
+    erros.push({ caminho: `${base}.cota`, mensagem: 'cota, se presente, deve ser número' });
+  }
   if (!isRecord(peca.props)) {
     erros.push({ caminho: `${base}.props`, mensagem: 'props ausente' });
     return;
@@ -98,12 +101,6 @@ function validarPeca(peca: unknown, idx: number, erros: ErroValidacao[]): void {
       erros.push({
         caminho: `${base}.props.alturaMaxima`,
         mensagem: 'alturaMaxima obrigatória',
-      });
-    }
-    if (!isFiniteNumber(props.cotaBase)) {
-      erros.push({
-        caminho: `${base}.props.cotaBase`,
-        mensagem: 'cotaBase obrigatória',
       });
     }
     if (props.formato !== 'cilindro' && props.formato !== 'retangular') {
@@ -189,6 +186,26 @@ function validarConexao(
 }
 
 /**
+ * Migração de estrutura in-place, idempotente e detectada pela FORMA (não só
+ * pela versão) — roda antes da validação para que saves antigos cheguem no
+ * formato atual.
+ *
+ * 1.0.0 → 1.1.0: a elevação do reservatório saiu de `props.cotaBase` para
+ * `peca.cota` (agora um campo comum a todas as peças).
+ */
+function migrarEstrutura(dado: Record<string, unknown>): void {
+  if (!Array.isArray(dado.pecas)) return;
+  for (const p of dado.pecas) {
+    if (!isRecord(p)) continue;
+    const props = p.props;
+    if (isRecord(props) && props.cotaBase !== undefined) {
+      if (p.cota === undefined) p.cota = props.cotaBase;
+      delete props.cotaBase;
+    }
+  }
+}
+
+/**
  * Valida a estrutura de um objeto já desserializado (não string JSON).
  * Não valida a topologia do grafo (isso é responsabilidade do motor — seção 5). Aqui garantimos apenas que o formato/tipos estão sãos.
  */
@@ -202,6 +219,8 @@ export function validarProjeto(dado: unknown): ResultadoParse {
       erros: [{ caminho: '', mensagem: 'raiz do projeto deve ser um objeto' }],
     };
   }
+
+  migrarEstrutura(dado);
 
   if (typeof dado.versao !== 'string') {
     erros.push({ caminho: 'versao', mensagem: 'campo versao (string) ausente' });

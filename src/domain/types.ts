@@ -8,7 +8,7 @@
  */
 
 /** Versão atual do schema serializado em arquivos `.json`. */
-export const SCHEMA_VERSION = '1.0.0';
+export const SCHEMA_VERSION = '1.1.0';
 
 export type TipoPeca =
   | 'reservatorio'
@@ -78,8 +78,6 @@ export interface PropsReservatorio {
   largura?: number; // retangular
   comprimento?: number; // retangular
   alturaMaxima: number;
-  /** Elevação física da base em relação ao solo — permite empilhamento. */
-  cotaBase: number;
   /** Nível atual do líquido (estado mutável durante a execução). */
   nivel?: number;
 }
@@ -340,6 +338,13 @@ export interface Peca {
   x: number;
   y: number;
   rotacao?: number; // tubo/bomba
+  /**
+   * Elevação física da peça (m) no mesmo datum para todo o projeto — permite
+   * empilhamento. No reservatório é a cota da BASE (dirige a carga hidráulica:
+   * carga = cota + nível). Nas demais peças serve só para converter carga↔pressão
+   * local, NPSH e cavitação — NÃO altera a vazão. Ausente = 0.
+   */
+  cota?: number;
   /** Portas nomeadas — reservatório/junção definem (ex.: ['topo', 'base']). */
   portas?: string[];
   props: PropsPorTipo;

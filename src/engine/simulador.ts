@@ -8,7 +8,7 @@
  *   Vazão por gravidade (tubo):  v = √(2·g·Δh)
  *                                A = π·(diametro/2)²
  *                                Q = A·v
- *   Δh = (cotaBase + nivel)_origem − (cotaBase + nivel)_destino (sempre a carga hidráulica total; nunca só o nível bruto)
+ *   Δh = (cota + nivel)_origem − (cota + nivel)_destino (sempre a carga hidráulica total; nunca só o nível bruto)
  *   Bomba:   Q = vazaoNominal           (sem curva)
  *            Q = vazaoNominal − k·Δh_lift (com curva), Δh_lift = carga a vencer
  *            Sentido forçado pela conexão, independe do Δh natural.

@@ -28,17 +28,17 @@ beforeEach(() => _resetContadorIds());
 
 // --- Construtores enxutos para topologias de teste -------------------------
 
-function res(id: string, over: Partial<PropsReservatorio>): Peca {
+function res(id: string, over: Partial<PropsReservatorio> & { cota?: number }): Peca {
+  const { cota, ...rest } = over;
   const props: PropsReservatorio = {
     formato: 'retangular',
     largura: 10,
     comprimento: 10, // área = 100
     alturaMaxima: 5,
-    cotaBase: 0,
     nivel: 0,
-    ...over,
+    ...rest,
   };
-  return { id, tipo: 'reservatorio', x: 0, y: 0, props };
+  return { id, tipo: 'reservatorio', x: 0, y: 0, cota: cota ?? 0, props };
 }
 function tubo(id: string, over: Partial<PropsTubo> = {}): Peca {
   // diâmetro em MILÍMETROS (100 mm = 0,1 m).
@@ -82,8 +82,8 @@ describe('vazão por gravidade em tubo', () => {
   it('segue Q = A·√(2·g·Δh) com Δh = carga total', () => {
     const p = projeto(
       [
-        res('A', { cotaBase: 10, nivel: 2 }), // carga 12
-        res('B', { cotaBase: 0, nivel: 0 }), // carga 0
+        res('A', { cota: 10, nivel: 2 }), // carga 12
+        res('B', { cota: 0, nivel: 0 }), // carga 0
         tubo('T', { diametro: 100 }), // 100 mm = 0,1 m
       ],
       [criarConexao('A', 'T'), criarConexao('T', 'B')],
@@ -104,7 +104,7 @@ describe('vazão por gravidade em tubo', () => {
     const mk = (d: number) =>
       tick(
         projeto(
-          [res('A', { cotaBase: 5, nivel: 2 }), res('B', {}), tubo('T', { diametro: d })],
+          [res('A', { cota: 5, nivel: 2 }), res('B', {}), tubo('T', { diametro: d })],
           [criarConexao('A', 'T'), criarConexao('T', 'B')],
         ),
       ).vazoes['T']!;
@@ -114,7 +114,7 @@ describe('vazão por gravidade em tubo', () => {
   it('não flui sem desnível (Δh = 0)', () => {
     const r = tick(
       projeto(
-        [res('A', { cotaBase: 0, nivel: 3 }), res('B', { cotaBase: 0, nivel: 3 }), tubo('T')],
+        [res('A', { cota: 0, nivel: 3 }), res('B', { cota: 0, nivel: 3 }), tubo('T')],
         [criarConexao('A', 'T'), criarConexao('T', 'B')],
       ),
     );
@@ -124,7 +124,7 @@ describe('vazão por gravidade em tubo', () => {
   it('registro fechado interrompe o fluxo', () => {
     const r = tick(
       projeto(
-        [res('A', { cotaBase: 5, nivel: 0 }), res('B', {}), tubo('T', { registro: { aberto: false } })],
+        [res('A', { cota: 5, nivel: 0 }), res('B', {}), tubo('T', { registro: { aberto: false } })],
         [criarConexao('A', 'T'), criarConexao('T', 'B')],
       ),
     );
@@ -135,7 +135,7 @@ describe('vazão por gravidade em tubo', () => {
     const p = () =>
       projeto(
         // B (com água) mais alto que A → sem check valve refluiria B→A.
-        [res('A', { cotaBase: 0, nivel: 0 }), res('B', { cotaBase: 5, nivel: 2 }), tubo('T', { checkValve: true })],
+        [res('A', { cota: 0, nivel: 0 }), res('B', { cota: 5, nivel: 2 }), tubo('T', { checkValve: true })],
         [criarConexao('A', 'T'), criarConexao('T', 'B')],
       );
     expect(tick(p()).vazoes['T']).toBe(0); // check valve bloqueia o refluxo
@@ -149,7 +149,7 @@ describe('vazão por gravidade em tubo', () => {
     // A vazio mas elevado (carga positiva pela cota) não deve gerar fluxo.
     const r = tick(
       projeto(
-        [res('A', { cotaBase: 10, nivel: 0 }), res('B', { cotaBase: 0, nivel: 0 }), tubo('T', { diametro: 200 })],
+        [res('A', { cota: 10, nivel: 0 }), res('B', { cota: 0, nivel: 0 }), tubo('T', { diametro: 200 })],
         [criarConexao('A', 'T'), criarConexao('T', 'B')],
       ),
     );
@@ -169,13 +169,13 @@ describe('tubos em série entre reservatórios', () => {
   it('dois tubos em série drenam IGUAL a um único (não dobram)', () => {
     const um = tick(
       projeto(
-        [res('R1', { cotaBase: 5, nivel: 3 }), res('R2', {}), tubo('T', { diametro: 100 })],
+        [res('R1', { cota: 5, nivel: 3 }), res('R2', {}), tubo('T', { diametro: 100 })],
         [criarConexao('R1', 'T'), criarConexao('T', 'R2')],
       ),
     );
     const serie = tick(
       projeto(
-        [res('R1', { cotaBase: 5, nivel: 3 }), res('R2', {}), tubo('A', { diametro: 100 }), tubo('B', { diametro: 100 })],
+        [res('R1', { cota: 5, nivel: 3 }), res('R2', {}), tubo('A', { diametro: 100 }), tubo('B', { diametro: 100 })],
         [criarConexao('R1', 'A'), criarConexao('A', 'B'), criarConexao('B', 'R2')],
       ),
     );
@@ -185,14 +185,14 @@ describe('tubos em série entre reservatórios', () => {
   it('com diâmetros diferentes, o cano mais estreito limita (independe da ordem)', () => {
     const soEstreito = tick(
       projeto(
-        [res('R1', { cotaBase: 5, nivel: 3 }), res('R2', {}), tubo('T', { diametro: 60 })],
+        [res('R1', { cota: 5, nivel: 3 }), res('R2', {}), tubo('T', { diametro: 60 })],
         [criarConexao('R1', 'T'), criarConexao('T', 'R2')],
       ),
     ).vazoes['T']!;
     const cenario = (dA: number, dB: number) =>
       tick(
         projeto(
-          [res('R1', { cotaBase: 5, nivel: 3 }), res('R2', {}), tubo('A', { diametro: dA }), tubo('B', { diametro: dB })],
+          [res('R1', { cota: 5, nivel: 3 }), res('R2', {}), tubo('A', { diametro: dA }), tubo('B', { diametro: dB })],
           [criarConexao('R1', 'A'), criarConexao('A', 'B'), criarConexao('B', 'R2')],
         ),
       );
@@ -206,7 +206,7 @@ describe('tubos em série entre reservatórios', () => {
   it('registro fechado no meio quebra a cadeia (sem fluxo)', () => {
     const r = tick(
       projeto(
-        [res('R1', { cotaBase: 5, nivel: 3 }), res('R2', {}), tubo('A', { diametro: 100 }), tubo('B', { diametro: 100, registro: { aberto: false } })],
+        [res('R1', { cota: 5, nivel: 3 }), res('R2', {}), tubo('A', { diametro: 100 }), tubo('B', { diametro: 100, registro: { aberto: false } })],
         [criarConexao('R1', 'A'), criarConexao('A', 'B'), criarConexao('B', 'R2')],
       ),
     );
@@ -233,7 +233,7 @@ describe('junção divide e soma vazão', () => {
     const cenario = (jdiam?: number) =>
       tick(
         projeto(
-          [res('R1', { cotaBase: 5, nivel: 3 }), res('R2', {}), tubo('t1', { diametro: 100 }), juncao('J', jdiam), tubo('t2', { diametro: 100 })],
+          [res('R1', { cota: 5, nivel: 3 }), res('R2', {}), tubo('t1', { diametro: 100 }), juncao('J', jdiam), tubo('t2', { diametro: 100 })],
           [criarConexao('R1', 't1'), criarConexao('t1', 'J'), criarConexao('J', 't2'), criarConexao('t2', 'R2')],
         ),
       );
@@ -247,7 +247,7 @@ describe('junção divide e soma vazão', () => {
     const r = tick(
       projeto(
         [
-          res('R1', { cotaBase: 10, nivel: 5 }),
+          res('R1', { cota: 10, nivel: 5 }),
           res('R2', { nivel: 0 }),
           res('R3', { nivel: 0 }),
           tubo('tin'),
@@ -276,8 +276,8 @@ describe('junção divide e soma vazão', () => {
     const r = tick(
       projeto(
         [
-          res('R1', { cotaBase: 10, nivel: 5 }),
-          res('R2', { cotaBase: 10, nivel: 5 }),
+          res('R1', { cota: 10, nivel: 5 }),
+          res('R2', { cota: 10, nivel: 5 }),
           res('R3', { nivel: 0 }),
           tubo('t1'),
           tubo('t2'),
@@ -305,7 +305,7 @@ describe('junção divide e soma vazão', () => {
     const r = tick(
       projeto(
         [
-          res('R1', { cotaBase: 10, nivel: 5 }),
+          res('R1', { cota: 10, nivel: 5 }),
           res('R2', { nivel: 0 }),
           res('R3', { nivel: 0 }),
           tubo('tin'),
@@ -333,7 +333,7 @@ describe('junção divide e soma vazão', () => {
     const r = tick(
       projeto(
         [
-          res('R1', { cotaBase: 10, nivel: 5 }),
+          res('R1', { cota: 10, nivel: 5 }),
           res('R2', { nivel: 0 }),
           res('R3', { nivel: 0 }),
           tubo('tin', { diametro: 200 }),
@@ -369,8 +369,8 @@ describe('terminal na rede de junções', () => {
     const r = tick(
       projeto(
         [
-          res('R_sup', { cotaBase: 10, nivel: 5 }), // carga 15 m
-          res('R_meio', { cotaBase: 0, nivel: 1 }), // carga 1 m
+          res('R_sup', { cota: 10, nivel: 5 }), // carga 15 m
+          res('R_meio', { cota: 0, nivel: 1 }), // carga 1 m
           juncao('J'),
           tubo('t_sup'),
           tubo('t_meio'),
@@ -402,7 +402,7 @@ describe('terminal na rede de junções', () => {
     const r = tick(
       projeto(
         [
-          res('R_sup', { cotaBase: 10, nivel: 5 }),
+          res('R_sup', { cota: 10, nivel: 5 }),
           juncao('J'),
           tubo('t_sup'),
           tubo('t_cons'), // tubo entre a junção e o consumo
@@ -426,8 +426,8 @@ describe('terminal na rede de junções', () => {
     const r = tick(
       projeto(
         [
-          res('R_sup', { cotaBase: 10, nivel: 5 }),
-          res('R_meio', { cotaBase: 10, nivel: 5 }),
+          res('R_sup', { cota: 10, nivel: 5 }),
+          res('R_meio', { cota: 10, nivel: 5 }),
           juncao('J'),
           tubo('t_sup'),
           tubo('t_meio'),
@@ -453,8 +453,8 @@ describe('terminal na rede de junções', () => {
     const r = tick(
       projeto(
         [
-          res('R_sup', { cotaBase: 10, nivel: 0 }), // vazio, cota alta
-          res('R_meio', { cotaBase: 0, nivel: 3 }),
+          res('R_sup', { cota: 10, nivel: 0 }), // vazio, cota alta
+          res('R_meio', { cota: 0, nivel: 3 }),
           juncao('J'),
           tubo('t_sup'),
           tubo('t_meio'),
@@ -481,8 +481,8 @@ describe('terminal na rede de junções', () => {
     const r = tick(
       projeto(
         [
-          res('R_sup', { cotaBase: 10, nivel: 2 }),
-          res('R_meio', { cotaBase: 0, nivel: 3 }),
+          res('R_sup', { cota: 10, nivel: 2 }),
+          res('R_meio', { cota: 0, nivel: 3 }),
           juncao('J'),
           tubo('t_sup', { alturaEntrada: 4 }), // tomada alta no lado do R_sup
           tubo('t_meio'),
@@ -511,8 +511,8 @@ describe('terminal na rede de junções', () => {
       ...projetoVazio(),
       unidades: { volume: 'm3', comprimento: 'm' },
       pecas: [
-        res('R_sup', { cotaBase: 10, nivel: 2, largura: 1, comprimento: 1 }), // pequeno, alto
-        res('R_meio', { cotaBase: 0, nivel: 1 }),
+        res('R_sup', { cota: 10, nivel: 2, largura: 1, comprimento: 1 }), // pequeno, alto
+        res('R_meio', { cota: 0, nivel: 1 }),
         juncao('J'),
         tubo('t_sup'),
         tubo('t_meio'),
@@ -577,7 +577,7 @@ describe('terminal na rede de junções', () => {
       projeto(
         [
           res('inf', { nivel: 5 }),
-          res('sup', { cotaBase: 5, nivel: 0 }),
+          res('sup', { cota: 5, nivel: 0 }),
           tubo('succao'),
           bomba('P', { ligada: true, vazaoNominal: 10 }),
           juncao('J'),
@@ -605,7 +605,7 @@ describe('terminal na rede de junções', () => {
         ...projeto(
           [
             res('inf', { nivel: 5 }),
-            res('sup', { cotaBase: 8, nivel: 0 }),
+            res('sup', { cota: 8, nivel: 0 }),
             tubo('succao', { diametro: 100, comprimento: compSuc }),
             // curva inclinada: kEff = vazaoNominal/alturaNominal = 30/20 = 1,5.
             bomba('P', { ligada: true, vazaoNominal: 30, alturaNominal: 20 }),
@@ -648,7 +648,7 @@ describe('altura de conexão do tubo', () => {
   it('tomada de entrada em altura só drena a água acima do bocal (para nesse nível)', () => {
     const p = projeto(
       // A (tanque pequeno) → tubo (entrada a 2 m) → ambiente. Drena de 4 até ~2.
-      [res('A', { largura: 1, comprimento: 1, cotaBase: 0, nivel: 4, alturaMaxima: 5 }), tubo('T', { diametro: 200, alturaEntrada: 2 })],
+      [res('A', { largura: 1, comprimento: 1, cota: 0, nivel: 4, alturaMaxima: 5 }), tubo('T', { diametro: 200, alturaEntrada: 2 })],
       [criarConexao('A', 'T')],
     );
     const r = rodarTicks(p, 3000);
@@ -661,8 +661,8 @@ describe('altura de conexão do tubo', () => {
     const r = tick(
       projeto(
         [
-          res('A', { cotaBase: 0, nivel: 3 }),
-          res('B', { cotaBase: 0, nivel: 0, alturaMaxima: 10 }),
+          res('A', { cota: 0, nivel: 3 }),
+          res('B', { cota: 0, nivel: 0, alturaMaxima: 10 }),
           tubo('T', { diametro: 200, alturaSaida: 5 }), // bocal do destino na elevação 5
         ],
         [criarConexao('A', 'T'), criarConexao('T', 'B')],
@@ -674,13 +674,13 @@ describe('altura de conexão do tubo', () => {
   it('com bocais no fundo (0) o comportamento é o de sempre', () => {
     const semAltura = tick(
       projeto(
-        [res('A', { cotaBase: 5, nivel: 2 }), res('B', {}), tubo('T', { diametro: 100 })],
+        [res('A', { cota: 5, nivel: 2 }), res('B', {}), tubo('T', { diametro: 100 })],
         [criarConexao('A', 'T'), criarConexao('T', 'B')],
       ),
     ).vazoes['T'];
     const comAltura0 = tick(
       projeto(
-        [res('A', { cotaBase: 5, nivel: 2 }), res('B', {}), tubo('T', { diametro: 100, alturaEntrada: 0, alturaSaida: 0 })],
+        [res('A', { cota: 5, nivel: 2 }), res('B', {}), tubo('T', { diametro: 100, alturaEntrada: 0, alturaSaida: 0 })],
         [criarConexao('A', 'T'), criarConexao('T', 'B')],
       ),
     ).vazoes['T'];
@@ -695,7 +695,7 @@ describe('bomba', () => {
   it('entrega vazaoNominal sem curva, sentido forçado', () => {
     const r = tick(
       projeto(
-        [res('A', { nivel: 5 }), res('B', { cotaBase: 10, nivel: 0 }), bomba('P', { ligada: true })],
+        [res('A', { nivel: 5 }), res('B', { cota: 10, nivel: 0 }), bomba('P', { ligada: true })],
         [criarConexao('A', 'P'), criarConexao('P', 'B')],
       ),
     );
@@ -706,8 +706,8 @@ describe('bomba', () => {
     const r = tick(
       projeto(
         [
-          res('A', { cotaBase: 0, nivel: 5 }), // carga 5
-          res('B', { cotaBase: 10, nivel: 0 }), // carga 10 → lift 5
+          res('A', { cota: 0, nivel: 5 }), // carga 5
+          res('B', { cota: 10, nivel: 0 }), // carga 10 → lift 5
           bomba('P', { ligada: true, vazaoNominal: 10, curva: { k: 1 } }),
         ],
         [criarConexao('A', 'P'), criarConexao('P', 'B')],
@@ -720,8 +720,8 @@ describe('bomba', () => {
     const r = tick(
       projeto(
         [
-          res('A', { cotaBase: 0, nivel: 5 }), // carga 5
-          res('B', { cotaBase: 10, nivel: 0 }), // carga 10 → lift 5
+          res('A', { cota: 0, nivel: 5 }), // carga 5
+          res('B', { cota: 10, nivel: 0 }), // carga 10 → lift 5
           // alturaNominal 20 → k = 10/20 = 0,5; lift 5 → Q = 10·(1 − 5/20) = 7,5.
           bomba('P', { ligada: true, vazaoNominal: 10, alturaNominal: 20 }),
         ],
@@ -735,8 +735,8 @@ describe('bomba', () => {
     const r = tick(
       projeto(
         [
-          res('A', { cotaBase: 0, nivel: 5 }),
-          res('B', { cotaBase: 10, nivel: 0 }), // lift 5
+          res('A', { cota: 0, nivel: 5 }),
+          res('B', { cota: 10, nivel: 0 }), // lift 5
           bomba('P', { ligada: true, vazaoNominal: 10, alturaNominal: 20, curva: { k: 5 } }),
         ],
         [criarConexao('A', 'P'), criarConexao('P', 'B')],
@@ -753,8 +753,8 @@ describe('bomba', () => {
       tick({
         ...projeto(
           [
-            res('A', { cotaBase: 0, nivel: 5 }), // carga 5
-            res('B', { cotaBase: 10, nivel: 0 }), // carga 10 → lift 5
+            res('A', { cota: 0, nivel: 5 }), // carga 5
+            res('B', { cota: 10, nivel: 0 }), // carga 10 → lift 5
             tubo('suc', { diametro: 100, comprimento: compSuc }),
             bomba('P', { ligada: true, vazaoNominal: 30, alturaNominal: 20 }), // k=1,5
             tubo('rec', { diametro: 100, comprimento: compRec }),
@@ -781,7 +781,7 @@ describe('bomba', () => {
   it('nunca gera vazão negativa (curva satura em 0)', () => {
     const r = tick(
       projeto(
-        [res('A', { nivel: 5 }), res('B', { cotaBase: 100, nivel: 0 }), bomba('P', { ligada: true, curva: { k: 1 } })],
+        [res('A', { nivel: 5 }), res('B', { cota: 100, nivel: 0 }), bomba('P', { ligada: true, curva: { k: 1 } })],
         [criarConexao('A', 'P'), criarConexao('P', 'B')],
       ),
     );
@@ -1071,9 +1071,9 @@ describe('boia em tubo entre reservatórios', () => {
   const cenario = (nivelB: number) =>
     projeto(
       [
-        res('A', { cotaBase: 10, nivel: 5 }), // alto e cheio
+        res('A', { cota: 10, nivel: 5 }), // alto e cheio
         tubo('T', { diametro: 100, boia: { nivelMinimo: 1, nivelMaximo: 2 } }),
-        res('B', { cotaBase: 0, nivel: nivelB, alturaMaxima: 5 }),
+        res('B', { cota: 0, nivel: nivelB, alturaMaxima: 5 }),
       ],
       [criarConexao('A', 'T'), criarConexao('T', 'B')],
     );
@@ -1443,7 +1443,7 @@ describe('tubo ladrão', () => {
   it('só escoa quando o nível de origem passa do nível de acionamento', () => {
     const acima = tick(
       projeto(
-        [res('A', { cotaBase: 0, nivel: 3, alturaMaxima: 6 }), tubo('L', { ladrao: { nivel: 2 } })],
+        [res('A', { cota: 0, nivel: 3, alturaMaxima: 6 }), tubo('L', { ladrao: { nivel: 2 } })],
         [criarConexao('A', 'L')],
       ),
     );
@@ -1452,7 +1452,7 @@ describe('tubo ladrão', () => {
 
     const abaixo = tick(
       projeto(
-        [res('A', { cotaBase: 0, nivel: 1.5, alturaMaxima: 6 }), tubo('L', { ladrao: { nivel: 2 } })],
+        [res('A', { cota: 0, nivel: 1.5, alturaMaxima: 6 }), tubo('L', { ladrao: { nivel: 2 } })],
         [criarConexao('A', 'L')],
       ),
     );
@@ -1518,7 +1518,7 @@ describe('consumo', () => {
     const r = tick(
       projeto(
         [
-          res('A', { cotaBase: 0, nivel: 1 }),
+          res('A', { cota: 0, nivel: 1 }),
           tubo('T', { diametro: 5 }), // cano fino: 5 mm
           { id: 'C', tipo: 'consumo', x: 0, y: 0, props: { gerador: { perfil: 'fixo', vazao: 1000 }, aberto: true } },
         ],
@@ -1767,7 +1767,7 @@ describe('perda de carga (atrito, Hazen-Williams)', () => {
     unidades: { volume: 'm3', comprimento: 'm' },
     configuracaoSimulacao: { dt: 0.1, g: 9.81, atrito },
     pecas: [
-      res('A', { cotaBase: 10, nivel: 5 }),
+      res('A', { cota: 10, nivel: 5 }),
       res('B', { nivel: 0 }),
       tubo('t', comprimento !== undefined ? { comprimento } : {}),
     ],

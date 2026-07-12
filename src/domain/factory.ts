@@ -83,11 +83,11 @@ export function criarPeca(
     case 'reservatorio':
       return {
         ...base,
+        cota: 0,
         props: {
           formato: 'cilindro',
           raio: 1,
           alturaMaxima: 5,
-          cotaBase: 0,
           nivel: 0,
         },
       };

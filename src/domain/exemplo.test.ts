@@ -14,7 +14,7 @@ describe('projeto de exemplo (reservatórios empilhados)', () => {
     const reservatorios = projetoExemplo().pecas.filter(isReservatorio);
     expect(reservatorios).toHaveLength(3);
     expect(reservatorios.every((r) => r.props.formato === 'cilindro')).toBe(true);
-    const cotas = reservatorios.map((r) => r.props.cotaBase).sort((a, b) => a - b);
+    const cotas = reservatorios.map((r) => r.cota ?? 0).sort((a, b) => a - b);
     expect(cotas[0]! < cotas[1]! && cotas[1]! < cotas[2]!).toBe(true); // empilhados
   });
 

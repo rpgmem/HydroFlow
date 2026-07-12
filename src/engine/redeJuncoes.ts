@@ -85,13 +85,13 @@ export function resolverGravidadeComJuncoes(
   const ehTerminal = (p: Peca | undefined): boolean =>
     !!p && (isConsumo(p) || isFonte(p) || isBomba(p)) && vazoes[p.id] === undefined;
   const juncoes = [...idx.porId.values()].filter((p) => p.tipo === 'juncao');
-  const cargaRes = (r: PecaDe<'reservatorio'>): number => (r.props.cotaBase + (r.props.nivel ?? 0)) * kL;
+  const cargaRes = (r: PecaDe<'reservatorio'>): number => ((r.cota ?? 0) + (r.props.nivel ?? 0)) * kL;
   const vizinhosDe = (id: string): string[] => [
     ...(idx.entrada.get(id) ?? []).map((c) => c.origem),
     ...(idx.saida.get(id) ?? []).map((c) => c.destino),
   ];
   // Um reservatório só FORNECE água acima da TOMADA por onde a aresta o toca (e, no mínimo, acima do fundo — tomada 0). Sem coluna acima do bocal não há o que
-  // escoar, ainda que a carga (cotaBase + nível) seja alta pela elevação. Sem isso, o solver usaria a cota de fundo como carga fixa e criaria fluxo
+  // escoar, ainda que a carga (cota + nível) seja alta pela elevação. Sem isso, o solver usaria a cota de fundo como carga fixa e criaria fluxo
   // FANTASMA saindo do tanque (ex.: o "superior" já esvaziado empurrando água pela União para o "meio", ou fornecendo por uma tomada acima do próprio nível). O
   // clamp de volume não bastava: a vazão calculada (e a seta de refluxo) ficavam acesas. `tap` é a altura da tomada relativa à base (0 = fundo).
   const podeFornecer = (n: string, tap: number): boolean => {

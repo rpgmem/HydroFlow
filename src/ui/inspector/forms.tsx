@@ -89,7 +89,6 @@ export function ReservatorioForm({
         </>
       )}
       <Num label={t('form.alturaMaxima')} unidade={u.comp} value={props.alturaMaxima} disabled={emExecucao} onChange={(v) => upd({ alturaMaxima: v })} />
-      <Num label={t('form.cotaBase')} unidade={u.comp} value={props.cotaBase} disabled={emExecucao} onChange={(v) => upd({ cotaBase: v })} />
       <Num label={t('form.nivelAtual')} unidade={u.comp} value={props.nivel} disabled={emExecucao} onChange={(v) => upd({ nivel: v })} />
       {capacidade > 0 && (
         <p className="telemetry" style={{ marginTop: -4 }}>

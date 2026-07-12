@@ -71,9 +71,9 @@ export function calcularTubo(
   const nivelDown = down?.props.nivel ?? 0;
 
   const supUp = cargaM(up, kL); // elevação da superfície da origem
-  const tapUp = (up.props.cotaBase + alturaEnt) * kL; // bocal na origem
+  const tapUp = ((up.cota ?? 0) + alturaEnt) * kL; // bocal na origem
   const supDown = down ? cargaM(down, kL) : 0; // superfície do destino (0 = ambiente)
-  const tapDown = down ? (down.props.cotaBase + alturaSai) * kL : 0; // bocal no destino
+  const tapDown = down ? ((down.cota ?? 0) + alturaSai) * kL : 0; // bocal no destino
 
   // Boia mecânica: fechada interrompe o fluxo (estado calculado no passo 2b, com histerese; normal monitora o destino, reversa monitora a origem).
   if (boia && !(boia.aberta ?? true)) return 0;

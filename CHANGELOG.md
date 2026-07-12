@@ -2,6 +2,20 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
+## [1.48.0] — Cota universal (elevação) em todas as peças
+
+Primeira etapa da fundação de física avançada ([#65](https://github.com/rpgmem/HydroFlow/issues/65)).
+
+### Alterado
+
+- **`cota` (elevação)** passou a ser um campo comum a **todas as peças** (base
+  `Peca`), editável no inspetor. Unifica o antigo `cotaBase` do reservatório —
+  no reservatório dirige a carga hidráulica (carga = cota + nível); nas demais
+  peças serve para converter carga↔pressão local, NPSH e cavitação (não altera a
+  vazão), preparando os próximos itens do roadmap.
+- **Schema `1.0.0` → `1.1.0`** com migração automática e idempotente ao carregar
+  (move `props.cotaBase` → `peca.cota`); projetos antigos abrem sem perda.
+
 ## [1.47.0] — Links da Wikipedia nos termos físicos (Ajuda e README)
 
 ### Adicionado
