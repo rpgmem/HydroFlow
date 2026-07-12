@@ -2,6 +2,23 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
+## [1.59.0] — Avisos de coerência de tubos (comprimento/tomada) + ajuda no inspetor
+
+### Adicionado
+
+- **Avisos de coerência** (não bloqueiam a execução) — `src/engine/coerencia.ts`
+  (`avisosCoerencia`) sinaliza, na edição, num painel **âmbar**:
+  - **comprimento < desnível** entre as pontas do tubo (com atrito ligado) —
+    fisicamente impossível (o cano não alcança);
+  - **tomada acima do topo** do reservatório conectado (`alturaEntrada`/
+    `alturaSaida` > `alturaMaxima`) — a água nunca chega ao bocal.
+  Só considera pontas de elevação conhecida (reservatório/bomba); junção e
+  descarga ao ambiente não disparam (degrada com elegância).
+- **Ajuda no inspetor do tubo:** mostra o **desnível entre as pontas** e, quando
+  o comprimento é curto, destaca em âmbar com um botão **"usar como comprimento
+  mínimo"**. `desnivelTuboM(idx, tubo)` é reutilizado pelo motor e pela UI.
+- i18n pt/en, README.
+
 ## [1.58.0] — Golpe de aríete: fechamento lento atenua (só bomba é abrupta)
 
 ### Alterado

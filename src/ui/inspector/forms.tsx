@@ -25,7 +25,8 @@ import {
 } from '../../domain/types';
 import { Trans, useTranslation } from 'react-i18next';
 import { vazaoDeM3, vazaoMaxRecomendadaM3, velocidadeTuboMs, volumeMaximoM3 } from '../../engine/geometria';
-import { labelVolume, m3PorVolume, UNIDADES_CANONICAS, exibirPressao, labelPressao } from '../../domain/unidades';
+import { labelVolume, m3PorVolume, UNIDADES_CANONICAS, exibirPressao, labelPressao, exibirComprimento } from '../../domain/unidades';
+import { COMPRIMENTO_PADRAO_M } from '../../engine/hidraulica';
 import { pressaoHidrostaticaKPa, reynolds, regimeReynolds, muAgua, sobrepressaoGolpeKPa, celeridadeGolpeMs, ATENUACAO_GOLPE_LENTO } from '../../engine/fisica';
 import { CATALOGO_TUBOS, CATEGORIAS_TUBO, bitolaPorDn, rotuloBitola } from '../../domain/tubosCatalogo';
 import { MATERIAIS_TUBO, ORDEM_MATERIAIS } from '../../domain/materiais';
@@ -131,6 +132,7 @@ export function TuboForm({
   temperaturaC,
   limiteGolpeKPa,
   golpeAbrupto,
+  desnivelM,
 }: {
   props: PropsTubo;
   emExecucao: boolean;
@@ -148,6 +150,8 @@ export function TuboForm({
   limiteGolpeKPa: number;
   /** Tubo em linha de bomba (parada abrupta = golpe cheio)? Senão, fechamento lento (atenuado). */
   golpeAbrupto?: boolean;
+  /** Desnível vertical (m, SI) entre as pontas do tubo, quando conhecido (reservatório/bomba). */
+  desnivelM?: number;
 }) {
   const { t, i18n } = useTranslation();
   const temBoia = props.boia !== undefined;
@@ -253,6 +257,33 @@ export function TuboForm({
             disabled={emExecucao}
             onChange={(v) => upd({ comprimento: v })}
           />
+          {/* Coerência: o comprimento desenvolvido não pode ser menor que o desnível
+              entre as pontas. Mostra o desnível e oferece usá-lo como mínimo. */}
+          {desnivelM !== undefined && (() => {
+            const curto = (props.comprimento ?? COMPRIMENTO_PADRAO_M) < desnivelM - 1e-6;
+            return (
+              <p className="telemetry" style={{ marginTop: -4, color: curto ? '#d9a441' : undefined }}>
+                <Trans
+                  i18nKey="form.desnivelPontas"
+                  values={{ desnivel: exibirComprimento(desnivelM, unidades).toFixed(1), unidade: u.comp }}
+                  components={{ 1: <strong /> }}
+                />
+                {curto && (
+                  <>
+                    {' '}
+                    <button
+                      type="button"
+                      className="link-inline"
+                      disabled={emExecucao}
+                      onClick={() => upd({ comprimento: Math.round(desnivelM * 100) / 100 })}
+                    >
+                      {t('form.usarDesnivel')}
+                    </button>
+                  </>
+                )}
+              </p>
+            );
+          })()}
           {/* Material: preset que preenche ε (rugosidade) e C. Editar ε/C na mão limpa o material (→ "Personalizado"). */}
           <div className="field">
             <label>{t('form.material')}</label>

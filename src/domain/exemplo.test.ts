@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { projetoExemplo } from './exemplo';
 import { validarGrafo } from '../engine/validacaoGrafo';
+import { avisosCoerencia } from '../engine/coerencia';
 import { rodarTicks } from '../engine/simulador';
 import { isReservatorio, isTubo } from './types';
 import { bitolaPorDn } from './tubosCatalogo';
@@ -8,6 +9,10 @@ import { bitolaPorDn } from './tubosCatalogo';
 describe('projeto de exemplo (reservatórios empilhados)', () => {
   it('passa na validação de grafo', () => {
     expect(validarGrafo(projetoExemplo()).ok).toBe(true);
+  });
+
+  it('não gera avisos de coerência (comprimentos e tomadas coerentes)', () => {
+    expect(avisosCoerencia(projetoExemplo())).toHaveLength(0);
   });
 
   it('tem três reservatórios cilíndricos empilhados', () => {
