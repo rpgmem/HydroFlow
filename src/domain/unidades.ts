@@ -62,3 +62,36 @@ export function exibirVazao(m3s: number, u: Unidades): number {
 export function vazaoParaSI(valor: number, u: Unidades): number {
   return valor * m3PorVolume(u);
 }
+
+// --- Pressão: armazenamento canônico em kPa; exibição em kPa/m.c.a./psi ------
+
+/** kPa por unidade de pressão exibida (kPa→1; m.c.a.→9,80665; psi→6,894757). */
+export function kPaPorPressao(u: Unidades): number {
+  switch (u.pressao) {
+    case 'mca':
+      return 9.80665;
+    case 'psi':
+      return 6.894757;
+    default:
+      return 1; // kPa (canônico)
+  }
+}
+/** Rótulo da unidade de pressão exibida. */
+export function labelPressao(u: Unidades): string {
+  switch (u.pressao) {
+    case 'mca':
+      return 'm.c.a.';
+    case 'psi':
+      return 'psi';
+    default:
+      return 'kPa';
+  }
+}
+/** Pressão SI (kPa) → valor exibido na unidade `u`. */
+export function exibirPressao(kpa: number, u: Unidades): number {
+  return kpa / kPaPorPressao(u);
+}
+/** Valor de pressão na unidade `u` → SI (kPa). */
+export function pressaoParaSI(valor: number, u: Unidades): number {
+  return valor * kPaPorPressao(u);
+}

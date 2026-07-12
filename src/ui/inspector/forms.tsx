@@ -24,7 +24,8 @@ import {
 } from '../../domain/types';
 import { Trans, useTranslation } from 'react-i18next';
 import { vazaoDeM3, vazaoMaxRecomendadaM3, volumeMaximoM3 } from '../../engine/geometria';
-import { labelVolume, m3PorVolume, UNIDADES_CANONICAS } from '../../domain/unidades';
+import { labelVolume, m3PorVolume, UNIDADES_CANONICAS, exibirPressao, labelPressao } from '../../domain/unidades';
+import { pressaoHidrostaticaKPa } from '../../engine/fisica';
 import { CATALOGO_TUBOS, CATEGORIAS_TUBO, bitolaPorDn, rotuloBitola } from '../../domain/tubosCatalogo';
 import { fmtNumero } from '../../i18n';
 import type { Acao } from '../../state/store';
@@ -100,6 +101,17 @@ export function ReservatorioForm({
           />
         </p>
       )}
+      {/* Pressão estática na base (Teorema de Stevin): P = ρ·g·nível. Só leitura. */}
+      <p className="telemetry" style={{ marginTop: -4 }}>
+        <Trans
+          i18nKey="form.pressaoBase"
+          values={{
+            p: exibirPressao(pressaoHidrostaticaKPa(props.nivel ?? 0), unidades).toFixed(1),
+            unidade: labelPressao(unidades),
+          }}
+          components={{ 1: <strong /> }}
+        />
+      </p>
     </>
   );
 }

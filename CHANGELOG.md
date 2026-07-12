@@ -2,6 +2,20 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
+## [1.50.0] — Pressão hidrostática (Stevin) e unidade de pressão
+
+Terceira etapa da fundação de física avançada ([#65](https://github.com/rpgmem/HydroFlow/issues/65)).
+
+### Adicionado
+
+- **Base física** `src/engine/fisica.ts` — constantes (densidade da água, g,
+  pressão atmosférica) e relações puras em SI (a primeira: pressão hidrostática).
+- **Pressão na base (Teorema de Stevin)** no inspetor do reservatório:
+  `P = ρ·g·nível`, exibida na unidade escolhida. Só leitura — não altera a vazão.
+- **Unidade de pressão** configurável em ⚙ Opções: **kPa** (canônico), **m.c.a.**
+  ou **psi**. A conversão é só de exibição (armazenamento sempre em kPa).
+- Ajuda e README ganham o item de pressão na base, com link.
+
 ## [1.49.0] — Unidades canônicas (SI): trocar a unidade preserva o valor físico
 
 Segunda etapa da fundação de física avançada ([#65](https://github.com/rpgmem/HydroFlow/issues/65)).

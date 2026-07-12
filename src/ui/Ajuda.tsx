@@ -37,6 +37,7 @@ const SECOES: { titulo: string; itens: string[] }[] = [
     itens: [
       'ajuda.fisica1',
       'ajuda.fisica2',
+      'ajuda.fisicaStevin',
       'ajuda.fisicaVasos',
       'ajuda.fisicaJuncao',
       'ajuda.fisicaBomba',
@@ -62,6 +63,7 @@ const SECOES: { titulo: string; itens: string[] }[] = [
 const LINKS: Record<string, string[]> = {
   'ajuda.fisica1': ['ajuda.linkVazao', 'ajuda.linkTorricelli', 'ajuda.linkCargaHidraulica'],
   'ajuda.fisica2': ['ajuda.linkContinuidade'],
+  'ajuda.fisicaStevin': ['ajuda.linkStevin'],
   'ajuda.fisicaVasos': ['ajuda.linkVasos'],
   'ajuda.fisicaJuncao': ['ajuda.linkGaussSeidel', 'ajuda.linkConservacaoMassa'],
   'ajuda.fisicaBomba': ['ajuda.linkBomba'],

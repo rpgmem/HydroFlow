@@ -25,6 +25,8 @@ export type ModoSistema = 'edicao' | 'execucao';
 export interface Unidades {
   volume: 'litros' | 'm3';
   comprimento: 'cm' | 'm';
+  /** Preferência de EXIBIÇÃO de pressão (armazenamento é sempre kPa). Ausente = 'kPa'. */
+  pressao?: 'kPa' | 'mca' | 'psi';
 }
 
 export interface ConfiguracaoSimulacao {

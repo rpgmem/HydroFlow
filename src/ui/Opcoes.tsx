@@ -91,6 +91,21 @@ export function Opcoes({ estado, dispatch, tema, onAlternarTema, formatoTempo, o
                 <option value="cm">{t('opcoes.cm')}</option>
               </select>
             </div>
+            <div className="field">
+              <label>{t('opcoes.pressao')}</label>
+              <select
+                aria-label={t('opcoes.pressaoLabel')}
+                disabled={emExecucao}
+                value={u.pressao ?? 'kPa'}
+                onChange={(e) =>
+                  dispatch({ tipo: 'SET_UNIDADES', unidades: { ...u, pressao: e.target.value as Unidades['pressao'] } })
+                }
+              >
+                <option value="kPa">kPa</option>
+                <option value="mca">m.c.a.</option>
+                <option value="psi">psi</option>
+              </select>
+            </div>
 
             <p className="opcoes-sec">{t('opcoes.exibicao')}</p>
             <Switch checked={tema === 'claro'} onChange={onAlternarTema} ariaLabel={t('opcoes.temaClaro')}>
