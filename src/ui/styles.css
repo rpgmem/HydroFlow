@@ -317,6 +317,26 @@ button.ativo {
   padding-left: 18px;
 }
 
+/* Seção recolhível "Opções avançadas" no inspetor. */
+.avancado {
+  margin-top: 6px;
+  border-top: 1px solid var(--borda, #2a3a48);
+  padding-top: 6px;
+}
+.avancado > summary {
+  cursor: pointer;
+  font-size: 12px;
+  opacity: 0.8;
+  list-style: revert;
+  user-select: none;
+}
+.avancado > summary:hover {
+  opacity: 1;
+}
+.avancado[open] > summary {
+  margin-bottom: 6px;
+}
+
 /* Botão-texto inline (ex.: "usar o desnível como mínimo" no inspetor). */
 .link-inline {
   background: none;

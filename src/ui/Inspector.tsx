@@ -115,15 +115,19 @@ export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatc
           />
         </div>
 
-        <Num
-          label={t('inspector.cota')}
-          unidade={u.comp}
-          unidades={projeto.unidades}
-          dim="comp"
-          value={peca.cota ?? 0}
-          disabled={emExecucao}
-          onChange={(v) => dispatch({ tipo: 'ATUALIZAR_COTA', id: peca.id, cota: v })}
-        />
+        {/* Cota (elevação) só faz sentido onde afeta algo físico. Não aparece em
+            quadro (painel de comando) nem em sensor (instrumento), onde é no-op. */}
+        {!isQuadro(peca) && !isSensor(peca) && (
+          <Num
+            label={t('inspector.cota')}
+            unidade={u.comp}
+            unidades={projeto.unidades}
+            dim="comp"
+            value={peca.cota ?? 0}
+            disabled={emExecucao}
+            onChange={(v) => dispatch({ tipo: 'ATUALIZAR_COTA', id: peca.id, cota: v })}
+          />
+        )}
 
         {isReservatorio(peca) && (
           <ReservatorioForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} />

@@ -132,6 +132,7 @@ export const en: Dicionario = {
     golpeSurge: 'Surge (sudden stop): <1>ΔP ≈ {{surge}} {{unidade}}</1> (limit {{teto}})',
     golpeLento: '— slow closure (attenuated; only pump lines are abrupt)',
     pressaoNominal: 'Nominal pressure (surge limit)',
+    opcoesAvancadas: 'Advanced options',
     desnivelPontas: 'Drop between ends: <1>{{desnivel}} {{unidade}}</1>',
     usarDesnivel: 'use as minimum length',
     coefC: 'C coefficient (Hazen-Williams)',
