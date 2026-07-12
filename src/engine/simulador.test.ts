@@ -190,6 +190,42 @@ describe('golpe de aríete (risco)', () => {
 });
 
 // ===========================================================================
+// Golpe: fechamento LENTO (registro/boia/gravidade) atenua; só linha de bomba é abrupta
+// ===========================================================================
+describe('golpe de aríete (fechamento lento vs. bomba)', () => {
+  it('tubo de gravidade (fechamento lento) NÃO dispara mesmo com surto cheio acima do teto', () => {
+    // Δh = 0,5 m → v ≈ 3,13 m/s. Surto cheio (a=500) ≈ 1566 kPa > 1000 (PN10),
+    // mas atenuado (×0,25) ≈ 391 kPa < 1000 → não dispara (registro/boia/gravidade fecham devagar).
+    const r = tick(
+      projeto(
+        [res('A', { cota: 0, nivel: 0.5 }), res('B', { cota: 0, nivel: 0 }), tubo('T', { diametro: 100 })],
+        [criarConexao('A', 'T'), criarConexao('T', 'B')],
+      ),
+    );
+    expect(r.vazoes['T']!).toBeGreaterThan(0);
+    expect(r.golpeAriete).not.toContain('T');
+  });
+  it('mesmo tubo, na LINHA DE BOMBA (parada abrupta), dispara na mesma faixa de velocidade', () => {
+    // Bomba ideal empurrando 0,02 m³/s por DN100 → v ≈ 2,55 m/s → surto cheio
+    // (a=500) ≈ 1273 kPa > 1000. Como é tubo de recalque, usa o fator 1 → dispara.
+    const r = tick(
+      projeto(
+        [
+          res('A', { cota: 0, nivel: 3 }),
+          res('B', { cota: 0, nivel: 0 }),
+          tubo('tsuc', { diametro: 100 }),
+          { ...bomba('P', { vazaoNominal: 0.02, modoControle: 'ligado' }), cota: 0 },
+          tubo('T', { diametro: 100 }),
+        ],
+        [criarConexao('A', 'tsuc'), criarConexao('tsuc', 'P'), criarConexao('P', 'T'), criarConexao('T', 'B')],
+      ),
+    );
+    expect(r.vazoes['T']!).toBeGreaterThan(0);
+    expect(r.golpeAriete).toContain('T');
+  });
+});
+
+// ===========================================================================
 // Cavitação (NPSH): bomba ligada com NPSH disponível abaixo do requerido
 // ===========================================================================
 describe('cavitação (NPSH)', () => {

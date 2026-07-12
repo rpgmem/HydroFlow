@@ -2,7 +2,9 @@
  * Inspetor de propriedades. Escolhe o formulário conforme o tipo da peça selecionada (os formulários vivem em `inspector/forms.tsx`) e mostra a
  * telemetria corrente + o sparkline. Em execução, os campos ficam somente-leitura.
  */
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { GrafoIndex, coletarTubosDeBomba } from '../engine/grafo';
 import type { Acao } from '../state/store';
 import {
   isAlivio,
@@ -47,6 +49,8 @@ interface Props {
 
 export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatch }: Props) {
   const { t } = useTranslation();
+  // Tubos em linha de bomba (parada abrupta → golpe cheio); os demais são atenuados.
+  const tubosBomba = useMemo(() => coletarTubosDeBomba(new GrafoIndex(projeto)), [projeto]);
   if (!peca) {
     return (
       <div className="panel right">
@@ -122,7 +126,7 @@ export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatc
         {isReservatorio(peca) && (
           <ReservatorioForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} />
         )}
-        {isTubo(peca) && <TuboForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} atrito={projeto.configuracaoSimulacao.atrito === true} modeloAtrito={projeto.configuracaoSimulacao.modeloAtrito ?? 'hazen-williams'} velRef={projeto.configuracaoSimulacao.velocidadeRef ?? VELOCIDADE_MAX_RECOMENDADA_MS} vazao={vazao} temperaturaC={projeto.configuracaoSimulacao.temperaturaC ?? TEMPERATURA_PADRAO_C} limiteGolpeKPa={projeto.configuracaoSimulacao.limiteGolpeArieteKPa ?? LIMITE_GOLPE_PADRAO_KPA} />}
+        {isTubo(peca) && <TuboForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} atrito={projeto.configuracaoSimulacao.atrito === true} modeloAtrito={projeto.configuracaoSimulacao.modeloAtrito ?? 'hazen-williams'} velRef={projeto.configuracaoSimulacao.velocidadeRef ?? VELOCIDADE_MAX_RECOMENDADA_MS} vazao={vazao} temperaturaC={projeto.configuracaoSimulacao.temperaturaC ?? TEMPERATURA_PADRAO_C} limiteGolpeKPa={projeto.configuracaoSimulacao.limiteGolpeArieteKPa ?? LIMITE_GOLPE_PADRAO_KPA} golpeAbrupto={tubosBomba.has(peca.id)} />}
         {isBomba(peca) && <BombaForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} projeto={projeto} pecaId={peca.id} dispatch={dispatch} />}
         {isFonte(peca) && <FonteForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} />}
         {isConsumo(peca) && <ConsumoForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} />}

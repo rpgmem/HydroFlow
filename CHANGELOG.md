@@ -2,6 +2,26 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
+## [1.58.0] — Golpe de aríete: fechamento lento atenua (só bomba é abrupta)
+
+### Alterado
+
+- O alerta de golpe passa a considerar que só o **desarme de bomba** é uma parada
+  **abrupta** (Joukowsky cheio). Registros manuais, boias mecânicas e a gravidade
+  fecham/cessam **devagar** → surto **atenuado** por `ATENUACAO_GOLPE_LENTO` (0,25).
+  Na prática, só os tubos de **linha de bomba** (sucção + recalque) usam o surto
+  cheio; os demais precisam de ~4× a velocidade para acender.
+- `src/engine/grafo.ts` ganha `coletarTubosDeBomba(idx)` (cadeia de sucção/recalque
+  de cada bomba); o motor aplica o fator no alerta. O inspetor do tubo mostra o
+  surto **efetivo** e a nota "fechamento lento (atenuado)" fora das linhas de bomba.
+
+### Corrigido
+
+- No exemplo, tubos de gravidade com boia/registro (ex.: o `bypass`) deixam de
+  acender golpe por modulação de velocidade — só as linhas de bomba realmente
+  sujeitas a parada súbita permanecem sinalizadas. Cobertura de teste (gravidade
+  atenuada vs. linha de bomba abrupta, na mesma faixa de velocidade).
+
 ## [1.57.0] — Celeridade do golpe de aríete por material
 
 ### Alterado

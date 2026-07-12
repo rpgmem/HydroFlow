@@ -49,6 +49,7 @@ import { COMPRIMENTO_PADRAO_M } from './hidraulica';
 import {
   sobrepressaoGolpeKPa,
   celeridadeGolpeMs,
+  ATENUACAO_GOLPE_LENTO,
   LIMITE_GOLPE_PADRAO_KPA,
   muAgua,
   TEMPERATURA_PADRAO_C,
@@ -59,7 +60,7 @@ import {
 import { metrosPorComprimento, UNIDADES_CANONICAS } from '../domain/unidades';
 import { arbitrarBomba, avaliarSensor, avaliarSequencia, boiaAberta, type Decisao } from './arbitragem';
 import { resolverGravidadeComJuncoes } from './redeJuncoes';
-import { GrafoIndex, cargaM, reservatorioVazio, type FluxoResolvido } from './grafo';
+import { GrafoIndex, cargaM, reservatorioVazio, coletarTubosDeBomba, type FluxoResolvido } from './grafo';
 import {
   calcularAlivio,
   calcularBomba,
@@ -355,15 +356,20 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   // Risco de golpe de aríete (indicador PERMANENTE): a sobrepressão de Joukowsky
   // numa parada súbita (ΔP = ρ·a·v) passaria do teto de pressão do tubo. Só um
   // aviso — não altera a física (o motor é quase-estático).
+  // Só o DESARME de bomba é abrupto (surto cheio); registro/boia/gravidade fecham
+  // devagar → surto atenuado. Por isso os tubos fora de linha de bomba usam o fator.
   const limiteGolpe = proj.configuracaoSimulacao.limiteGolpeArieteKPa ?? LIMITE_GOLPE_PADRAO_KPA;
+  const tubosBomba = coletarTubosDeBomba(idx);
   const golpeAriete: string[] = [];
   for (const p of proj.pecas) {
     if (!isTubo(p)) continue;
     const v = velocidadeTuboMs(vazoesM3[p.id] ?? 0, p.props.diametro);
     if (v <= 1e-6) continue;
     const teto = p.props.pressaoNominal ?? limiteGolpe;
-    // Celeridade conforme o material do tubo (PVC amortece; metal/concreto propagam mais).
-    if (sobrepressaoGolpeKPa(v, celeridadeGolpeMs(p.props.material)) > teto) golpeAriete.push(p.id);
+    // Celeridade conforme o material (PVC amortece; metal/concreto propagam mais)
+    // e atenuação de fechamento lento fora das linhas de bomba.
+    const fator = tubosBomba.has(p.id) ? 1 : ATENUACAO_GOLPE_LENTO;
+    if (fator * sobrepressaoGolpeKPa(v, celeridadeGolpeMs(p.props.material)) > teto) golpeAriete.push(p.id);
   }
 
   // Risco de cavitação (NPSH): para cada bomba LIGADA com NPSH requerido

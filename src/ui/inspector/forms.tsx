@@ -26,7 +26,7 @@ import {
 import { Trans, useTranslation } from 'react-i18next';
 import { vazaoDeM3, vazaoMaxRecomendadaM3, velocidadeTuboMs, volumeMaximoM3 } from '../../engine/geometria';
 import { labelVolume, m3PorVolume, UNIDADES_CANONICAS, exibirPressao, labelPressao } from '../../domain/unidades';
-import { pressaoHidrostaticaKPa, reynolds, regimeReynolds, muAgua, sobrepressaoGolpeKPa, celeridadeGolpeMs } from '../../engine/fisica';
+import { pressaoHidrostaticaKPa, reynolds, regimeReynolds, muAgua, sobrepressaoGolpeKPa, celeridadeGolpeMs, ATENUACAO_GOLPE_LENTO } from '../../engine/fisica';
 import { CATALOGO_TUBOS, CATEGORIAS_TUBO, bitolaPorDn, rotuloBitola } from '../../domain/tubosCatalogo';
 import { MATERIAIS_TUBO, ORDEM_MATERIAIS } from '../../domain/materiais';
 import { fmtNumero } from '../../i18n';
@@ -130,6 +130,7 @@ export function TuboForm({
   vazao,
   temperaturaC,
   limiteGolpeKPa,
+  golpeAbrupto,
 }: {
   props: PropsTubo;
   emExecucao: boolean;
@@ -145,6 +146,8 @@ export function TuboForm({
   temperaturaC: number;
   /** Teto global de pressão do golpe de aríete (kPa) — fallback do `pressaoNominal`. */
   limiteGolpeKPa: number;
+  /** Tubo em linha de bomba (parada abrupta = golpe cheio)? Senão, fechamento lento (atenuado). */
+  golpeAbrupto?: boolean;
 }) {
   const { t, i18n } = useTranslation();
   const temBoia = props.boia !== undefined;
@@ -158,6 +161,8 @@ export function TuboForm({
   // Golpe de aríete: sobrepressão de Joukowsky numa parada súbita e o teto vigente.
   const surgeKPa = emExecucao && vMs > 1e-6 ? sobrepressaoGolpeKPa(vMs, celeridadeGolpeMs(props.material)) : null;
   const tetoGolpe = props.pressaoNominal ?? limiteGolpeKPa;
+  // Fechamento abrupto só em linha de bomba; senão o surto é atenuado (registro/boia/gravidade fecham devagar).
+  const surgeEfetivoKPa = surgeKPa === null ? null : surgeKPa * (golpeAbrupto ? 1 : ATENUACAO_GOLPE_LENTO);
   return (
     <>
       {/* Bitola pré-configurada: seleciona o DN e grava o diâmetro INTERNO tabelado (usado no cálculo de vazão). "Personalizado" libera o mm. */}
@@ -213,14 +218,16 @@ export function TuboForm({
           />
         </p>
       )}
-      {/* Golpe de aríete: sobrepressão de Joukowsky numa parada súbita vs. o teto. */}
-      {surgeKPa !== null && (
-        <p className="telemetry" style={{ marginTop: -4, color: surgeKPa > tetoGolpe ? '#f43f5e' : undefined }}>
+      {/* Golpe de aríete: sobrepressão de Joukowsky numa parada súbita vs. o teto.
+          O alerta usa o surto EFETIVO (atenuado fora das linhas de bomba). */}
+      {surgeKPa !== null && surgeEfetivoKPa !== null && (
+        <p className="telemetry" style={{ marginTop: -4, color: surgeEfetivoKPa > tetoGolpe ? '#f43f5e' : undefined }}>
           <Trans
             i18nKey="form.golpeSurge"
             values={{ surge: exibirPressao(surgeKPa, unidades).toFixed(0), teto: exibirPressao(tetoGolpe, unidades).toFixed(0), unidade: labelPressao(unidades) }}
             components={{ 1: <strong /> }}
           />
+          {!golpeAbrupto && ' ' + t('form.golpeLento')}
         </p>
       )}
       {/* Pressão nominal do tubo (teto do golpe): em branco = usa o limite global. */}

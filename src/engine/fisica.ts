@@ -124,6 +124,16 @@ export function celeridadeGolpeMs(material?: string): number {
 export const LIMITE_GOLPE_PADRAO_KPA = 1000;
 
 /**
+ * Fator de atenuação do golpe para paradas LENTAS (adimensional). O Joukowsky
+ * cheio (ΔP = ρ·a·v) só vale para fechamento INSTANTÂNEO. Registros manuais
+ * (operados à mão) e boias mecânicas (flutuador) fecham devagar, e a gravidade
+ * cessa gradualmente — todos amortecem o golpe. O único evento genuinamente
+ * abrupto é o DESARME de bomba; por isso só os tubos de linha de bomba usam o
+ * surto cheio (fator 1) e os demais aplicam este fator (~0,25).
+ */
+export const ATENUACAO_GOLPE_LENTO = 0.25;
+
+/**
  * Sobrepressão do golpe de aríete (kPa) numa PARADA SÚBITA do escoamento
  * (equação de Joukowsky): ΔP = ρ·a·Δv, com Δv = |v| (parada total). É a pior
  * sobrepressão possível ao fechar um registro / desligar uma bomba de repente.
