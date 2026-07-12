@@ -45,7 +45,7 @@ import {
   VELOCIDADE_MAX_RECOMENDADA_MS,
 } from './geometria';
 import { COMPRIMENTO_PADRAO_M } from './hidraulica';
-import { sobrepressaoGolpeKPa, LIMITE_GOLPE_PADRAO_KPA } from './fisica';
+import { sobrepressaoGolpeKPa, LIMITE_GOLPE_PADRAO_KPA, muAgua, TEMPERATURA_PADRAO_C } from './fisica';
 import { metrosPorComprimento, UNIDADES_CANONICAS } from '../domain/unidades';
 import { arbitrarBomba, avaliarSensor, avaliarSequencia, boiaAberta, type Decisao } from './arbitragem';
 import { resolverGravidadeComJuncoes } from './redeJuncoes';
@@ -129,7 +129,9 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
   const idx = new GrafoIndex(proj);
   const dt = proj.configuracaoSimulacao.dt;
   const g = proj.configuracaoSimulacao.g;
-  const atrito = proj.configuracaoSimulacao.atrito === true; // perda de carga (Hazen-Williams)
+  const atrito = proj.configuracaoSimulacao.atrito === true; // perda de carga por atrito
+  const modeloAtrito = proj.configuracaoSimulacao.modeloAtrito ?? 'hazen-williams';
+  const muPas = muAgua(proj.configuracaoSimulacao.temperaturaC ?? TEMPERATURA_PADRAO_C); // viscosidade p/ Darcy-Weisbach
   const velRef = proj.configuracaoSimulacao.velocidadeRef ?? VELOCIDADE_MAX_RECOMENDADA_MS;
   const tempoFim = tempoAtual + dt;
 
@@ -273,15 +275,17 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     bombasASeco,
     refluxos,
     atrito,
+    modeloAtrito,
+    muPas,
   );
 
   // Elementos ATIVOS: além da própria vazão, anotam a vazão nos tubos em série pelos quais empurram a água (para a telemetria/animação refletir o fluxo que
   // passa por esses canos). Os já resolvidos pela rede de junções são pulados.
   for (const p of proj.pecas) {
     if (driversResolvidos.has(p.id)) continue;
-    if (isBomba(p)) vazoesM3[p.id] = calcularBomba(idx, p, g, u, tempoAtual, fluxos, vazoesM3, consumoInsuficiente, bombasASeco, atrito);
+    if (isBomba(p)) vazoesM3[p.id] = calcularBomba(idx, p, g, u, tempoAtual, fluxos, vazoesM3, consumoInsuficiente, bombasASeco, atrito, modeloAtrito, muPas);
     else if (isFonte(p)) vazoesM3[p.id] = calcularFonte(idx, p, u, tempoAtual, fluxos, vazoesM3);
-    else if (isConsumo(p)) vazoesM3[p.id] = calcularConsumo(idx, p, g, u, tempoAtual, fluxos, vazoesM3, atrito);
+    else if (isConsumo(p)) vazoesM3[p.id] = calcularConsumo(idx, p, g, u, tempoAtual, fluxos, vazoesM3, atrito, modeloAtrito, muPas);
   }
   // Tubos por gravidade / ladrão: só os que ainda não foram atribuídos por um elemento ativo (um cano alimentado por fonte/bomba tem sua vazão dada pelo
   // driver).
@@ -296,7 +300,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     const down = fechado || p.props.ladrao ? null : idx.resolverReservatorio(p.id, 'down', true);
     if (!up || !down) {
       // Registro fechado, ladrão, descarga ao ambiente ou sucção de bomba (sem reservatório nas duas pontas) → lógica por tubo, como antes.
-      const q = calcularTubo(idx, p, g, u, fluxos, ladroesAtivos, atrito);
+      const q = calcularTubo(idx, p, g, u, fluxos, ladroesAtivos, atrito, modeloAtrito, muPas);
       vazoesM3[p.id] = q;
       if (q < -1e-9) refluxos.push(p.id); // fluxo contrário à seta
       continue;
@@ -317,7 +321,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
       : undefined;
     const q = boiaFechada
       ? 0
-      : calcularTubo(idx, idx.porId.get(gargalo) as PecaDe<'tubo'>, g, u, fluxos, ladroesAtivos, atrito, compTotalM);
+      : calcularTubo(idx, idx.porId.get(gargalo) as PecaDe<'tubo'>, g, u, fluxos, ladroesAtivos, atrito, modeloAtrito, muPas, compTotalM);
     for (const id of cadeia) vazoesM3[id] = q; // toda a cadeia carrega a mesma vazão
     if (q < -1e-9) cadeia.forEach((id) => refluxos.push(id)); // fluxo contrário à seta
   }

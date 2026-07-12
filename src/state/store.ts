@@ -109,6 +109,7 @@ export type Acao =
   | { tipo: 'SET_NOME'; nome: string }
   | { tipo: 'SET_UNIDADES'; unidades: ProjetoSimulacao['unidades'] }
   | { tipo: 'SET_ATRITO'; atrito: boolean }
+  | { tipo: 'SET_MODELO_ATRITO'; modeloAtrito: 'hazen-williams' | 'darcy-weisbach' }
   | { tipo: 'SET_VELOCIDADE_REF'; velocidadeRef: number }
   | { tipo: 'SET_TEMPERATURA'; temperaturaC: number }
   | { tipo: 'SET_LIMITE_GOLPE'; limiteGolpeArieteKPa: number }
@@ -180,6 +181,7 @@ const ACOES_ESTRUTURAIS = new Set<Acao['tipo']>([
   'REMOVER_CONEXAO',
   'SET_UNIDADES',
   'SET_ATRITO',
+  'SET_MODELO_ATRITO',
   'SET_VELOCIDADE_REF',
   'SET_TEMPERATURA',
   'SET_LIMITE_GOLPE',
@@ -336,6 +338,7 @@ const ACOES_UNDOAVEIS = new Set<Acao['tipo']>([
   'SET_NOME',
   'SET_UNIDADES',
   'SET_ATRITO',
+  'SET_MODELO_ATRITO',
   'SET_VELOCIDADE_REF',
   'SET_TEMPERATURA',
   'SET_LIMITE_GOLPE',
@@ -535,6 +538,18 @@ function reducerBase(estado: EstadoApp, acao: Acao): EstadoApp {
         projeto: {
           ...estado.projeto,
           configuracaoSimulacao: { ...estado.projeto.configuracaoSimulacao, atrito: acao.atrito },
+        },
+      };
+
+    case 'SET_MODELO_ATRITO':
+      return {
+        ...estado,
+        projeto: {
+          ...estado.projeto,
+          configuracaoSimulacao: {
+            ...estado.projeto.configuracaoSimulacao,
+            modeloAtrito: acao.modeloAtrito,
+          },
         },
       };
 

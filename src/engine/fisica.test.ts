@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pressaoHidrostaticaKPa, PRESSAO_ATM_KPA, muAgua, reynolds, regimeReynolds, sobrepressaoGolpeKPa } from './fisica';
+import { pressaoHidrostaticaKPa, PRESSAO_ATM_KPA, muAgua, reynolds, regimeReynolds, sobrepressaoGolpeKPa, fatorAtritoDW } from './fisica';
 import { velocidadeTuboMs } from './geometria';
 import {
   exibirPressao,
@@ -72,6 +72,23 @@ describe('viscosidade e número de Reynolds', () => {
   it('integra com a velocidade do tubo', () => {
     const v = velocidadeTuboMs(0.02, 100); // 0,02 m³/s num tubo de 100 mm
     expect(regimeReynolds(reynolds(v, 100, muAgua(20)))).toBe('turbulento');
+  });
+});
+
+describe('fator de atrito de Darcy (fatorAtritoDW)', () => {
+  it('laminar: f = 64/Re', () => {
+    expect(fatorAtritoDW(1000, 0.0015, 100)).toBeCloseTo(0.064);
+  });
+  it('turbulento (Swamee-Jain): ~0,018 para tubo quase liso a Re=1e5 (Moody)', () => {
+    const f = fatorAtritoDW(1e5, 0.0015, 100);
+    expect(f).toBeGreaterThan(0.015);
+    expect(f).toBeLessThan(0.025);
+  });
+  it('mais áspero → mais atrito', () => {
+    expect(fatorAtritoDW(1e5, 1.0, 100)).toBeGreaterThan(fatorAtritoDW(1e5, 0.0015, 100));
+  });
+  it('Re ≤ 0 → 0', () => {
+    expect(fatorAtritoDW(0, 0.0015, 100)).toBe(0);
   });
 });
 

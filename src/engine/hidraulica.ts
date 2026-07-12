@@ -12,6 +12,20 @@
  * bisseção pura. É o caminho quente quando a opção de atrito está ligada.
  */
 
+import { reynolds, fatorAtritoDW, muAgua, RUGOSIDADE_PADRAO_MM } from './fisica';
+
+/** Modelo de perda de carga por atrito. */
+export type ModeloAtrito = 'hazen-williams' | 'darcy-weisbach';
+
+/** Parâmetros do Darcy-Weisbach (opcional; ausente = Hazen-Williams). */
+export interface OpcoesDW {
+  modelo?: ModeloAtrito;
+  /** Rugosidade absoluta ε (mm). */
+  rugosidadeMM?: number;
+  /** Viscosidade dinâmica da água (Pa·s) — de μ(T). */
+  muPas?: number;
+}
+
 /** Coeficiente C de Hazen-Williams padrão (plástico/PVC liso). */
 export const HW_C_PADRAO = 140;
 /** Comprimento assumido (m) quando o tubo não informa `comprimento` e o atrito está ligado. Mantém o modelo utilizável sem exigir preencher tudo. */
@@ -64,16 +78,31 @@ export function vazaoGravidadeM3(
   coefC: number,
   deltaHm: number,
   g: number,
+  dw?: OpcoesDW,
 ): number {
   if (deltaHm <= 0 || areaM2 <= 0) return 0;
   const qTorr = areaM2 * Math.sqrt(2 * g * deltaHm); // Torricelli (limite superior)
   const dM = diametroMM / 1000;
-  if (!atrito || !(comprimentoM > 0) || !(coefC > 0) || !(dM > 0)) return qTorr;
+  if (!atrito || !(comprimentoM > 0) || !(dM > 0)) return qTorr;
+  const velCoef = 1 / (2 * g * areaM2 * areaM2); // Q²/(2g·A²) = velCoef·Q²
 
+  // --- Darcy-Weisbach: Δh = velCoef·Q²·(1 + f(Q)·L/D), f por Swamee-Jain -----
+  if (dw?.modelo === 'darcy-weisbach') {
+    const eps = dw.rugosidadeMM ?? RUGOSIDADE_PADRAO_MM;
+    const mu = dw.muPas ?? muAgua();
+    const LD = comprimentoM / dM;
+    const fric = (q: number): number => fatorAtritoDW(reynolds(q / areaM2, diametroMM, mu), eps, diametroMM);
+    const fDW = (q: number): number => velCoef * q * q * (1 + fric(q) * LD) - deltaHm;
+    // Derivada tratando f como localmente constante (o Newton salvaguardado tolera; a bisseção corrige).
+    const dfDW = (q: number): number => 2 * velCoef * q * (1 + fric(q) * LD);
+    return raizCrescente(fDW, dfDW, 0, qTorr, qTorr);
+  }
+
+  // --- Hazen-Williams (padrão) ----------------------------------------------
+  if (!(coefC > 0)) return qTorr;
   // f(Q) = carga de velocidade + perda − carga disponível, com hf = K·Q^1,85:
   //   f(Q) = Q²/(2g·A²) + K·Q^1,85 − Δh,   f'(Q) = Q/(g·A²) + 1,85·K·Q^0,85.
   // Cresce com Q: f(0) = −Δh < 0; f(qTorr) = hf(qTorr) > 0 → raiz em (0, qTorr).
-  const velCoef = 1 / (2 * g * areaM2 * areaM2); // Q²/(2g·A²) = velCoef·Q²
   const K = (10.67 * comprimentoM) / (Math.pow(coefC, 1.85) * Math.pow(dM, 4.87));
   let pot = 0; // Q^0,85 memoizado entre f e df (mesma Q consecutiva)
   let potDe = NaN;
@@ -102,6 +131,27 @@ export function hfHazenWilliamsM(
 ): number {
   if (qM3 <= 0 || lengthM <= 0 || coefC <= 0 || diametroM <= 0) return 0;
   return (10.67 * lengthM * Math.pow(qM3, 1.85)) / (Math.pow(coefC, 1.85) * Math.pow(diametroM, 4.87));
+}
+
+/**
+ * Perda de carga (m) de Darcy-Weisbach num tubo para a vazão `qM3` (m³/s):
+ *   hf = f · (L/D) · v²/2g,  com f por Swamee-Jain e v = Q/A.
+ * `diametroMM` em mm; `rugosidadeMM` (ε) em mm; `muPas` = viscosidade dinâmica.
+ */
+export function hfDarcyWeisbachM(
+  qM3: number,
+  lengthM: number,
+  diametroMM: number,
+  rugosidadeMM: number,
+  muPas: number,
+  g: number,
+): number {
+  const dM = diametroMM / 1000;
+  if (qM3 <= 0 || lengthM <= 0 || dM <= 0) return 0;
+  const areaM2 = Math.PI * (dM / 2) * (dM / 2);
+  const v = qM3 / areaM2;
+  const f = fatorAtritoDW(reynolds(v, diametroMM, muPas), rugosidadeMM, diametroMM);
+  return (f * (lengthM / dM) * v * v) / (2 * g);
 }
 
 /**

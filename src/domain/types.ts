@@ -42,6 +42,11 @@ export interface ConfiguracaoSimulacao {
    */
   atrito?: boolean;
   /**
+   * Modelo de perda de carga por atrito: 'hazen-williams' (padrão) ou
+   * 'darcy-weisbach' (usa rugosidade ε + viscosidade). Só tem efeito com `atrito`.
+   */
+  modeloAtrito?: 'hazen-williams' | 'darcy-weisbach';
+  /**
    * Velocidade de referência de escoamento (m/s) — limite de dimensionamento.
    * Acima dela um tubo é sinalizado como subdimensionado; também define a "vazão máxima recomendada". Ausente → `VELOCIDADE_MAX_RECOMENDADA_MS` (3 m/s).
    */
@@ -129,6 +134,16 @@ export interface PropsTubo {
    * Coeficiente C de Hazen-Williams (rugosidade). Ausente → `HW_C_PADRAO` (140, plástico/PVC). Ex.: ~130 cimento, ~100 ferro fundido usado.
    */
   coefC?: number;
+  /**
+   * Material do tubo — apenas um PRESET de UI (como `bitola`): selecionar preenche
+   * `rugosidade` (ε) e `coefC`. O motor lê `rugosidade`/`coefC`, não o material.
+   */
+  material?: 'pvc' | 'cobre' | 'aco' | 'ferro' | 'concreto';
+  /**
+   * Rugosidade absoluta ε (mm) — usada pelo Darcy-Weisbach. Ausente →
+   * `RUGOSIDADE_PADRAO_MM` (0,0015, PVC liso).
+   */
+  rugosidade?: number;
   /**
    * Pressão nominal do tubo (kPa) — teto usado no alerta de golpe de aríete.
    * Ausente → usa o limite global (`configuracaoSimulacao.limiteGolpeArieteKPa`).

@@ -2,6 +2,23 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
+## [1.54.0] — Darcy-Weisbach (modelo de atrito alternativo)
+
+Sexta etapa da fundação de física avançada ([#65](https://github.com/rpgmem/HydroFlow/issues/65)).
+
+### Adicionado
+
+- **Modelo de atrito Darcy-Weisbach** (⚙ Opções, com o atrito ligado): `hf = f·(L/D)·v²/2g`,
+  com `f` por **Swamee-Jain** (laminar `64/Re`; turbulento explícito; transição
+  interpolada). Usa a **rugosidade ε** de cada tubo e a **viscosidade μ(T)**. O
+  Hazen-Williams segue como padrão (comportamento inalterado).
+- **Material do tubo** (preset, como a bitola): PVC, cobre, aço, ferro fundido,
+  concreto — preenche a rugosidade ε e o coeficiente C. O inspetor do tubo mostra
+  ε (Darcy) ou C (Hazen-Williams) conforme o modelo.
+- `src/engine/fisica.ts` ganha `fatorAtritoDW`; `hidraulica.ts` ganha
+  `hfDarcyWeisbachM` e o ramo DW no solver de vazão. Ajuda e README atualizados
+  (Darcy-Weisbach sai de "fora de escopo").
+
 ## [1.53.0] — Golpe de aríete (alerta) + comprimentos coerentes no exemplo
 
 Quinta etapa da fundação de física avançada ([#65](https://github.com/rpgmem/HydroFlow/issues/65)).
