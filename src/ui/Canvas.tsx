@@ -27,6 +27,7 @@ import {
   type Peca,
   type PropsBomba,
 } from '../domain/types';
+import { exibirComprimento, exibirVazao } from '../domain/unidades';
 import type { Acao, EstadoApp } from '../state/store';
 
 interface Props {
@@ -438,6 +439,7 @@ export function Canvas({ estado, dispatch, largura, altura, temaClaro, imprimind
               selecionada={estado.selecionada === peca.id}
               emExecucao={emExecucao}
               vazao={estado.vazoes[peca.id]}
+              unidades={estado.projeto.unidades}
               overflow={overflowSet.has(peca.id)}
               aSeco={secoSet.has(peca.id)}
               boiaFechada={boiaFechadaSet.has(peca.id)}
@@ -588,38 +590,41 @@ function linhasTooltip(peca: Peca, estado: EstadoApp): string[] {
   const vazL = `${volL}/s`;
   const compL = u.comprimento;
   const emExec = estado.modo === 'execucao';
+  // Magnitudes são SI; converte para a unidade de EXIBIÇÃO nos tooltips.
+  const eC = (m: number): number => exibirComprimento(m, u);
+  const eV = (qm: number): number => exibirVazao(qm, u);
   const q = estado.vazoes[peca.id];
   const linhaVazao = (): string | null => {
     if (!emExec || q === undefined || Math.abs(q) < 1e-6) return null;
-    return t('canvas.tipVazao', { vazao: q.toFixed(2), unidade: vazL, refluxo: q < -1e-6 ? t('canvas.tipRefluxo') : '' });
+    return t('canvas.tipVazao', { vazao: eV(q).toFixed(2), unidade: vazL, refluxo: q < -1e-6 ? t('canvas.tipRefluxo') : '' });
   };
   const linhas: (string | null)[] = [];
   if (isReservatorio(peca)) {
     const p = peca.props;
-    linhas.push(t('canvas.tipNivel', { nivel: (p.nivel ?? 0).toFixed(2), max: p.alturaMaxima, unidade: compL }));
-    linhas.push(t('canvas.tipCotaBase', { cota: peca.cota ?? 0, unidade: compL }));
-    linhas.push(t('canvas.tipCarga', { carga: ((peca.cota ?? 0) + (p.nivel ?? 0)).toFixed(2), unidade: compL }));
+    linhas.push(t('canvas.tipNivel', { nivel: eC(p.nivel ?? 0).toFixed(2), max: eC(p.alturaMaxima), unidade: compL }));
+    linhas.push(t('canvas.tipCotaBase', { cota: eC(peca.cota ?? 0), unidade: compL }));
+    linhas.push(t('canvas.tipCarga', { carga: eC((peca.cota ?? 0) + (p.nivel ?? 0)).toFixed(2), unidade: compL }));
   } else if (isTubo(peca)) {
     const p = peca.props;
     linhas.push(`Ø ${p.diametro} mm${p.bitola ? ` (${p.bitola})` : ''}`);
-    if (p.ladrao) linhas.push(t('canvas.tipLadrao', { nivel: p.ladrao.nivel, unidade: compL }));
+    if (p.ladrao) linhas.push(t('canvas.tipLadrao', { nivel: eC(p.ladrao.nivel), unidade: compL }));
     if (p.registro) linhas.push(t('canvas.tipRegistro', { estado: p.registro.aberto ? t('canvas.aberto') : t('canvas.fechado') }));
     linhas.push(linhaVazao());
   } else if (isBomba(peca)) {
     const p = peca.props;
-    linhas.push(t('canvas.tipVazaoNominal', { vazao: p.vazaoNominal, unidade: vazL }));
-    if (p.alturaNominal) linhas.push(t('canvas.tipAlturaNominal', { altura: p.alturaNominal, unidade: compL }));
+    linhas.push(t('canvas.tipVazaoNominal', { vazao: eV(p.vazaoNominal), unidade: vazL }));
+    if (p.alturaNominal) linhas.push(t('canvas.tipAlturaNominal', { altura: eC(p.alturaNominal), unidade: compL }));
     if (emExec) linhas.push(t('canvas.tipEstado', { estado: p.ligada ? t('canvas.ligada') : t('canvas.desligada') }));
     linhas.push(linhaVazao());
   } else if (isFonte(peca)) {
     const g = peca.props.gerador;
     const suf = g.perfil === 'fixo' ? '' : ` (${t(`perfis.${g.perfil}`)})`;
-    linhas.push(t('canvas.tipVazaoFixa', { vazao: vazaoRef(g), unidade: vazL, perfil: suf }));
+    linhas.push(t('canvas.tipVazaoFixa', { vazao: eV(vazaoRef(g)), unidade: vazL, perfil: suf }));
     linhas.push(linhaVazao());
   } else if (isConsumo(peca)) {
     const p = peca.props;
     const suf = p.gerador.perfil === 'fixo' ? '' : ` (${t(`perfis.${p.gerador.perfil}`)})`;
-    linhas.push(t('canvas.tipDemanda', { vazao: vazaoRef(p.gerador), unidade: vazL, perfil: suf }));
+    linhas.push(t('canvas.tipDemanda', { vazao: eV(vazaoRef(p.gerador)), unidade: vazL, perfil: suf }));
     if (p.aberto === false) linhas.push(t('canvas.tipFechado'));
     linhas.push(linhaVazao());
   } else if (isSensor(peca)) {
@@ -627,8 +632,8 @@ function linhasTooltip(peca: Peca, estado: EstadoApp): string[] {
     linhas.push(
       t('canvas.tipSensor', {
         reverso: p.reversa ? t('canvas.tipReverso') : '',
-        min: p.nivelMinimo,
-        max: p.nivelMaximo,
+        min: eC(p.nivelMinimo ?? 0),
+        max: eC(p.nivelMaximo ?? 0),
         unidade: compL,
       }),
     );

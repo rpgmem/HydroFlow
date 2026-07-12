@@ -15,8 +15,10 @@ import {
   type PropsBomba,
   type PropsReservatorio,
   type PropsTubo,
+  type Unidades,
 } from '../domain/types';
 
+import { exibirVazao } from '../domain/unidades';
 import { tamanhoPeca, GRADE } from './pecaGeom';
 
 interface Props {
@@ -24,6 +26,8 @@ interface Props {
   selecionada: boolean;
   emExecucao: boolean;
   vazao: number | undefined;
+  /** Unidade de EXIBIÇÃO (a vazão chega em SI e é convertida no rótulo). */
+  unidades: Unidades;
   overflow: boolean;
   aSeco: boolean;
   boiaFechada: boolean;
@@ -77,6 +81,7 @@ export function PecaView({
   selecionada,
   emExecucao,
   vazao,
+  unidades,
   overflow,
   aSeco,
   boiaFechada,
@@ -187,7 +192,7 @@ export function PecaView({
       )}
 
       <Text
-        text={rotulo(peca, vazao)}
+        text={rotulo(peca, vazao, unidades)}
         fontSize={11}
         fill={temaClaro ? '#0d1f2b' : '#cfe0ee'}
         align="center"
@@ -364,11 +369,11 @@ function hexagono(R: number): number[] {
   return [-hx, -hy, hx, -hy, R, 0, hx, hy, -hx, hy, -R, 0];
 }
 
-function rotulo(peca: Peca, vazao: number | undefined): string {
+function rotulo(peca: Peca, vazao: number | undefined, unidades: Unidades): string {
   const nome = peca.rotulo && peca.rotulo.trim() ? peca.rotulo : peca.id;
   const base = `${icone(peca.tipo)} ${nome}`;
   if (vazao !== undefined && Math.abs(vazao) > 1e-6) {
-    return `${base}\nQ=${vazao.toFixed(2)}`;
+    return `${base}\nQ=${exibirVazao(vazao, unidades).toFixed(2)}`;
   }
   return base;
 }
