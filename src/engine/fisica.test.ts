@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pressaoHidrostaticaKPa, PRESSAO_ATM_KPA, muAgua, reynolds, regimeReynolds } from './fisica';
+import { pressaoHidrostaticaKPa, PRESSAO_ATM_KPA, muAgua, reynolds, regimeReynolds, sobrepressaoGolpeKPa } from './fisica';
 import { velocidadeTuboMs } from './geometria';
 import {
   exibirPressao,
@@ -63,6 +63,11 @@ describe('viscosidade e número de Reynolds', () => {
     expect(regimeReynolds(1500)).toBe('laminar');
     expect(regimeReynolds(3000)).toBe('transicao');
     expect(regimeReynolds(50000)).toBe('turbulento');
+  });
+  it('sobrepressão de Joukowsky ΔP = ρ·a·v (parada súbita)', () => {
+    expect(sobrepressaoGolpeKPa(2)).toBeCloseTo(2000); // 1000·1000·2/1000 = 2000 kPa
+    expect(sobrepressaoGolpeKPa(1)).toBeCloseTo(1000); // 1 m/s ≈ PN10
+    expect(sobrepressaoGolpeKPa(0)).toBe(0);
   });
   it('integra com a velocidade do tubo', () => {
     const v = velocidadeTuboMs(0.02, 100); // 0,02 m³/s num tubo de 100 mm

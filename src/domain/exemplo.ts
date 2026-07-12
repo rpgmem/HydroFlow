@@ -137,8 +137,8 @@ export function projetoExemplo(): ProjetoSimulacao {
         } as PropsConsumo,
         rotulo: 'Consumo',
       },
-      tubo('consumo_c1', 'Consumo C1', 600, 160, { bitola: 'DN160', diametro: 147.0, registro: { aberto: true } }),
-      tubo('consumo_c2', 'Consumo C2', 600, 280, { bitola: 'DN160', diametro: 147.0, registro: { aberto: false }, alturaEntrada: 3.12 }),
+      tubo('consumo_c1', 'Consumo C1', 600, 160, { bitola: 'DN160', diametro: 147.0, registro: { aberto: true }, comprimento: 18 }),
+      tubo('consumo_c2', 'Consumo C2', 600, 280, { bitola: 'DN160', diametro: 147.0, registro: { aberto: false }, alturaEntrada: 3.12, comprimento: 14 }),
       // ---- Boias eletrônicas (sensores) -------------------------------------
       {
         id: 'boia_eletronica_c1',
@@ -162,7 +162,7 @@ export function projetoExemplo(): ProjetoSimulacao {
       },
       // ---- Boia manual + bypass + ladrões -----------------------------------
       tubo('boia_manual', 'Boia Manual', 360, 580, { bitola: 'DN110', diametro: 97.8, registro: { aberto: true }, boia: { nivelMinimo: 7, nivelMaximo: 8.5 }, alturaSaida: 8.5, comprimento: 8.5 }),
-      tubo('bypass_boia_manual', 'bypass Boia Manual', 600, 220, { bitola: 'DN32', diametro: 27.8, registro: { aberto: true }, boia: { nivelMinimo: 5, nivelMaximo: 5.5 }, alturaEntrada: 2, alturaSaida: 6 }),
+      tubo('bypass_boia_manual', 'bypass Boia Manual', 600, 220, { bitola: 'DN32', diametro: 27.8, registro: { aberto: true }, boia: { nivelMinimo: 5, nivelMaximo: 5.5 }, alturaEntrada: 2, alturaSaida: 6, comprimento: 5 }),
       tubo('ladrao_c1', 'Ladrão (C1)', 360, 80, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true }, ladrao: { nivel: 6.5 } }),
       tubo('ladrao_c2', 'Ladrão (C2)', 360, 260, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true }, ladrao: { nivel: 6.5 } }),
       tubo('ladrao_inferior', 'Ladrão (inferior)', 360, 440, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true }, ladrao: { nivel: 9 } }),

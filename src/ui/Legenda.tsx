@@ -111,6 +111,7 @@ const ESTADOS: { c: string; k: string }[] = [
   { c: '#22d3ee', k: 'legenda.fluxoLinha' },
   { c: '#2b8fe0', k: 'legenda.fluxoTubo' },
   { c: '#c084fc', k: 'legenda.refluxo' },
+  { c: '#dc2626', k: 'legenda.golpe' },
   { c: '#f43f5e', k: 'legenda.velocidade' },
   { c: '#5b2b2b', k: 'legenda.seco' },
   { c: '#f59e0b', k: 'legenda.deficit' },

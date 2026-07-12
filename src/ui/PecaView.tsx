@@ -35,6 +35,8 @@ interface Props {
   ladraoAtivo: boolean;
   /** Tubo com velocidade acima da recomendada (subdimensionado) neste tick. */
   tuboVeloz: boolean;
+  /** Tubo com risco de golpe de aríete (sobrepressão de Joukowsky acima do teto). */
+  golpeAriete: boolean;
   /** Consumo cuja demanda excede a vazão da bomba (déficit) neste tick. */
   consumoInsuficiente: boolean;
   /** Modo impressão: rótulos em cor escura (legíveis sobre fundo branco). */
@@ -87,6 +89,7 @@ export function PecaView({
   boiaFechada,
   ladraoAtivo,
   tuboVeloz,
+  golpeAriete,
   consumoInsuficiente,
   temaClaro,
   sensorEstado,
@@ -146,6 +149,7 @@ export function PecaView({
           boiaFechada={boiaFechada}
           ladraoAtivo={ladraoAtivo}
           tuboVeloz={tuboVeloz}
+          golpeAriete={golpeAriete}
         />
       ) : peca.tipo === 'sensor' ? (
         // Sensor = losango (instrumento/medição) — distinto do círculo da bomba.
@@ -241,6 +245,7 @@ function TuboView({
   boiaFechada,
   ladraoAtivo,
   tuboVeloz,
+  golpeAriete,
 }: {
   props: PropsTubo;
   w: number;
@@ -251,18 +256,21 @@ function TuboView({
   boiaFechada: boolean;
   ladraoAtivo: boolean;
   tuboVeloz: boolean;
+  golpeAriete: boolean;
 }) {
   const fluindo = vazao !== undefined && Math.abs(vazao) > 1e-9;
   const registroFechado = props.registro !== undefined && !props.registro.aberto;
-  // Prioridade de cor: ladrão transbordando (laranja) > velocidade acima da recomendada/subdimensionado (rosa) > fluindo normal (azul) > repouso (cinza).
+  // Prioridade de cor: golpe de aríete/risco de sobrepressão (vermelho) > ladrão transbordando (laranja) > velocidade acima da recomendada/subdimensionado (rosa) > fluindo normal (azul) > repouso (cinza).
   const corTubo =
-    props.ladrao && ladraoAtivo
-      ? '#f59e0b'
-      : tuboVeloz
-        ? '#f43f5e'
-        : fluindo
-          ? '#2b8fe0'
-          : COR.tubo;
+    golpeAriete
+      ? '#dc2626'
+      : props.ladrao && ladraoAtivo
+        ? '#f59e0b'
+        : tuboVeloz
+          ? '#f43f5e'
+          : fluindo
+            ? '#2b8fe0'
+            : COR.tubo;
   return (
     <>
       <Rect

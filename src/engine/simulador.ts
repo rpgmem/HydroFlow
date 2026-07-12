@@ -45,6 +45,7 @@ import {
   VELOCIDADE_MAX_RECOMENDADA_MS,
 } from './geometria';
 import { COMPRIMENTO_PADRAO_M } from './hidraulica';
+import { sobrepressaoGolpeKPa, LIMITE_GOLPE_PADRAO_KPA } from './fisica';
 import { metrosPorComprimento, UNIDADES_CANONICAS } from '../domain/unidades';
 import { arbitrarBomba, avaliarSensor, avaliarSequencia, boiaAberta, type Decisao } from './arbitragem';
 import { resolverGravidadeComJuncoes } from './redeJuncoes';
@@ -74,6 +75,8 @@ export interface ResultadoTick {
   ladroesAtivos: string[];
   /** Tubos com velocidade acima da recomendada (subdimensionados) neste tick. */
   tubosVelozes: string[];
+  /** Tubos com RISCO de golpe de aríete: a sobrepressão de Joukowsky numa parada súbita passaria do teto de pressão. */
+  golpeAriete: string[];
   /** Tubos com fluxo contrário à seta (refluxo) neste tick — inesperado. */
   refluxos: string[];
   /** Consumos cuja demanda excede a vazão da bomba que os alimenta (déficit). */
@@ -327,6 +330,19 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     if (v > velRef + 1e-6) tubosVelozes.push(p.id);
   }
 
+  // Risco de golpe de aríete (indicador PERMANENTE): a sobrepressão de Joukowsky
+  // numa parada súbita (ΔP = ρ·a·v) passaria do teto de pressão do tubo. Só um
+  // aviso — não altera a física (o motor é quase-estático).
+  const limiteGolpe = proj.configuracaoSimulacao.limiteGolpeArieteKPa ?? LIMITE_GOLPE_PADRAO_KPA;
+  const golpeAriete: string[] = [];
+  for (const p of proj.pecas) {
+    if (!isTubo(p)) continue;
+    const v = velocidadeTuboMs(vazoesM3[p.id] ?? 0, p.props.diametro);
+    if (v <= 1e-6) continue;
+    const teto = p.props.pressaoNominal ?? limiteGolpe;
+    if (sobrepressaoGolpeKPa(v) > teto) golpeAriete.push(p.id);
+  }
+
   // Boias fechadas neste tick (para a UI colorir) — estado calculado no passo 2b.
   const boiasFechadas: string[] = [];
   for (const p of proj.pecas) {
@@ -350,6 +366,7 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     boiasFechadas,
     ladroesAtivos,
     tubosVelozes,
+    golpeAriete,
     refluxos,
     consumoInsuficiente,
     sensores,
@@ -430,6 +447,7 @@ export function rodarTicks(
     boiasFechadas: [],
     ladroesAtivos: [],
     tubosVelozes: [],
+    golpeAriete: [],
     refluxos: [],
     consumoInsuficiente: [],
     sensores: {},

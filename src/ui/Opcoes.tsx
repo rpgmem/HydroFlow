@@ -7,8 +7,8 @@ import { Trans, useTranslation } from 'react-i18next';
 import type { Acao, EstadoApp } from '../state/store';
 import type { Unidades } from '../domain/types';
 import { rotulosDuplicados } from '../domain/normalizarIds';
-import { exibirTemperatura, temperaturaParaSI, labelTemperatura } from '../domain/unidades';
-import { TEMPERATURA_PADRAO_C } from '../engine/fisica';
+import { exibirTemperatura, temperaturaParaSI, labelTemperatura, exibirPressao, pressaoParaSI, labelPressao } from '../domain/unidades';
+import { TEMPERATURA_PADRAO_C, LIMITE_GOLPE_PADRAO_KPA } from '../engine/fisica';
 import { IDIOMAS } from '../i18n';
 import { Switch } from './Switch';
 
@@ -33,6 +33,7 @@ export function Opcoes({ estado, dispatch, tema, onAlternarTema, formatoTempo, o
   const atrito = estado.projeto.configuracaoSimulacao.atrito === true;
   const velRef = estado.projeto.configuracaoSimulacao.velocidadeRef ?? 3;
   const tempC = estado.projeto.configuracaoSimulacao.temperaturaC ?? TEMPERATURA_PADRAO_C;
+  const limiteGolpe = estado.projeto.configuracaoSimulacao.limiteGolpeArieteKPa ?? LIMITE_GOLPE_PADRAO_KPA;
   const idiomaAtual = (i18n.resolvedLanguage ?? i18n.language ?? 'pt').split('-')[0];
 
   return (
@@ -189,6 +190,25 @@ export function Opcoes({ estado, dispatch, tema, onAlternarTema, formatoTempo, o
             </div>
             <p className="telemetry" style={{ margin: '2px 0 0' }}>
               <Trans i18nKey="opcoes.temperaturaDica" components={{ 1: <strong /> }} />
+            </p>
+
+            <div className="field" style={{ marginTop: 8 }}>
+              <label>{t('opcoes.limiteGolpe')} ({labelPressao(u)})</label>
+              <input
+                type="number"
+                step={50}
+                min={0}
+                disabled={emExecucao}
+                aria-label={t('opcoes.limiteGolpeLabel')}
+                value={Number(exibirPressao(limiteGolpe, u).toFixed(2))}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  if (Number.isFinite(v) && v > 0) dispatch({ tipo: 'SET_LIMITE_GOLPE', limiteGolpeArieteKPa: pressaoParaSI(v, u) });
+                }}
+              />
+            </div>
+            <p className="telemetry" style={{ margin: '2px 0 0' }}>
+              <Trans i18nKey="opcoes.limiteGolpeDica" components={{ 1: <strong /> }} />
             </p>
 
             <p className="opcoes-sec">{t('opcoes.projeto')}</p>

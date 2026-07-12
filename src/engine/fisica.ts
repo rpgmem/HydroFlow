@@ -55,3 +55,25 @@ export function regimeReynolds(re: number): 'laminar' | 'transicao' | 'turbulent
   if (re > 4000) return 'turbulento';
   return 'transicao';
 }
+
+/**
+ * Celeridade da onda de pressão (m/s) para o golpe de aríete — velocidade com
+ * que a sobrepressão se propaga no tubo. Depende da elasticidade do fluido e do
+ * tubo; ~1000 m/s é um valor típico para água em tubo relativamente rígido.
+ */
+export const CELERIDADE_GOLPE_MS = 1000;
+
+/** Limite de pressão padrão para o alerta de golpe (kPa) — ordem de PN10 = 1000 kPa. */
+export const LIMITE_GOLPE_PADRAO_KPA = 1000;
+
+/**
+ * Sobrepressão do golpe de aríete (kPa) numa PARADA SÚBITA do escoamento
+ * (equação de Joukowsky): ΔP = ρ·a·Δv, com Δv = |v| (parada total). É a pior
+ * sobrepressão possível ao fechar um registro / desligar uma bomba de repente.
+ */
+export function sobrepressaoGolpeKPa(
+  vMs: number,
+  celeridade: number = CELERIDADE_GOLPE_MS,
+): number {
+  return (DENSIDADE_AGUA_KGM3 * celeridade * Math.abs(vMs)) / 1000;
+}

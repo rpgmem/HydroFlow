@@ -8,6 +8,8 @@ import {
   exibirComprimento,
   exibirVazao,
   vazaoParaSI,
+  exibirPressao,
+  pressaoParaSI,
 } from '../../domain/unidades';
 
 /** Rótulos de unidade derivados das unidades do projeto. */
@@ -43,14 +45,14 @@ export function Num({
   unidade?: string;
   /** Unidade de exibição do projeto (para converter SI↔exibição). */
   unidades?: Unidades;
-  /** Dimensão do valor SI: 'comp' (m) ou 'vazao' (m³/s). Ausente = sem conversão. */
-  dim?: 'comp' | 'vazao';
+  /** Dimensão do valor SI: 'comp' (m), 'vazao' (m³/s) ou 'pressao' (kPa). Ausente = sem conversão. */
+  dim?: 'comp' | 'vazao' | 'pressao';
 }) {
   const converte = dim !== undefined && unidades !== undefined;
   const paraExibir = (v: number): number =>
-    dim === 'vazao' ? exibirVazao(v, unidades!) : exibirComprimento(v, unidades!);
+    dim === 'vazao' ? exibirVazao(v, unidades!) : dim === 'pressao' ? exibirPressao(v, unidades!) : exibirComprimento(v, unidades!);
   const paraSI = (v: number): number =>
-    dim === 'vazao' ? vazaoParaSI(v, unidades!) : comprimentoParaSI(v, unidades!);
+    dim === 'vazao' ? vazaoParaSI(v, unidades!) : dim === 'pressao' ? pressaoParaSI(v, unidades!) : comprimentoParaSI(v, unidades!);
   const exibido = value === undefined ? '' : converte ? paraExibir(value) : value;
   return (
     <div className="field">

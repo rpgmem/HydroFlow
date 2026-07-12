@@ -36,7 +36,7 @@ import {
 } from '../domain/types';
 
 /** Uma entrada do log de eventos (acionamentos e alertas ao longo da execução). */
-export type TipoEvento = 'bomba' | 'sensor' | 'seco' | 'ladrao' | 'deficit' | 'overflow' | 'velocidade' | 'refluxo' | 'comando';
+export type TipoEvento = 'bomba' | 'sensor' | 'seco' | 'ladrao' | 'deficit' | 'overflow' | 'velocidade' | 'refluxo' | 'golpe' | 'comando';
 export interface EventoLog {
   /** Tempo de simulação (s) em que o evento ocorreu. */
   tempo: number;
@@ -68,6 +68,7 @@ export interface EstadoApp {
   boiasFechadas: string[];
   ladroesAtivos: string[];
   tubosVelozes: string[];
+  golpeAriete: string[];
   refluxos: string[];
   consumoInsuficiente: string[];
   sensores: Record<string, Decisao>;
@@ -110,6 +111,7 @@ export type Acao =
   | { tipo: 'SET_ATRITO'; atrito: boolean }
   | { tipo: 'SET_VELOCIDADE_REF'; velocidadeRef: number }
   | { tipo: 'SET_TEMPERATURA'; temperaturaC: number }
+  | { tipo: 'SET_LIMITE_GOLPE'; limiteGolpeArieteKPa: number }
   | { tipo: 'CARREGAR_PROJETO'; projeto: ProjetoSimulacao }
   | { tipo: 'ENTRAR_EXECUCAO' }
   | { tipo: 'SAIR_EXECUCAO' }
@@ -137,6 +139,7 @@ export function estadoInicial(projeto: ProjetoSimulacao): EstadoApp {
     boiasFechadas: [],
     ladroesAtivos: [],
     tubosVelozes: [],
+    golpeAriete: [],
     refluxos: [],
     consumoInsuficiente: [],
     sensores: {},
@@ -179,6 +182,7 @@ const ACOES_ESTRUTURAIS = new Set<Acao['tipo']>([
   'SET_ATRITO',
   'SET_VELOCIDADE_REF',
   'SET_TEMPERATURA',
+  'SET_LIMITE_GOLPE',
   'DUPLICAR_PECA',
   'NORMALIZAR_IDS',
 ]);
@@ -247,6 +251,16 @@ function derivarEventos(anterior: EstadoApp, r: ResultadoTick): EventoLog[] {
   entraram(r.refluxos, anterior.refluxos, 'refluxo', 'log.refluxo');
   entraram(r.consumoInsuficiente, anterior.consumoInsuficiente, 'deficit', 'log.deficit');
   entraram(r.overflow, anterior.overflow, 'overflow', 'log.overflow');
+  // Golpe de aríete: risco PERMANENTE aparecendo (entrou na lista) …
+  entraram(r.golpeAriete, anterior.golpeAriete, 'golpe', 'log.golpeRisco');
+  // … e o evento PONTUAL: um tubo COM risco cuja vazão COLAPSA neste tick
+  // (fechamento brusco / desligamento) — o instante em que o golpe ocorreria.
+  const antGolpe = new Set(anterior.golpeAriete);
+  for (const id of antGolpe) {
+    if (Math.abs(r.vazoes[id] ?? 0) <= 1e-9) {
+      ev.push({ tempo: t, tipo: 'golpe', chave: 'log.golpeOcorreu', params: { nome: rot(id) } });
+    }
+  }
 
   return ev;
 }
@@ -324,6 +338,7 @@ const ACOES_UNDOAVEIS = new Set<Acao['tipo']>([
   'SET_ATRITO',
   'SET_VELOCIDADE_REF',
   'SET_TEMPERATURA',
+  'SET_LIMITE_GOLPE',
 ]);
 
 const MAX_UNDO = 60;
@@ -547,6 +562,18 @@ function reducerBase(estado: EstadoApp, acao: Acao): EstadoApp {
         },
       };
 
+    case 'SET_LIMITE_GOLPE':
+      return {
+        ...estado,
+        projeto: {
+          ...estado.projeto,
+          configuracaoSimulacao: {
+            ...estado.projeto.configuracaoSimulacao,
+            limiteGolpeArieteKPa: acao.limiteGolpeArieteKPa,
+          },
+        },
+      };
+
     case 'CARREGAR_PROJETO':
       return { ...estadoInicial(acao.projeto) };
 
@@ -634,6 +661,7 @@ function reducerBase(estado: EstadoApp, acao: Acao): EstadoApp {
         boiasFechadas: r.boiasFechadas,
         ladroesAtivos: r.ladroesAtivos,
         tubosVelozes: r.tubosVelozes,
+        golpeAriete: r.golpeAriete,
         refluxos: r.refluxos,
         consumoInsuficiente: r.consumoInsuficiente,
         sensores: r.sensores,
