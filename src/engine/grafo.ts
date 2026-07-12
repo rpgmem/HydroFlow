@@ -156,3 +156,23 @@ export class GrafoIndex {
     return vazio;
   }
 }
+
+/**
+ * IDs dos tubos que carregam vazão de BOMBA — a cadeia de sucção e de recalque
+ * de cada bomba do projeto. São os tubos sujeitos a parada ABRUPTA (o desarme
+ * da bomba é súbito); os demais tubos param devagar (registro/boia/gravidade).
+ * Usado pelo alerta de golpe de aríete para atenuar os tubos de fechamento lento.
+ */
+export function coletarTubosDeBomba(idx: GrafoIndex): Set<string> {
+  const tubos = new Set<string>();
+  for (const p of idx.porId.values()) {
+    if (!isBomba(p)) continue;
+    // Sucção (a montante da bomba).
+    for (const t of idx.resolverFluxo(p.id, 'up').tubos) tubos.add(t);
+    // Recalque: cada saída da bomba até seu terminal.
+    for (const c of idx.saida.get(p.id) ?? []) {
+      for (const t of idx.resolverFluxo(c.destino, 'down').tubos) tubos.add(t);
+    }
+  }
+  return tubos;
+}
