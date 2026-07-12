@@ -153,7 +153,7 @@ As leis de vazão ficam em `src/engine/hidraulica.ts`; a rede que bifurca/une em
 
 - **[Vazão](https://pt.wikipedia.org/wiki/Vaz%C3%A3o) por gravidade (tubo)** — [Torricelli](https://pt.wikipedia.org/wiki/Teorema_de_Torricelli):
   `v = √(2·g·Δh)`, `A = π·(diametro/2)²`, `Q = A·v`.
-- **[Perda de carga](https://pt.wikipedia.org/wiki/Perda_de_carga) por atrito** (opcional, `configuracaoSimulacao.atrito`) — [Hazen-Williams](https://pt.wikipedia.org/wiki/Hidr%C3%A1ulica_aplicada_a_tubula%C3%A7%C3%B5es): resolve `Δh = v²/2g + hf(Q)` com `hf = 10,67·L·Q^1,85 / (C^1,85·D^4,87)` (usa o `comprimento` e o `coefC` do tubo). Desligado por padrão (Torricelli puro).
+- **[Perda de carga](https://pt.wikipedia.org/wiki/Perda_de_carga) por atrito** (opcional, `configuracaoSimulacao.atrito`) — dois modelos (⚙ Opções): **[Hazen-Williams](https://pt.wikipedia.org/wiki/Hidr%C3%A1ulica_aplicada_a_tubula%C3%A7%C3%B5es)** `hf = 10,67·L·Q^1,85 / (C^1,85·D^4,87)` (coeficiente C) ou **[Darcy-Weisbach](https://pt.wikipedia.org/wiki/Equa%C3%A7%C3%A3o_de_Darcy-Weisbach)** `hf = f·(L/D)·v²/2g` com `f` por **Swamee-Jain** (rugosidade ε + Reynolds, ε/f dependem da viscosidade `μ(T)`). O **material** do tubo preenche C e ε (PVC, aço, ferro fundido, concreto…). Desligado por padrão (Torricelli puro).
 - **[Número de Reynolds](https://pt.wikipedia.org/wiki/N%C3%BAmero_de_Reynolds)** — `Re = ρ·v·D/μ` (readout no inspetor do tubo durante a execução): regime laminar (Re < 2000) ou turbulento (Re > 4000). A viscosidade `μ` da água depende da **temperatura da água** (⚙ Opções, padrão 20 °C, exibível em °C/°F/K). Só exibição — não altera a vazão.
 - **[Golpe de aríete](https://pt.wikipedia.org/wiki/Golpe_de_ar%C3%ADete) (alerta)** — sobrepressão de **[Joukowsky](https://pt.wikipedia.org/wiki/Nikolai_Jukovski)** numa parada súbita: `ΔP = ρ·a·v` (celeridade `a ≈ 1000 m/s`). O tubo fica **vermelho** quando essa sobrepressão passaria do teto de pressão (⚙ Opções, padrão ≈ PN10 = 1000 kPa, ou a `pressaoNominal` do tubo); o log registra o **risco** e o **instante da parada brusca**. Alerta — o motor é quase-estático, não simula a onda.
 - **[Carga hidráulica](https://en.wikipedia.org/wiki/Hydraulic_head)** — `Δh = (cota + nivel)origem − (cota + nivel)destino` (sempre a carga total; **nunca** só o nível bruto). É o princípio dos **[vasos comunicantes](https://pt.wikipedia.org/wiki/Vasos_comunicantes)**: reservatórios ligados por baixo tendem a igualar a **superfície** (não o volume), escoando enquanto houver diferença de carga.
@@ -209,6 +209,6 @@ Export/import manual via `.json`: **Salvar** baixa `{nome}.json`; **Carregar** v
 
 ## Fora de escopo
 
-CFD real (Navier-Stokes) · perda de carga por atrito de **[Darcy-Weisbach](https://pt.wikipedia.org/wiki/Equa%C3%A7%C3%A3o_de_Darcy-Weisbach)** (há um modelo **opcional** de Hazen-Williams; ver a seção de Física) · evaporação/temperatura · reservatórios de seção variável (cone, esfera) · prioridade manual entre sensores · backend/nuvem · app mobile/desktop nativo.
+CFD real (Navier-Stokes) · evaporação · reservatórios de seção variável (cone, esfera) · prioridade manual entre sensores · backend/nuvem · app mobile/desktop nativo.
 
 Ver [`CHANGELOG.md`](./CHANGELOG.md) para a evolução.

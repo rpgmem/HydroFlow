@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { vazaoGravidadeM3, vazaoBombaOperacao, hfHazenWilliamsM } from './hidraulica';
+import { vazaoGravidadeM3, vazaoBombaOperacao, hfHazenWilliamsM, hfDarcyWeisbachM } from './hidraulica';
 import { areaTuboM2 } from './geometria';
 
 // As leis com atrito não têm forma fechada e são resolvidas por Newton salvaguardado. Aqui garantimos que a raiz devolvida REALMENTE satisfaz a
@@ -75,5 +75,42 @@ describe('vazaoBombaOperacao (ponto de operação)', () => {
     const comAtrito = vazaoBombaOperacao(30, 1.5, 4, hf);
     expect(comAtrito).toBeGreaterThan(0);
     expect(comAtrito).toBeLessThan(semAtrito);
+  });
+});
+
+describe('Darcy-Weisbach', () => {
+  const g = 9.81;
+  const dw = { modelo: 'darcy-weisbach' as const, rugosidadeMM: 0.0015, muPas: 1e-3 };
+
+  it('resolve Δh = v²/2g + hf_DW (resíduo ~0)', () => {
+    const A = areaTuboM2(100);
+    const dh = 5, L = 10;
+    const q = vazaoGravidadeM3(true, A, 100, L, 140, dh, g, dw);
+    const v = q / A;
+    const hf = hfDarcyWeisbachM(q, L, 100, dw.rugosidadeMM, dw.muPas, g);
+    expect((v * v) / (2 * g) + hf).toBeCloseTo(dh, 4);
+  });
+
+  it('o atrito REDUZ a vazão frente ao Torricelli', () => {
+    const A = areaTuboM2(100);
+    const qTorr = A * Math.sqrt(2 * g * 5);
+    const q = vazaoGravidadeM3(true, A, 100, 50, 140, 5, g, dw);
+    expect(q).toBeGreaterThan(0);
+    expect(q).toBeLessThan(qTorr);
+  });
+
+  it('Darcy-Weisbach e Hazen-Williams ficam na mesma ordem de grandeza', () => {
+    const A = areaTuboM2(100);
+    const hw = vazaoGravidadeM3(true, A, 100, 50, 140, 5, g);
+    const q = vazaoGravidadeM3(true, A, 100, 50, 140, 5, g, dw);
+    expect(q).toBeGreaterThan(hw * 0.5);
+    expect(q).toBeLessThan(hw * 2);
+  });
+
+  it('tubo mais áspero entrega menos', () => {
+    const A = areaTuboM2(100);
+    const liso = vazaoGravidadeM3(true, A, 100, 50, 140, 5, g, dw);
+    const aspero = vazaoGravidadeM3(true, A, 100, 50, 140, 5, g, { ...dw, rugosidadeMM: 1.0 });
+    expect(aspero).toBeLessThan(liso);
   });
 });

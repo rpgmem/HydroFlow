@@ -27,6 +27,7 @@ import { vazaoDeM3, vazaoMaxRecomendadaM3, velocidadeTuboMs, volumeMaximoM3 } fr
 import { labelVolume, m3PorVolume, UNIDADES_CANONICAS, exibirPressao, labelPressao } from '../../domain/unidades';
 import { pressaoHidrostaticaKPa, reynolds, regimeReynolds, muAgua, sobrepressaoGolpeKPa } from '../../engine/fisica';
 import { CATALOGO_TUBOS, CATEGORIAS_TUBO, bitolaPorDn, rotuloBitola } from '../../domain/tubosCatalogo';
+import { MATERIAIS_TUBO, ORDEM_MATERIAIS } from '../../domain/materiais';
 import { fmtNumero } from '../../i18n';
 import type { Acao } from '../../state/store';
 import { useState } from 'react';
@@ -123,6 +124,7 @@ export function TuboForm({
   u,
   unidades,
   atrito,
+  modeloAtrito,
   velRef,
   vazao,
   temperaturaC,
@@ -134,6 +136,7 @@ export function TuboForm({
   u: UniLabel;
   unidades: Unidades;
   atrito: boolean;
+  modeloAtrito: 'hazen-williams' | 'darcy-weisbach';
   velRef: number;
   /** Vazão corrente do tubo (SI, m³/s) — só na execução; para o Reynolds. */
   vazao?: number;
@@ -230,7 +233,7 @@ export function TuboForm({
         disabled={emExecucao}
         onChange={(v) => upd({ pressaoNominal: v > 0 ? v : undefined })}
       />
-      {/* Perda de carga (Hazen-Williams): comprimento e C só aparecem com o atrito ligado (ver ⚙ Opções). Defaults: 1 m e C=140 quando em branco. */}
+      {/* Perda de carga: comprimento + material + (C de Hazen-Williams | ε de Darcy-Weisbach), só com o atrito ligado (ver ⚙ Opções). */}
       {atrito && (
         <>
           <Num
@@ -242,13 +245,43 @@ export function TuboForm({
             disabled={emExecucao}
             onChange={(v) => upd({ comprimento: v })}
           />
-          <Num
-            label={t('form.coefC')}
-            value={props.coefC ?? 140}
-            disabled={emExecucao}
-            step={1}
-            onChange={(v) => upd({ coefC: v })}
-          />
+          {/* Material: preset que preenche ε (rugosidade) e C. Editar ε/C na mão limpa o material (→ "Personalizado"). */}
+          <div className="field">
+            <label>{t('form.material')}</label>
+            <select
+              value={props.material ?? ''}
+              disabled={emExecucao}
+              aria-label={t('form.material')}
+              onChange={(e) => {
+                const m = e.target.value as NonNullable<PropsTubo['material']> | '';
+                if (m) upd({ material: m, rugosidade: MATERIAIS_TUBO[m].rugosidadeMM, coefC: MATERIAIS_TUBO[m].coefC });
+                else upd({ material: undefined });
+              }}
+            >
+              <option value="">{t('form.personalizado')}</option>
+              {ORDEM_MATERIAIS.map((m) => (
+                <option key={m} value={m}>{t(`materiais.${m}`)}</option>
+              ))}
+            </select>
+          </div>
+          {modeloAtrito === 'darcy-weisbach' ? (
+            <Num
+              label={t('form.rugosidade')}
+              unidade="mm"
+              value={props.rugosidade ?? 0.0015}
+              disabled={emExecucao}
+              step={0.001}
+              onChange={(v) => upd({ rugosidade: v, material: undefined })}
+            />
+          ) : (
+            <Num
+              label={t('form.coefC')}
+              value={props.coefC ?? 140}
+              disabled={emExecucao}
+              step={1}
+              onChange={(v) => upd({ coefC: v, material: undefined })}
+            />
+          )}
         </>
       )}
       {/* Altura de conexão em cada ponta (relativa à base do reservatório).

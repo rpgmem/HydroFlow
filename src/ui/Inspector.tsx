@@ -120,7 +120,7 @@ export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatc
         {isReservatorio(peca) && (
           <ReservatorioForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} />
         )}
-        {isTubo(peca) && <TuboForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} atrito={projeto.configuracaoSimulacao.atrito === true} velRef={projeto.configuracaoSimulacao.velocidadeRef ?? VELOCIDADE_MAX_RECOMENDADA_MS} vazao={vazao} temperaturaC={projeto.configuracaoSimulacao.temperaturaC ?? TEMPERATURA_PADRAO_C} limiteGolpeKPa={projeto.configuracaoSimulacao.limiteGolpeArieteKPa ?? LIMITE_GOLPE_PADRAO_KPA} />}
+        {isTubo(peca) && <TuboForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} atrito={projeto.configuracaoSimulacao.atrito === true} modeloAtrito={projeto.configuracaoSimulacao.modeloAtrito ?? 'hazen-williams'} velRef={projeto.configuracaoSimulacao.velocidadeRef ?? VELOCIDADE_MAX_RECOMENDADA_MS} vazao={vazao} temperaturaC={projeto.configuracaoSimulacao.temperaturaC ?? TEMPERATURA_PADRAO_C} limiteGolpeKPa={projeto.configuracaoSimulacao.limiteGolpeArieteKPa ?? LIMITE_GOLPE_PADRAO_KPA} />}
         {isBomba(peca) && <BombaForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} projeto={projeto} pecaId={peca.id} dispatch={dispatch} />}
         {isFonte(peca) && <FonteForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} />}
         {isConsumo(peca) && <ConsumoForm props={peca.props} emExecucao={emExecucao} upd={upd} u={u} unidades={projeto.unidades} />}

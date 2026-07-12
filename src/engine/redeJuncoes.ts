@@ -20,7 +20,8 @@ import {
   type Unidades,
 } from '../domain/types';
 import { areaTuboM2, vazaoParaM3 } from './geometria';
-import { vazaoBombaOperacao, vazaoGravidadeM3, COMPRIMENTO_PADRAO_M, HW_C_PADRAO } from './hidraulica';
+import { vazaoBombaOperacao, vazaoGravidadeM3, COMPRIMENTO_PADRAO_M, HW_C_PADRAO, type ModeloAtrito } from './hidraulica';
+import { RUGOSIDADE_PADRAO_MM } from './fisica';
 import { metrosPorComprimento } from '../domain/unidades';
 import { reservatorioVazio, type FluxoResolvido, type GrafoIndex } from './grafo';
 import { hfTubosM } from './vazaoPecas';
@@ -55,6 +56,8 @@ interface ArestaRede {
   diamMinMM: number;
   /** Menor coeficiente C (Hazen-Williams) do run. */
   coefC: number;
+  /** Maior rugosidade ε (mm) do run — a mais áspera (Darcy-Weisbach). */
+  rugosidadeMM: number;
 }
 
 /**
@@ -74,6 +77,8 @@ export function resolverGravidadeComJuncoes(
   bombasASeco: string[],
   refluxos: string[],
   atrito: boolean,
+  modelo: ModeloAtrito,
+  muPas: number,
 ): void {
   const kL = metrosPorComprimento(u);
   const ehCandidato = (p: Peca | undefined): p is PecaDe<'tubo'> =>
@@ -148,6 +153,7 @@ export function resolverGravidadeComJuncoes(
       let comprimentoM = 0;
       let diamMinMM = Infinity;
       let coefC = Infinity;
+      let rugMax = 0;
       const local = new Set<string>([de]);
       for (let guard = 0; guard < 1000; guard++) {
         const pe = idx.porId.get(cur);
@@ -171,6 +177,7 @@ export function resolverGravidadeComJuncoes(
             comprimentoM,
             diamMinMM: tubos.length ? diamMinMM : 1000,
             coefC: tubos.length ? coefC : HW_C_PADRAO,
+            rugosidadeMM: tubos.length ? rugMax : RUGOSIDADE_PADRAO_MM,
           };
         }
         if (!ehCandidato(pe)) return null;
@@ -182,6 +189,7 @@ export function resolverGravidadeComJuncoes(
         diamMinMM = Math.min(diamMinMM, pe.props.diametro);
         comprimentoM += (pe.props.comprimento ?? COMPRIMENTO_PADRAO_M) * kL;
         coefC = Math.min(coefC, pe.props.coefC ?? HW_C_PADRAO);
+        rugMax = Math.max(rugMax, pe.props.rugosidade ?? RUGOSIDADE_PADRAO_MM);
         local.add(cur);
         const next = vizinhosDe(cur).find((v) => v !== prev && !local.has(v));
         if (next === undefined) return null; // beco (ambiente) → sem aresta
@@ -301,7 +309,7 @@ export function resolverGravidadeComJuncoes(
       else bombasPorNo.set(b.no, [b]);
     }
     const qBomba = (b: ContribBomba, hJ: number): number =>
-      Math.max(0, vazaoBombaOperacao(b.baseM3, b.kEffM3, hJ - b.sucHeadM, (x) => hfTubosM(idx, b.tubosSuc, x, u)));
+      Math.max(0, vazaoBombaOperacao(b.baseM3, b.kEffM3, hJ - b.sucHeadM, (x) => hfTubosM(idx, b.tubosSuc, x, u, g, modelo, muPas)));
 
     const arestasDe = new Map<string, ArestaRede[]>();
     for (const j of juncSet) arestasDe.set(j, []);
@@ -320,7 +328,11 @@ export function resolverGravidadeComJuncoes(
     // Magnitude da vazão numa aresta para uma carga |dh| (m): Torricelli puro ou, com o atrito ligado, Hazen-Williams sobre o comprimento SOMADO do run (com o
     // diâmetro do gargalo — aproximação da série de tubos).
     const magVazao = (ar: ArestaRede, absDh: number): number =>
-      vazaoGravidadeM3(atrito, ar.area, ar.diamMinMM, ar.comprimentoM, ar.coefC, absDh, g);
+      vazaoGravidadeM3(atrito, ar.area, ar.diamMinMM, ar.comprimentoM, ar.coefC, absDh, g, {
+        modelo,
+        rugosidadeMM: ar.rugosidadeMM,
+        muPas,
+      });
     const fluxoEntra = (ar: ArestaRede, hJ: number, outro: string): number => {
       const dh = cargaDe(outro) - hJ;
       const q = Math.sign(dh) * magVazao(ar, Math.abs(dh));

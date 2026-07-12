@@ -12,11 +12,14 @@ import { isTubo, type PecaDe, type Unidades } from '../domain/types';
 import { areaTuboM2, vazaoParaM3 } from './geometria';
 import {
   hfHazenWilliamsM,
+  hfDarcyWeisbachM,
   vazaoBombaOperacao,
   vazaoGravidadeM3,
   COMPRIMENTO_PADRAO_M,
   HW_C_PADRAO,
+  type ModeloAtrito,
 } from './hidraulica';
+import { RUGOSIDADE_PADRAO_MM } from './fisica';
 import { metrosPorComprimento } from '../domain/unidades';
 import { boiaAberta } from './arbitragem';
 import { valorNoTempo } from '../domain/geradorVazao';
@@ -30,6 +33,8 @@ export function calcularTubo(
   fluxos: FluxoResolvido[],
   ladroesAtivos: string[],
   atrito: boolean,
+  modelo: ModeloAtrito,
+  muPas: number,
   comprimentoOverrideM?: number,
 ): number {
   const { registro, boia, checkValve, diametro, ladrao } = tubo.props;
@@ -47,7 +52,11 @@ export function calcularTubo(
   // `comprimentoOverrideM` (m) permite à cadeia usar o comprimento SOMADO dos tubos em série; senão usa o comprimento do próprio tubo.
   const lengthM = comprimentoOverrideM ?? (tubo.props.comprimento ?? COMPRIMENTO_PADRAO_M) * kL;
   const vazaoDe = (dh: number): number =>
-    vazaoGravidadeM3(atrito, areaM2, diametro, lengthM, tubo.props.coefC ?? HW_C_PADRAO, dh, g);
+    vazaoGravidadeM3(atrito, areaM2, diametro, lengthM, tubo.props.coefC ?? HW_C_PADRAO, dh, g, {
+      modelo,
+      rugosidadeMM: tubo.props.rugosidade ?? RUGOSIDADE_PADRAO_MM,
+      muPas,
+    });
 
   // Tubo ladrão: só escoa o EXCEDENTE acima do nível de acionamento (a coluna acima do lábio é a carga que empurra o transbordo — autolimitante).
   if (ladrao && Number.isFinite(ladrao.nivel)) {
@@ -146,18 +155,25 @@ export function coletarCadeiaTubos(idx: GrafoIndex, tuboInicial: string): string
  * Perda de carga total (m) de Hazen-Williams ao longo de uma lista de tubos em série, para a vazão `qM3` (m³/s). Usada no ponto de operação da bomba (sucção +
  * recalque) — canos em série somam suas perdas (mesma vazão).
  */
-export function hfTubosM(idx: GrafoIndex, tubos: string[], qM3: number, u: Unidades): number {
+export function hfTubosM(
+  idx: GrafoIndex,
+  tubos: string[],
+  qM3: number,
+  u: Unidades,
+  g: number,
+  modelo: ModeloAtrito,
+  muPas: number,
+): number {
   const kL = metrosPorComprimento(u);
   let hf = 0;
   for (const tid of tubos) {
     const t = idx.porId.get(tid);
     if (t && isTubo(t)) {
-      hf += hfHazenWilliamsM(
-        qM3,
-        (t.props.comprimento ?? COMPRIMENTO_PADRAO_M) * kL,
-        t.props.diametro / 1000,
-        t.props.coefC ?? HW_C_PADRAO,
-      );
+      const lengthM = (t.props.comprimento ?? COMPRIMENTO_PADRAO_M) * kL;
+      hf +=
+        modelo === 'darcy-weisbach'
+          ? hfDarcyWeisbachM(qM3, lengthM, t.props.diametro, t.props.rugosidade ?? RUGOSIDADE_PADRAO_MM, muPas, g)
+          : hfHazenWilliamsM(qM3, lengthM, t.props.diametro / 1000, t.props.coefC ?? HW_C_PADRAO);
     }
   }
   return hf;
@@ -174,6 +190,8 @@ export function calcularBomba(
   consumoInsuficiente: string[],
   bombasASeco: string[],
   atrito: boolean,
+  modelo: ModeloAtrito,
+  muPas: number,
 ): number {
   if (!bomba.props.ligada) return 0;
 
@@ -225,7 +243,7 @@ export function calcularBomba(
       // Com o atrito ligado, a vazão é o PONTO DE OPERAÇÃO (curva da bomba ∩ curva do sistema): a perda de carga de sucção + recalque reduz a entrega. Sem
       // atrito, só a altura estática conta (comportamento de sempre).
       qUser = atrito
-        ? vazaoBombaOperacao(base, kEff, liftM, (x) => hfTubosM(idx, [...upPath.tubos, ...dp.tubos], vazaoParaM3(x, u), u))
+        ? vazaoBombaOperacao(base, kEff, liftM, (x) => hfTubosM(idx, [...upPath.tubos, ...dp.tubos], vazaoParaM3(x, u), u, g, modelo, muPas))
         : base - kEff * liftM;
       destino = dp.res.id;
     } else {
@@ -300,6 +318,8 @@ export function calcularConsumo(
   fluxos: FluxoResolvido[],
   vazoes: Record<string, number>,
   atrito: boolean,
+  modelo: ModeloAtrito,
+  muPas: number,
 ): number {
   const cp = idx.resolverFluxo(consumo.id, 'up');
   // REIVINDICA os canos do caminho do consumo (mesmo com demanda 0, consumo fechado ou caminho bloqueado). Sem isso, o cano ficaria "sem dono" e o
@@ -333,6 +353,7 @@ export function calcularConsumo(
           t.props.coefC ?? HW_C_PADRAO,
           Math.max(0, headM),
           g,
+          { modelo, rugosidadeMM: t.props.rugosidade ?? RUGOSIDADE_PADRAO_MM, muPas },
         );
         capMin = Math.min(capMin, cap);
       }

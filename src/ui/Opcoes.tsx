@@ -154,6 +154,22 @@ export function Opcoes({ estado, dispatch, tema, onAlternarTema, formatoTempo, o
             <p className="telemetry" style={{ margin: '2px 0 0' }}>
               <Trans i18nKey="opcoes.atritoDica" components={{ 1: <strong />, 3: <strong /> }} />
             </p>
+            {atrito && (
+              <div className="field" style={{ marginTop: 8 }}>
+                <label>{t('opcoes.modeloAtrito')}</label>
+                <select
+                  aria-label={t('opcoes.modeloAtrito')}
+                  disabled={emExecucao}
+                  value={estado.projeto.configuracaoSimulacao.modeloAtrito ?? 'hazen-williams'}
+                  onChange={(e) =>
+                    dispatch({ tipo: 'SET_MODELO_ATRITO', modeloAtrito: e.target.value as 'hazen-williams' | 'darcy-weisbach' })
+                  }
+                >
+                  <option value="hazen-williams">{t('opcoes.modeloHW')}</option>
+                  <option value="darcy-weisbach">{t('opcoes.modeloDW')}</option>
+                </select>
+              </div>
+            )}
 
             <div className="field" style={{ marginTop: 8 }}>
               <label>{t('opcoes.velocidadeRef')}</label>

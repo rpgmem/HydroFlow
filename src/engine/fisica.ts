@@ -56,6 +56,31 @@ export function regimeReynolds(re: number): 'laminar' | 'transicao' | 'turbulent
   return 'transicao';
 }
 
+/** Rugosidade absoluta padrão (mm) — PVC/plástico liso, default do Darcy-Weisbach. */
+export const RUGOSIDADE_PADRAO_MM = 0.0015;
+
+/**
+ * Fator de atrito de Darcy `f` (adimensional) para o Darcy-Weisbach:
+ *  - laminar (Re < 2000): f = 64/Re;
+ *  - turbulento (Re > 4000): Swamee-Jain (aproximação explícita de Colebrook)
+ *    f = 0,25 / [log10(ε/(3,7·D) + 5,74/Re^0,9)]²;
+ *  - transição (2000–4000): interpola linearmente entre os dois.
+ * `epsMM` e `diametroMM` na MESMA unidade (mm) — só a razão ε/D importa.
+ */
+export function fatorAtritoDW(re: number, epsMM: number, diametroMM: number): number {
+  if (re <= 0 || diametroMM <= 0) return 0;
+  const epsD = Math.max(0, epsMM) / diametroMM;
+  const turbulento = (r: number): number => {
+    const x = Math.log10(epsD / 3.7 + 5.74 / Math.pow(r, 0.9));
+    return 0.25 / (x * x);
+  };
+  if (re < 2000) return 64 / re;
+  if (re > 4000) return turbulento(re);
+  // transição: mistura laminar(2000) → turbulento(4000).
+  const t = (re - 2000) / 2000;
+  return (1 - t) * (64 / 2000) + t * turbulento(4000);
+}
+
 /**
  * Celeridade da onda de pressão (m/s) para o golpe de aríete — velocidade com
  * que a sobrepressão se propaga no tubo. Depende da elasticidade do fluido e do
