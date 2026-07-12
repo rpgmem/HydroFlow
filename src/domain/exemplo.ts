@@ -185,7 +185,10 @@ export function projetoExemplo(): ProjetoSimulacao {
         props: { gerador: { perfil: 'fixo', vazao: 0 }, aberto: false } as PropsConsumo,
         rotulo: 'Hidrantes',
       },
-      tubo('cavalete_incendio', 'Cavalete Incêndio', 720, 400, { bitola: 'DN60', diametro: 53.4, registro: { aberto: true } }),
+      // Sucção da bomba de incêndio: puxa do C2 Meio (base na cota 9,5). O
+      // comprimento desenvolvido = ~4 m (como a sucção do recalque) + os 9,5 m
+      // de subida até a base do reservatório → 13,5 m (coerente com o desnível).
+      tubo('cavalete_incendio', 'Cavalete Incêndio', 720, 400, { bitola: 'DN60', diametro: 53.4, registro: { aberto: true }, comprimento: 13.5 }),
       {
         // Boia NORMAL no meio (igual à do C1): pede LIGAR quando baixa (≤ 4,6 m) e
         // DESLIGAR quando cheia (≥ 5,5 m).
