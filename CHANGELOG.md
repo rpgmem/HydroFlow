@@ -2,6 +2,30 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
+## [1.53.0] — Golpe de aríete (alerta) + comprimentos coerentes no exemplo
+
+Quinta etapa da fundação de física avançada ([#65](https://github.com/rpgmem/HydroFlow/issues/65)).
+
+### Adicionado
+
+- **Alerta de golpe de aríete** em dois níveis:
+  - **Risco permanente** (determinístico): o tubo fica **vermelho** quando a
+    sobrepressão de Joukowsky numa parada súbita (`ΔP = ρ·a·v`, `a ≈ 1000 m/s`)
+    passaria do teto de pressão. Novo campo `golpeAriete` no resultado do tick.
+  - **Evento pontual**: o log registra o instante em que um tubo com risco tem a
+    vazão **interrompida bruscamente** (fechamento/desligamento).
+- **Teto de pressão** configurável: global em ⚙ Opções (`limiteGolpeArieteKPa`,
+  padrão ≈ PN10 = 1000 kPa) e **por tubo** (`pressaoNominal`). O inspetor do tubo
+  mostra a sobrepressão do golpe durante a execução.
+- `src/engine/fisica.ts` ganha `sobrepressaoGolpeKPa` e a celeridade padrão.
+  Ajuda, README e legenda com o item do golpe de aríete (link).
+
+### Alterado
+
+- **Projeto exemplo:** comprimentos coerentes com as elevações nos tubos que
+  descem dos tanques altos — `consumo_c1` 18 m, `consumo_c2` 14 m, `bypass` 5 m
+  (relevante com o atrito ligado).
+
 ## [1.52.0] — Linha do "zero do terreno" no canvas
 
 ### Adicionado

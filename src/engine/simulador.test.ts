@@ -160,6 +160,36 @@ describe('vazão por gravidade em tubo', () => {
 });
 
 // ===========================================================================
+// Golpe de aríete (indicador de risco permanente)
+// ===========================================================================
+describe('golpe de aríete (risco)', () => {
+  const cenario = (over = {}) =>
+    tick(
+      projeto(
+        [res('A', { cota: 10, nivel: 5 }), res('B', {}), tubo('T', { diametro: 100, ...over })],
+        [criarConexao('A', 'T'), criarConexao('T', 'B')],
+      ),
+    );
+  it('sinaliza tubo cuja parada súbita superaria o teto de pressão', () => {
+    const r = cenario();
+    expect(r.vazoes['T']!).toBeGreaterThan(0); // há fluxo (v alto por Torricelli)
+    expect(r.golpeAriete).toContain('T'); // ΔP = ρ·a·v > 1000 kPa (PN10 padrão)
+  });
+  it('respeita a pressão nominal do tubo (teto alto → sem alerta)', () => {
+    expect(cenario({ pressaoNominal: 1e7 }).golpeAriete).not.toContain('T');
+  });
+  it('sem fluxo, sem risco', () => {
+    const r = tick(
+      projeto(
+        [res('A', { cota: 0, nivel: 3 }), res('B', { cota: 0, nivel: 3 }), tubo('T')],
+        [criarConexao('A', 'T'), criarConexao('T', 'B')],
+      ),
+    );
+    expect(r.golpeAriete).toHaveLength(0);
+  });
+});
+
+// ===========================================================================
 // Tubos em série (uma cadeia carrega UM fluxo, limitado pelo gargalo)
 // ===========================================================================
 describe('tubos em série entre reservatórios', () => {

@@ -18,7 +18,7 @@ const dis = (nome: string): boolean => (screen.getByLabelText(nome) as HTMLInput
 // Em execução, os COMANDOS de operação ficam ativos e o resto (estrutura/dimensionamento) fica desabilitado campo a campo.
 describe('inspetor em execução — comandos ativos, estrutura travada', () => {
   it('tubo: registro (comando) ativo; diâmetro (estrutura) travado', () => {
-    render(<TuboForm props={{ diametro: 100 }} emExecucao upd={noop} u={u} unidades={proj().unidades} atrito={false} velRef={3} temperaturaC={20} />);
+    render(<TuboForm props={{ diametro: 100 }} emExecucao upd={noop} u={u} unidades={proj().unidades} atrito={false} velRef={3} temperaturaC={20} limiteGolpeKPa={1000} />);
     expect(dis('Registro aberto')).toBe(false);
     expect(dis('Diâmetro interno')).toBe(true);
   });

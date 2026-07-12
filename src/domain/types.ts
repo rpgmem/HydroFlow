@@ -51,6 +51,12 @@ export interface ConfiguracaoSimulacao {
    * pressão de vapor (NPSH). Ausente → 20 °C.
    */
   temperaturaC?: number;
+  /**
+   * Teto de pressão (kPa) do alerta de golpe de aríete: acima da sobrepressão de
+   * Joukowsky numa parada súbita, o tubo é sinalizado. Ausente → `LIMITE_GOLPE_PADRAO_KPA`
+   * (1000 ≈ PN10). Um tubo pode sobrescrever com `pressaoNominal`.
+   */
+  limiteGolpeArieteKPa?: number;
 }
 
 /**
@@ -123,6 +129,11 @@ export interface PropsTubo {
    * Coeficiente C de Hazen-Williams (rugosidade). Ausente → `HW_C_PADRAO` (140, plástico/PVC). Ex.: ~130 cimento, ~100 ferro fundido usado.
    */
   coefC?: number;
+  /**
+   * Pressão nominal do tubo (kPa) — teto usado no alerta de golpe de aríete.
+   * Ausente → usa o limite global (`configuracaoSimulacao.limiteGolpeArieteKPa`).
+   */
+  pressaoNominal?: number;
 }
 
 export interface PropsBomba {

@@ -25,7 +25,7 @@ import {
 import { Trans, useTranslation } from 'react-i18next';
 import { vazaoDeM3, vazaoMaxRecomendadaM3, velocidadeTuboMs, volumeMaximoM3 } from '../../engine/geometria';
 import { labelVolume, m3PorVolume, UNIDADES_CANONICAS, exibirPressao, labelPressao } from '../../domain/unidades';
-import { pressaoHidrostaticaKPa, reynolds, regimeReynolds, muAgua } from '../../engine/fisica';
+import { pressaoHidrostaticaKPa, reynolds, regimeReynolds, muAgua, sobrepressaoGolpeKPa } from '../../engine/fisica';
 import { CATALOGO_TUBOS, CATEGORIAS_TUBO, bitolaPorDn, rotuloBitola } from '../../domain/tubosCatalogo';
 import { fmtNumero } from '../../i18n';
 import type { Acao } from '../../state/store';
@@ -126,6 +126,7 @@ export function TuboForm({
   velRef,
   vazao,
   temperaturaC,
+  limiteGolpeKPa,
 }: {
   props: PropsTubo;
   emExecucao: boolean;
@@ -138,6 +139,8 @@ export function TuboForm({
   vazao?: number;
   /** Temperatura da água (°C) — para a viscosidade no Reynolds. */
   temperaturaC: number;
+  /** Teto global de pressão do golpe de aríete (kPa) — fallback do `pressaoNominal`. */
+  limiteGolpeKPa: number;
 }) {
   const { t, i18n } = useTranslation();
   const temBoia = props.boia !== undefined;
@@ -148,6 +151,9 @@ export function TuboForm({
   // Número de Reynolds (só na execução, com fluxo): Re = ρ·v·D/μ(T).
   const vMs = vazao !== undefined && props.diametro > 0 ? velocidadeTuboMs(vazao, props.diametro) : 0;
   const re = emExecucao && vMs > 1e-6 ? reynolds(vMs, props.diametro, muAgua(temperaturaC)) : null;
+  // Golpe de aríete: sobrepressão de Joukowsky numa parada súbita e o teto vigente.
+  const surgeKPa = emExecucao && vMs > 1e-6 ? sobrepressaoGolpeKPa(vMs) : null;
+  const tetoGolpe = props.pressaoNominal ?? limiteGolpeKPa;
   return (
     <>
       {/* Bitola pré-configurada: seleciona o DN e grava o diâmetro INTERNO tabelado (usado no cálculo de vazão). "Personalizado" libera o mm. */}
@@ -203,6 +209,27 @@ export function TuboForm({
           />
         </p>
       )}
+      {/* Golpe de aríete: sobrepressão de Joukowsky numa parada súbita vs. o teto. */}
+      {surgeKPa !== null && (
+        <p className="telemetry" style={{ marginTop: -4, color: surgeKPa > tetoGolpe ? '#f43f5e' : undefined }}>
+          <Trans
+            i18nKey="form.golpeSurge"
+            values={{ surge: exibirPressao(surgeKPa, unidades).toFixed(0), teto: exibirPressao(tetoGolpe, unidades).toFixed(0), unidade: labelPressao(unidades) }}
+            components={{ 1: <strong /> }}
+          />
+        </p>
+      )}
+      {/* Pressão nominal do tubo (teto do golpe): em branco = usa o limite global. */}
+      <Num
+        label={t('form.pressaoNominal')}
+        unidade={labelPressao(unidades)}
+        unidades={unidades}
+        dim="pressao"
+        step={50}
+        value={props.pressaoNominal}
+        disabled={emExecucao}
+        onChange={(v) => upd({ pressaoNominal: v > 0 ? v : undefined })}
+      />
       {/* Perda de carga (Hazen-Williams): comprimento e C só aparecem com o atrito ligado (ver ⚙ Opções). Defaults: 1 m e C=140 quando em branco. */}
       {atrito && (
         <>
