@@ -10,8 +10,10 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
   correta por idioma (pt → pt.wikipedia, en → en.wikipedia): Torricelli, vazão,
   continuidade, **vasos comunicantes**, Gauss-Seidel, conservação de massa,
   Hazen-Williams, **perda de carga**, **bomba (centrífuga)**, válvula de retenção,
-  aceleração da gravidade (g) e **CFD (Fluidodinâmica Computacional)** — a sigla
-  agora aparece por extenso na introdução.
+  aceleração da gravidade (g), **carga hidráulica**, **Navier-Stokes**,
+  **Darcy-Weisbach** e **CFD (Fluidodinâmica Computacional)** — a sigla agora
+  aparece por extenso na introdução. (Carga hidráulica aponta para o artigo em
+  inglês por não haver equivalente na Wikipédia em português.)
 
 ### Corrigido
 

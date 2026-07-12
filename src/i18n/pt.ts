@@ -307,7 +307,7 @@ export const pt = {
     pecaJuncao: 'Junção: nó de conexão (divisor/união). Pode estrangular pelo diâmetro. Não tem cota própria (a carga é resolvida por balanço).',
     pecaQuadro: 'Quadro de comandos (MCC): centraliza bombas e sensores. Por bomba, no automático, uma sequência ordenada de sensores com operador E/OU por par (avaliada de cima para baixo, expressão pura: desligar só vence atrás de um E). Também comanda o revezamento.',
     secFisica: 'Física (simplificada)',
-    fisica1: '<0>Vazão por gravidade</0> (<1>Torricelli</1>): v = √(2·g·Δh), Q = área·v. Δh usa a carga total (cota + nível), nunca só o nível.',
+    fisica1: '<0>Vazão por gravidade</0> (<1>Torricelli</1>): v = √(2·g·Δh), Q = área·v. Δh usa a <2>carga total</2> (cota + nível), nunca só o nível.',
     fisica2: '<0>Continuidade</0> de volume: o nível de cada reservatório sobe/desce pela soma das vazões que entram e saem no tick.',
     fisicaVasos: '<0>Vasos comunicantes</0>: reservatórios ligados por baixo tendem a igualar a SUPERFÍCIE (não o volume) — a água escoa enquanto houver diferença de carga, até os níveis se equilibrarem.',
     fisicaJuncao: 'Junções (rede): a carga de cada nó é resolvida por iteração (<0>Gauss-Seidel</0>) para que a soma das vazões seja zero — o que entra é igual ao que sai (<1>conservação de massa</1>).',
@@ -330,6 +330,8 @@ export const pt = {
     linkBomba: 'https://pt.wikipedia.org/wiki/Bomba_centr%C3%ADfuga',
     linkPerdaCarga: 'https://pt.wikipedia.org/wiki/Perda_de_carga',
     linkCFD: 'https://pt.wikipedia.org/wiki/Fluidodin%C3%A2mica_computacional',
+    // Sem artigo dedicado na pt.wikipedia — aponta para o artigo em inglês.
+    linkCargaHidraulica: 'https://en.wikipedia.org/wiki/Hydraulic_head',
     secOpcoes: 'Opções (⚙)',
     opc1: 'Idioma: Português (padrão) ou Inglês — detecção automática do navegador e troca manual, lembrada no dispositivo.',
     opc2: 'Unidades: volume (litros ou m³) e comprimento (m ou cm), aplicadas a todo o projeto.',

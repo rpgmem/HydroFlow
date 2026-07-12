@@ -60,7 +60,7 @@ const SECOES: { titulo: string; itens: string[] }[] = [
 
 // Itens que contêm links: chave → chaves i18n dos `href` (na ordem dos <0>,<1>…).
 const LINKS: Record<string, string[]> = {
-  'ajuda.fisica1': ['ajuda.linkVazao', 'ajuda.linkTorricelli'],
+  'ajuda.fisica1': ['ajuda.linkVazao', 'ajuda.linkTorricelli', 'ajuda.linkCargaHidraulica'],
   'ajuda.fisica2': ['ajuda.linkContinuidade'],
   'ajuda.fisicaVasos': ['ajuda.linkVasos'],
   'ajuda.fisicaJuncao': ['ajuda.linkGaussSeidel', 'ajuda.linkConservacaoMassa'],
