@@ -25,7 +25,7 @@ import {
 } from '../../domain/types';
 import { Trans, useTranslation } from 'react-i18next';
 import { vazaoDeM3, vazaoMaxRecomendadaM3, velocidadeTuboMs, volumeMaximoM3 } from '../../engine/geometria';
-import { labelVolume, m3PorVolume, UNIDADES_CANONICAS, exibirPressao, labelPressao, exibirComprimento } from '../../domain/unidades';
+import { labelVolume, m3PorVolume, UNIDADES_CANONICAS, exibirPressao, labelPressao, exibirComprimento, exibirVazao } from '../../domain/unidades';
 import { COMPRIMENTO_PADRAO_M } from '../../engine/hidraulica';
 import { pressaoHidrostaticaKPa, reynolds, regimeReynolds, muAgua, sobrepressaoGolpeKPa, celeridadeGolpeMs, ATENUACAO_GOLPE_LENTO } from '../../engine/fisica';
 import { CATALOGO_TUBOS, CATEGORIAS_TUBO, bitolaPorDn, rotuloBitola } from '../../domain/tubosCatalogo';
@@ -520,26 +520,43 @@ export function BombaForm({ props, emExecucao, upd, u, projeto, pecaId, dispatch
           ))}
         </select>
       </div>
-      <Num label={t('form.vazaoNominal')} unidade={u.vazao} unidades={projeto.unidades} dim="vazao" value={props.vazaoNominal} disabled={emExecucao} onChange={(v) => upd({ vazaoNominal: v, modeloBomba: undefined })} />
-      {/* Altura nominal deriva a curva automaticamente; entre dois reservatórios a altura real da instalação reduz a vazão. Projetos antigos com `curva.k`
-          aparecem aqui como a altura equivalente (vazaoNominal/k). */}
-      <Num
-        label={t('form.alturaNominal')}
-        unidade={u.comp}
-        unidades={projeto.unidades}
-        dim="comp"
-        value={props.alturaNominal ?? (props.curva && props.curva.k > 0 ? props.vazaoNominal / props.curva.k : 0)}
-        disabled={emExecucao}
-        step={0.5}
-        onChange={(v) => upd({ alturaNominal: v > 0 ? v : undefined, curva: undefined, modeloBomba: undefined })}
-      />
-      <p className="telemetry" style={{ marginTop: -4 }}>
-        {t('form.alturaNominalDica')}
-      </p>
-      {modelo && (
-        <p className="telemetry" style={{ marginTop: -4 }}>
-          {t('form.bombaModeloInfo', { potencia: modelo.potenciaCV, aplicacao: modelo.aplicacao })}
-        </p>
+      {modelo ? (
+        // Modelo do catálogo escolhido → specs vêm dele (como a bitola do tubo):
+        // os campos editáveis somem e mostramos os valores como readout.
+        <>
+          <p className="telemetry" style={{ marginTop: -4 }}>
+            {t('form.bombaModeloInfo', { potencia: modelo.potenciaCV, watts: modelo.potenciaW, aplicacao: modelo.aplicacao })}
+          </p>
+          <p className="telemetry" style={{ marginTop: -4 }}>
+            {t('form.bombaModeloSpecs', {
+              vazao: exibirVazao(modelo.vazaoNominal, projeto.unidades).toFixed(2),
+              uVazao: u.vazao,
+              altura: exibirComprimento(modelo.alturaNominal, projeto.unidades).toFixed(1),
+              uComp: u.comp,
+              npsh: modelo.npshRequerido !== undefined
+                ? `${exibirComprimento(modelo.npshRequerido, projeto.unidades).toFixed(1)} ${u.comp}`
+                : t('form.naoAplicavel'),
+            })}
+          </p>
+        </>
+      ) : (
+        <>
+          <Num label={t('form.vazaoNominal')} unidade={u.vazao} unidades={projeto.unidades} dim="vazao" value={props.vazaoNominal} disabled={emExecucao} onChange={(v) => upd({ vazaoNominal: v, modeloBomba: undefined })} />
+          {/* Altura nominal deriva a curva automaticamente; a altura real da instalação reduz a vazão. */}
+          <Num
+            label={t('form.alturaNominal')}
+            unidade={u.comp}
+            unidades={projeto.unidades}
+            dim="comp"
+            value={props.alturaNominal ?? (props.curva && props.curva.k > 0 ? props.vazaoNominal / props.curva.k : 0)}
+            disabled={emExecucao}
+            step={0.5}
+            onChange={(v) => upd({ alturaNominal: v > 0 ? v : undefined, curva: undefined, modeloBomba: undefined })}
+          />
+          <p className="telemetry" style={{ marginTop: -4 }}>
+            {t('form.alturaNominalDica')}
+          </p>
+        </>
       )}
       {/* Seletor de quadro: só aparece se existir algum quadro no projeto. */}
       {quadros.length > 0 && (
@@ -579,21 +596,25 @@ export function BombaForm({ props, emExecucao, upd, u, projeto, pecaId, dispatch
         </div>
       )}
       <Avancado>
-        {/* NPSH requerido (m): dado de catálogo. Informado, liga o alerta de
-            cavitação — a bomba usa a própria `cota` (Inspetor) na carga de sucção. */}
-        <Num
-          label={t('form.npshRequerido')}
-          unidade={u.comp}
-          unidades={projeto.unidades}
-          dim="comp"
-          value={props.npshRequerido ?? 0}
-          disabled={emExecucao}
-          step={0.1}
-          onChange={(v) => upd({ npshRequerido: v > 0 ? v : undefined, modeloBomba: undefined })}
-        />
-        <p className="telemetry" style={{ marginTop: -4 }}>
-          {t('form.npshRequeridoDica')}
-        </p>
+        {/* NPSH requerido (m): dado de catálogo. Com um modelo escolhido vem dele
+            (some daqui, como as demais specs); em "Personalizado", editável. */}
+        {!modelo && (
+          <>
+            <Num
+              label={t('form.npshRequerido')}
+              unidade={u.comp}
+              unidades={projeto.unidades}
+              dim="comp"
+              value={props.npshRequerido ?? 0}
+              disabled={emExecucao}
+              step={0.1}
+              onChange={(v) => upd({ npshRequerido: v > 0 ? v : undefined, modeloBomba: undefined })}
+            />
+            <p className="telemetry" style={{ marginTop: -4 }}>
+              {t('form.npshRequeridoDica')}
+            </p>
+          </>
+        )}
         {/* Bomba dupla em revezamento: rodízio de desgaste entre duas metades
             (mesma vazão e tubulação). Regida por quadro → controlado LÁ. */}
         {!regidaPor && (
