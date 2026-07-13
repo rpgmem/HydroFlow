@@ -24,6 +24,8 @@ export interface ModeloBomba {
   grupo: GrupoBomba;
   /** Potência (CV) — só rótulo/readout. */
   potenciaCV: string;
+  /** Potência em Watts, derivada da CV (1 CV = 735,49875 W). Só referência. */
+  potenciaW: number;
   /** Tipo construtivo (Centrífuga, Submersa…) — só rótulo/readout. */
   tipo: string;
   /** Vazão nominal em m³/s (SI). Fonte: m³/h ÷ 3600. */
@@ -45,7 +47,10 @@ export interface ModeloBomba {
  * NPSH: bombas de superfície pelo dado de placa; submergíveis = 0,30 m (garante
  * que sejam operadas afogadas); injetora = N/A (undefined).
  */
-export const CATALOGO_BOMBAS: ModeloBomba[] = [
+/** 1 CV (cavalo-vapor métrico) em Watts. */
+export const CV_PARA_W = 735.49875;
+
+const CATALOGO_BASE: Omit<ModeloBomba, 'potenciaW'>[] = [
   // ---- Superfície -------------------------------------------------------
   { id: 'sup-perif-0-25', nome: 'Periférica 0,25 CV', grupo: 'superficie', potenciaCV: '0,25', tipo: 'Periférica', vazaoNominal: 1.5 / 3600, alturaNominal: 15, npshRequerido: 1.8, fase: 'Monofásica', aplicacao: 'Pequenas residências / Cisternas', faixa: '1,0 a 2,4 m³/h @ 25 a 2 m' },
   { id: 'sup-centr-0-5', nome: 'Centrífuga 0,5 CV', grupo: 'superficie', potenciaCV: '0,5', tipo: 'Centrífuga', vazaoNominal: 4.0 / 3600, alturaNominal: 12, npshRequerido: 2.0, fase: 'Monofásica', aplicacao: 'Abastecimento predial leve', faixa: '2,5 a 5,5 m³/h @ 19 a 1 m' },
@@ -70,6 +75,12 @@ export const CATALOGO_BOMBAS: ModeloBomba[] = [
   { id: 'sub-suba-7-5', nome: 'Submersa 7,5 CV', grupo: 'submergivel', potenciaCV: '7,5', tipo: 'Submersa', vazaoNominal: 18.0 / 3600, alturaNominal: 95, npshRequerido: 0.3, fase: 'Trifásica', aplicacao: 'Captação profunda / Indústria', faixa: '10,0 a 28,0 m³/h @ 140 a 45 m' },
   { id: 'sub-subm-10', nome: 'Submersível 10,0 CV', grupo: 'submergivel', potenciaCV: '10,0', tipo: 'Submersível', vazaoNominal: 75.0 / 3600, alturaNominal: 22, npshRequerido: 0.3, fase: 'Trifásica', aplicacao: 'Mineração / Tratamento pesado', faixa: '40,0 a 110,0 m³/h @ 35 a 10 m' },
 ];
+
+/** Catálogo final — a potência em W é derivada da CV (referência). */
+export const CATALOGO_BOMBAS: ModeloBomba[] = CATALOGO_BASE.map((m) => ({
+  ...m,
+  potenciaW: Math.round(parseFloat(m.potenciaCV.replace(',', '.')) * CV_PARA_W),
+}));
 
 /** Grupos na ordem de exibição (para os `optgroup` do seletor). */
 export const GRUPOS_BOMBA: GrupoBomba[] = ['superficie', 'submergivel'];

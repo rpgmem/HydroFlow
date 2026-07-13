@@ -2,6 +2,24 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
+## [1.63.0] — Modelo de bomba: comportamento tipo-tubo + potência em W
+
+### Alterado
+
+- No inspetor da bomba, escolher um **Modelo** agora **esconde** os campos de
+  vazão/altura/NPSH (como a bitola do tubo esconde o diâmetro manual) e mostra um
+  **readout** com os valores (vazão · altura · NPSH) e a potência. Em
+  **"Personalizado"** os campos voltam a ser editáveis.
+- Catálogo ganha a coluna **potência em Watts** (`potenciaW`), derivada da CV
+  (`CV_PARA_W = 735,49875`) — só referência/readout. Ex.: 1,0 CV = 735 W.
+
+### Notas
+
+- A "Faixa de Operação" segue como **readout** (não entra no cálculo): a vazão
+  real emerge da curva linear `Q = vazaoNominal·(1 − Δh/alturaNominal)` conforme
+  a altura que a instalação impõe — a "perda de vazão por altura" é a inclinação
+  `k = vazão/altura`, que o motor já deriva a cada tick (nada a pré-calcular).
+
 ## [1.62.0] — Catálogo de modelos de bomba (presets)
 
 ### Adicionado

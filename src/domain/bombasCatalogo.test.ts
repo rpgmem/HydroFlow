@@ -30,6 +30,12 @@ describe('catálogo de bombas', () => {
     expect(modeloBombaPorId('sup-injet-1-0')!.npshRequerido).toBeUndefined();
   });
 
+  it('deriva a potência em W da CV (1 CV = 735,49875 W)', () => {
+    expect(modeloBombaPorId('sup-centr-1-0')!.potenciaW).toBe(735); // 1,0 CV
+    expect(modeloBombaPorId('sup-perif-0-25')!.potenciaW).toBe(184); // 0,25 CV → 183,9 ≈ 184
+    expect(modeloBombaPorId('sup-centr-10')!.potenciaW).toBe(7355); // 10,0 CV
+  });
+
   it('o rótulo é "{Tipo} {Potência} CV"', () => {
     for (const m of CATALOGO_BOMBAS) {
       expect(m.nome).toBe(`${m.tipo} ${m.potenciaCV} CV`);
