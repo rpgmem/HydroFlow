@@ -5,7 +5,7 @@
 import { useTranslation } from 'react-i18next';
 import type { Gerador, PerfilVazao, Unidades } from '../../domain/types';
 import { ORDEM_PRESETS, PRESETS_TRAPEZOIDAIS, paramsPadrao, vazaoRef } from '../../domain/geradorVazao';
-import { Num, type UniLabel } from './campos';
+import { Avancado, Num, type UniLabel } from './campos';
 import { WaveformPreview } from './WaveformPreview';
 
 const PERIODICOS: PerfilVazao[] = ['trapezoidal', 'senoidal', 'escalonada'];
@@ -36,38 +36,10 @@ export function GeradorForm({
     if (p) set({ preset: nome, ...p });
   };
 
-  return (
+  // Perfil + ajuda + prévia ficam SEMPRE visíveis (o perfil recolhe na execução,
+  // pois é estrutural). Os parâmetros numéricos vão para "Opções avançadas".
+  const params = (
     <>
-      <div className="field">
-        <label>{t('form.perfilVazao')}</label>
-        <select
-          value={gerador.perfil}
-          disabled={emExecucao}
-          aria-label={t('form.perfilVazao')}
-          onChange={(e) => trocarPerfil(e.target.value as PerfilVazao)}
-        >
-          <optgroup label={t('form.grpPadrao')}>
-            <option value="fixo">{t('perfis.fixo')}</option>
-          </optgroup>
-          <optgroup label={t('form.grpPeriodicos')}>
-            {PERIODICOS.map((p) => (
-              <option key={p} value={p}>{t(`perfis.${p}`)}</option>
-            ))}
-          </optgroup>
-          <optgroup label={t('form.grpTransientes')}>
-            {TRANSIENTES.map((p) => (
-              <option key={p} value={p}>{t(`perfis.${p}`)}</option>
-            ))}
-          </optgroup>
-          <optgroup label={t('form.grpOutros')}>
-            <option value="aleatoria">{t('perfis.aleatoria')}</option>
-          </optgroup>
-        </select>
-      </div>
-
-      <p className="telemetry" style={{ margin: '0 0 4px' }}>{t(`perfilAjuda.${gerador.perfil}`)}</p>
-      <WaveformPreview gerador={gerador} unidade={u.vazao} />
-
       {gerador.perfil === 'fixo' && (
         <Num label={t('form.vazaoConstante')} unidade={u.vazao} unidades={unidades} dim="vazao" value={gerador.vazao} disabled={emExecucao} onChange={(v) => set({ vazao: v })} />
       )}
@@ -99,14 +71,11 @@ export function GeradorForm({
           <Num label={t('form.vazaoMin')} unidade={u.vazao} unidades={unidades} dim="vazao" value={gerador.min} disabled={emExecucao} onChange={(v) => set({ min: v })} />
           <Num label={t('form.vazaoMax')} unidade={u.vazao} unidades={unidades} dim="vazao" value={gerador.max} disabled={emExecucao} onChange={(v) => set({ max: v })} />
           <Num label={t('form.periodo')} value={gerador.periodo} disabled={emExecucao} step={1} onChange={(v) => set({ periodo: v })} />
-          {/* Avançado: as 4 frações do período (editar limpa o preset → "personalizado"). */}
-          <details className="avancado">
-            <summary>{t('form.avancado')}</summary>
-            <Num label={t('form.fracSubida')} value={gerador.subida} disabled={emExecucao} step={0.05} onChange={(v) => set({ subida: v, preset: undefined })} />
-            <Num label={t('form.fracAlto')} value={gerador.alto} disabled={emExecucao} step={0.05} onChange={(v) => set({ alto: v, preset: undefined })} />
-            <Num label={t('form.fracDescida')} value={gerador.descida} disabled={emExecucao} step={0.05} onChange={(v) => set({ descida: v, preset: undefined })} />
-            <Num label={t('form.fracBaixo')} value={gerador.baixo} disabled={emExecucao} step={0.05} onChange={(v) => set({ baixo: v, preset: undefined })} />
-          </details>
+          {/* As 4 frações do período (editar limpa o preset → "personalizado"). */}
+          <Num label={t('form.fracSubida')} value={gerador.subida} disabled={emExecucao} step={0.05} onChange={(v) => set({ subida: v, preset: undefined })} />
+          <Num label={t('form.fracAlto')} value={gerador.alto} disabled={emExecucao} step={0.05} onChange={(v) => set({ alto: v, preset: undefined })} />
+          <Num label={t('form.fracDescida')} value={gerador.descida} disabled={emExecucao} step={0.05} onChange={(v) => set({ descida: v, preset: undefined })} />
+          <Num label={t('form.fracBaixo')} value={gerador.baixo} disabled={emExecucao} step={0.05} onChange={(v) => set({ baixo: v, preset: undefined })} />
         </>
       )}
 
@@ -187,6 +156,45 @@ export function GeradorForm({
           <Num label={t('form.diaDescida')} value={gerador.pnDescida} disabled={emExecucao} step={0.5} onChange={(v) => set({ pnDescida: v })} />
         </>
       )}
+    </>
+  );
+
+  return (
+    <>
+      {!emExecucao && (
+        <div className="field">
+          <label>{t('form.perfilVazao')}</label>
+          <select
+            value={gerador.perfil}
+            aria-label={t('form.perfilVazao')}
+            onChange={(e) => trocarPerfil(e.target.value as PerfilVazao)}
+          >
+            <optgroup label={t('form.grpPadrao')}>
+              <option value="fixo">{t('perfis.fixo')}</option>
+            </optgroup>
+            <optgroup label={t('form.grpPeriodicos')}>
+              {PERIODICOS.map((p) => (
+                <option key={p} value={p}>{t(`perfis.${p}`)}</option>
+              ))}
+            </optgroup>
+            <optgroup label={t('form.grpTransientes')}>
+              {TRANSIENTES.map((p) => (
+                <option key={p} value={p}>{t(`perfis.${p}`)}</option>
+              ))}
+            </optgroup>
+            <optgroup label={t('form.grpOutros')}>
+              <option value="aleatoria">{t('perfis.aleatoria')}</option>
+            </optgroup>
+          </select>
+        </div>
+      )}
+
+      <p className="telemetry" style={{ margin: '0 0 4px' }}>{t(`perfilAjuda.${gerador.perfil}`)}</p>
+      <WaveformPreview gerador={gerador} unidade={u.vazao} />
+
+      {/* Parâmetros do perfil: recolhidos em "Opções avançadas" (edição) e ocultos
+          na execução (configuração travada). */}
+      {!emExecucao && <Avancado>{params}</Avancado>}
     </>
   );
 }

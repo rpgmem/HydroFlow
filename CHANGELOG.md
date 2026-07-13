@@ -2,6 +2,30 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
+## [1.65.0] — Inspetor enxuto na execução + menu de Opções recolhível
+
+### Alterado
+
+- **Consumo/Fonte**: os parâmetros numéricos do gerador de vazão passam para a
+  seção **"Opções avançadas"** (como as demais peças); o seletor de perfil e a
+  prévia da onda continuam visíveis por padrão.
+- **Inspetor na execução**: a configuração estrutural (nome, cota, dimensionamento,
+  bitola/diâmetro, modelo/specs da bomba, níveis do sensor, geometria do
+  reservatório, parâmetros do gerador, "Opções avançadas") agora fica **oculta**
+  em vez de apenas desabilitada. Permanecem só os **comandos de operação**
+  (registro, saída de consumo, sensor on/off, modo da bomba/quadro) e as
+  **leituras ao vivo** (vazão, Reynolds, golpe, pressão na base, prévia). A
+  válvula de alívio mostra o setpoint como leitura.
+- **Menu ⚙ Opções**: cada seção (Idioma, Unidades, Exibição, Física, Projeto)
+  vira um grupo **recolhível**; as curtas/comuns nascem abertas e as
+  longas/raras (Física, Projeto) fechadas, reduzindo bastante a altura do menu.
+  O menu ganha rolagem própria como rede de segurança.
+
+### Interno
+
+- `Avancado` (seção recolhível) extraída para `inspector/campos.tsx` e
+  compartilhada por `forms.tsx` e `GeradorForm.tsx`.
+
 ## [1.64.0] — Ajustes do projeto-exemplo + link do SI
 
 ### Alterado
