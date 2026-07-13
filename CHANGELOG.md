@@ -2,6 +2,30 @@
 
 Todas as mudanças relevantes deste projeto são documentadas aqui. O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e o versionamento é [SemVer](https://semver.org/lang/pt-BR/). As primeiras versões (0.x–1.0) espelham as especificações técnicas; as seguintes acompanham a evolução incremental por funcionalidade.
 
+## [1.64.0] — Ajustes do projeto-exemplo + link do SI
+
+### Alterado
+
+- **Projeto-exemplo** afinado com os valores do catálogo de bombas: a **Bomba
+  Recalque** passa a usar o modelo **Centrífuga 10 CV** (`sup-centr-10`: 45 m³/h
+  @ 42 m, NPSHr 4,8 m) e a **Bomba Incêndio** a **Centrífuga 7,5 CV**
+  (`sup-centr-7-5`: 35 m³/h @ 38 m, NPSHr 4,2 m). Os **Hidrantes** recebem vazão
+  fixa de 5 L/s (ainda fechados) e o **Cavalete Incêndio** passa a **cobre**.
+- Cotas de terreno acrescentadas à **Concessionária** (−0,6 m) e ao **Registro
+  Hidrômetro** (+0,6 m); pequenos reposicionamentos no canvas (C2 Meio, Boia
+  Manual, Registro Hidrômetro, Limpeza C3, Concessionária) — só layout.
+
+### Adicionado
+
+- Termo **SI** (Sistema Internacional de Unidades) agora tem **link** na Ajuda
+  (⚙ Opções → Unidades) e no README, apontando para a Wikipedia.
+
+### Notas
+
+- Com a bomba de recalque mais robusta (10 CV) e o tubo de recalque em DN60, o
+  desarme abrupto da bomba passa a acionar o alerta de **golpe de aríete** no
+  `Recalque → C1` — comportamento físico esperado para esse ponto de operação.
+
 ## [1.63.0] — Modelo de bomba: comportamento tipo-tubo + potência em W
 
 ### Alterado

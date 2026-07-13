@@ -79,6 +79,7 @@ const LINKS: Record<string, string[]> = {
   'ajuda.fisicaNPSH': ['ajuda.linkNPSH', 'ajuda.linkPressaoVapor'],
   'ajuda.fisicaAlivio': ['ajuda.linkAlivio'],
   'ajuda.fisica6': ['ajuda.linkG'],
+  'ajuda.opc2': ['ajuda.linkSI'],
 };
 
 export function Ajuda({ onFechar }: { onFechar: () => void }) {
