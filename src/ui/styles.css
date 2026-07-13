@@ -136,11 +136,22 @@ body {
   z-index: 21;
   width: 240px;
   max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
   padding: 8px 10px 10px;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+/* Grupos recolhíveis do menu (idioma, unidades, exibição, física, projeto). */
+.opcoes-grupo {
+  border-top: 1px solid var(--line);
+  padding-top: 4px;
+}
+.opcoes-grupo:first-of-type {
+  border-top: none;
+  padding-top: 0;
 }
 .opcoes-sec {
   margin: 8px 0 4px;
@@ -150,7 +161,27 @@ body {
   letter-spacing: 0.04em;
   color: var(--muted);
 }
-.opcoes-sec:first-child {
+/* Quando o cabeçalho de seção é o <summary> de um grupo recolhível. */
+summary.opcoes-sec {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+summary.opcoes-sec::-webkit-details-marker {
+  display: none;
+}
+summary.opcoes-sec::before {
+  content: '▸';
+  font-size: 9px;
+  transition: transform 0.15s ease;
+}
+.opcoes-grupo[open] > summary.opcoes-sec::before {
+  transform: rotate(90deg);
+}
+.opcoes-grupo:first-of-type > summary.opcoes-sec {
   margin-top: 0;
 }
 .opcoes-menu .field {

@@ -166,8 +166,8 @@ describe('modo execução — validação e transição', () => {
     fireEvent.mouseUp(screen.getByTestId(`peca-${id}`));
     fireEvent.click(screen.getByTestId(`peca-${id}`));
     fireEvent.click(screen.getByText('▶ Executar'));
-    // Em execução o campo fica desabilitado (fieldset disabled).
-    expect(screen.getByLabelText('Altura máxima')).toBeDisabled();
+    // Em execução a configuração estrutural fica OCULTA (não só desabilitada).
+    expect(screen.queryByLabelText('Altura máxima')).toBeNull();
   });
 
   it('exige pause antes de voltar à edição', () => {

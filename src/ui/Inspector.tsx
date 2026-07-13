@@ -98,33 +98,37 @@ export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatc
         />
       )}
 
-      {/* Em execução, só os COMANDOS de operação ficam ativos (registro, modo da bomba/quadro, saída de consumo, sensor on/off); o resto é bloqueado
-          campo a campo (via `disabled={emExecucao}`), não pelo fieldset. Assim o operador comanda a simulação sem alterar a estrutura/dimensionamento. */}
+      {/* Em execução, só os COMANDOS de operação aparecem (registro, modo da
+          bomba/quadro, saída de consumo, sensor on/off) junto das leituras ao
+          vivo; a configuração estrutural (nome, cota, dimensionamento) fica
+          OCULTA — cada formulário esconde a sua. Assim o operador comanda a
+          simulação sem alterar a estrutura/dimensionamento. */}
       <fieldset className="inspetor-campos">
-        <div className="field">
-          <label>{t('inspector.nome')}</label>
-          <input
-            type="text"
-            aria-label={t('inspector.nome')}
-            placeholder={peca.id}
-            value={peca.rotulo ?? ''}
-            disabled={emExecucao}
-            onChange={(e) =>
-              dispatch({ tipo: 'RENOMEAR_PECA', id: peca.id, rotulo: e.target.value })
-            }
-          />
-        </div>
+        {/* Nome e cota são estruturais → só na edição. */}
+        {!emExecucao && (
+          <div className="field">
+            <label>{t('inspector.nome')}</label>
+            <input
+              type="text"
+              aria-label={t('inspector.nome')}
+              placeholder={peca.id}
+              value={peca.rotulo ?? ''}
+              onChange={(e) =>
+                dispatch({ tipo: 'RENOMEAR_PECA', id: peca.id, rotulo: e.target.value })
+              }
+            />
+          </div>
+        )}
 
         {/* Cota (elevação) só faz sentido onde afeta algo físico. Não aparece em
             quadro (painel de comando) nem em sensor (instrumento), onde é no-op. */}
-        {!isQuadro(peca) && !isSensor(peca) && (
+        {!emExecucao && !isQuadro(peca) && !isSensor(peca) && (
           <Num
             label={t('inspector.cota')}
             unidade={u.comp}
             unidades={projeto.unidades}
             dim="comp"
             value={peca.cota ?? 0}
-            disabled={emExecucao}
             onChange={(v) => dispatch({ tipo: 'ATUALIZAR_COTA', id: peca.id, cota: v })}
           />
         )}

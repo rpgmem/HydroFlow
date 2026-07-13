@@ -2,7 +2,7 @@
  * Menu ⚙ Opções: consolida configurações que não são "peças" — idioma, unidades do projeto, tema de exibição e a física opcional (perda de carga por atrito).
  * Dropdown recolhível na toolbar (inline no desktop, colapsado no ⋯ no mobile).
  */
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import type { Acao, EstadoApp } from '../state/store';
 import type { Unidades } from '../domain/types';
@@ -14,6 +14,22 @@ import { Switch } from './Switch';
 
 /** Como o tempo de simulação é mostrado na barra: só segundos, só relógio 24 h, ou ambos. */
 export type FormatoTempo = 'segundos' | 'horario' | 'ambos';
+
+/**
+ * Seção recolhível do menu de Opções. Cada grupo (idioma, unidades, exibição,
+ * física, projeto) vira um `<details>` para o menu não ficar muito alto — os
+ * grupos curtos/comuns nascem abertos e os longos/raros (física, projeto),
+ * fechados. Controlado por estado próprio para permitir alternar livremente.
+ */
+function Secao({ titulo, aberto = false, children }: { titulo: string; aberto?: boolean; children: ReactNode }) {
+  const [open, setOpen] = useState(aberto);
+  return (
+    <details className="opcoes-grupo" open={open} onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}>
+      <summary className="opcoes-sec">{titulo}</summary>
+      {children}
+    </details>
+  );
+}
 
 interface Props {
   estado: EstadoApp;
@@ -50,7 +66,7 @@ export function Opcoes({ estado, dispatch, tema, onAlternarTema, formatoTempo, o
         <>
           <div className="opcoes-backdrop" onClick={() => setAberto(false)} aria-hidden />
           <div className="opcoes-menu" role="dialog" aria-label={t('opcoes.titulo')}>
-            <p className="opcoes-sec">{t('opcoes.idioma')}</p>
+            <Secao titulo={t('opcoes.idioma')} aberto>
             <div className="field">
               <label>{t('opcoes.idiomaLabel')}</label>
               <select
@@ -65,8 +81,9 @@ export function Opcoes({ estado, dispatch, tema, onAlternarTema, formatoTempo, o
                 ))}
               </select>
             </div>
+            </Secao>
 
-            <p className="opcoes-sec">{t('opcoes.unidades')}</p>
+            <Secao titulo={t('opcoes.unidades')} aberto>
             <div className="field">
               <label>{t('opcoes.volume')}</label>
               <select
@@ -124,8 +141,9 @@ export function Opcoes({ estado, dispatch, tema, onAlternarTema, formatoTempo, o
                 <option value="K">K</option>
               </select>
             </div>
+            </Secao>
 
-            <p className="opcoes-sec">{t('opcoes.exibicao')}</p>
+            <Secao titulo={t('opcoes.exibicao')} aberto>
             <Switch checked={tema === 'claro'} onChange={onAlternarTema} ariaLabel={t('opcoes.temaClaro')}>
               {t('opcoes.temaClaro')}
             </Switch>
@@ -141,8 +159,9 @@ export function Opcoes({ estado, dispatch, tema, onAlternarTema, formatoTempo, o
                 <option value="ambos">{t('opcoes.formatoAmbos')}</option>
               </select>
             </div>
+            </Secao>
 
-            <p className="opcoes-sec">{t('opcoes.fisica')}</p>
+            <Secao titulo={t('opcoes.fisica')}>
             <Switch
               checked={atrito}
               disabled={emExecucao}
@@ -226,8 +245,9 @@ export function Opcoes({ estado, dispatch, tema, onAlternarTema, formatoTempo, o
             <p className="telemetry" style={{ margin: '2px 0 0' }}>
               <Trans i18nKey="opcoes.limiteGolpeDica" components={{ 1: <strong /> }} />
             </p>
+            </Secao>
 
-            <p className="opcoes-sec">{t('opcoes.projeto')}</p>
+            <Secao titulo={t('opcoes.projeto')}>
             <button
               type="button"
               disabled={emExecucao || duplicados.length > 0}
@@ -249,6 +269,7 @@ export function Opcoes({ estado, dispatch, tema, onAlternarTema, formatoTempo, o
             ) : (
               <p className="telemetry" style={{ margin: '2px 0 0' }}>{t('opcoes.normalizarDica')}</p>
             )}
+            </Secao>
           </div>
         </>
       )}

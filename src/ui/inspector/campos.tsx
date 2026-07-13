@@ -2,6 +2,8 @@
  * Blocos compartilhados dos formulários do inspetor: o campo numérico `Num` e os tipos `Upd`/`UniLabel`. Separados para os formulários por tipo (forms.tsx)
  * reusarem sem inchar o Inspector principal.
  */
+import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Unidades } from '../../domain/types';
 import {
   comprimentoParaSI,
@@ -16,6 +18,21 @@ import {
 export interface UniLabel {
   comp: string;
   vazao: string;
+}
+
+/**
+ * Seção recolhível "Opções avançadas" (nativa, acessível). Mantém fora dela só o
+ * que um usuário comum precisa para montar um sistema simples; o resto recolhe.
+ * Compartilhada pelos formulários (forms.tsx) e pelo gerador (GeradorForm).
+ */
+export function Avancado({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
+  return (
+    <details className="avancado">
+      <summary>{t('form.opcoesAvancadas')}</summary>
+      {children}
+    </details>
+  );
 }
 
 /** Atualiza props da peça selecionada (dispatch de ATUALIZAR_PROPS no Inspector). */

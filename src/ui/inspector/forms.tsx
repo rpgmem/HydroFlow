@@ -33,26 +33,12 @@ import { MATERIAIS_TUBO, ORDEM_MATERIAIS } from '../../domain/materiais';
 import { CATALOGO_BOMBAS, GRUPOS_BOMBA, modeloBombaPorId } from '../../domain/bombasCatalogo';
 import { fmtNumero } from '../../i18n';
 import type { Acao } from '../../state/store';
-import { useState, type ReactNode } from 'react';
-import { Num, type Upd, type UniLabel } from './campos';
+import { useState } from 'react';
+import { Avancado, Num, type Upd, type UniLabel } from './campos';
 import { Switch } from '../Switch';
 import { GeradorForm } from './GeradorForm';
 
 const nomePeca = (p: Peca): string => (p.rotulo && p.rotulo.trim() ? p.rotulo : p.id);
-
-/**
- * Seção recolhível "Opções avançadas" (nativa, acessível). Mantém fora dela só o
- * que um usuário comum precisa para montar um sistema simples; o resto recolhe.
- */
-function Avancado({ children }: { children: ReactNode }) {
-  const { t } = useTranslation();
-  return (
-    <details className="avancado">
-      <summary>{t('form.opcoesAvancadas')}</summary>
-      {children}
-    </details>
-  );
-}
 
 // Paleta de cores dos membros do quadro (boias/sensores e bombas). Tons vivos e
 // distinguíveis; reciclada ciclicamente se houver mais membros que cores.
@@ -88,28 +74,33 @@ export function ReservatorioForm({
   const fmt = (n: number): string => fmtNumero(n, i18n.language, { maximumFractionDigits: 0 });
   return (
     <>
-      <div className="field">
-        <label>{t('form.formato')}</label>
-        <select
-          value={props.formato}
-          disabled={emExecucao}
-          aria-label={t('form.formato')}
-          onChange={(e) => upd({ formato: e.target.value })}
-        >
-          <option value="cilindro">{t('form.cilindro')}</option>
-          <option value="retangular">{t('form.retangular')}</option>
-        </select>
-      </div>
-      {props.formato === 'cilindro' ? (
-        <Num label={t('form.raio')} unidade={u.comp} unidades={unidades} dim="comp" value={props.raio} disabled={emExecucao} onChange={(v) => upd({ raio: v })} />
-      ) : (
+      {/* Geometria (formato/raio/altura/nível) é estrutural → só na edição; na
+          execução ficam as leituras (capacidade atual e pressão na base). */}
+      {!emExecucao && (
         <>
-          <Num label={t('form.largura')} unidade={u.comp} unidades={unidades} dim="comp" value={props.largura} disabled={emExecucao} onChange={(v) => upd({ largura: v })} />
-          <Num label={t('form.comprimento')} unidade={u.comp} unidades={unidades} dim="comp" value={props.comprimento} disabled={emExecucao} onChange={(v) => upd({ comprimento: v })} />
+          <div className="field">
+            <label>{t('form.formato')}</label>
+            <select
+              value={props.formato}
+              aria-label={t('form.formato')}
+              onChange={(e) => upd({ formato: e.target.value })}
+            >
+              <option value="cilindro">{t('form.cilindro')}</option>
+              <option value="retangular">{t('form.retangular')}</option>
+            </select>
+          </div>
+          {props.formato === 'cilindro' ? (
+            <Num label={t('form.raio')} unidade={u.comp} unidades={unidades} dim="comp" value={props.raio} onChange={(v) => upd({ raio: v })} />
+          ) : (
+            <>
+              <Num label={t('form.largura')} unidade={u.comp} unidades={unidades} dim="comp" value={props.largura} onChange={(v) => upd({ largura: v })} />
+              <Num label={t('form.comprimento')} unidade={u.comp} unidades={unidades} dim="comp" value={props.comprimento} onChange={(v) => upd({ comprimento: v })} />
+            </>
+          )}
+          <Num label={t('form.alturaMaxima')} unidade={u.comp} unidades={unidades} dim="comp" value={props.alturaMaxima} onChange={(v) => upd({ alturaMaxima: v })} />
+          <Num label={t('form.nivelAtual')} unidade={u.comp} unidades={unidades} dim="comp" value={props.nivel} onChange={(v) => upd({ nivel: v })} />
         </>
       )}
-      <Num label={t('form.alturaMaxima')} unidade={u.comp} unidades={unidades} dim="comp" value={props.alturaMaxima} disabled={emExecucao} onChange={(v) => upd({ alturaMaxima: v })} />
-      <Num label={t('form.nivelAtual')} unidade={u.comp} unidades={unidades} dim="comp" value={props.nivel} disabled={emExecucao} onChange={(v) => upd({ nivel: v })} />
       {capacidade > 0 && (
         <p className="telemetry" style={{ marginTop: -4 }}>
           <Trans
@@ -184,42 +175,46 @@ export function TuboForm({
   const surgeEfetivoKPa = surgeKPa === null ? null : surgeKPa * (golpeAbrupto ? 1 : ATENUACAO_GOLPE_LENTO);
   return (
     <>
-      {/* Bitola pré-configurada: seleciona o DN e grava o diâmetro INTERNO tabelado (usado no cálculo de vazão). "Personalizado" libera o mm. */}
-      <div className="field">
-        <label>{t('form.bitola')}</label>
-        <select
-          value={props.bitola ?? ''}
-          disabled={emExecucao}
-          aria-label={t('form.bitola')}
-          onChange={(e) => {
-            const b = bitolaPorDn(e.target.value);
-            if (b) upd({ bitola: b.dn, diametro: b.internoMm });
-            else upd({ bitola: undefined });
-          }}
-        >
-          <option value="">{t('form.personalizado')}</option>
-          {CATEGORIAS_TUBO.map((cat) => (
-            <optgroup key={cat} label={cat}>
-              {CATALOGO_TUBOS.filter((b) => b.categoria === cat).map((b) => (
-                <option key={b.dn} value={b.dn}>
-                  {rotuloBitola(b)}
-                </option>
+      {/* Bitola/diâmetro são estruturais → só na edição (na execução ficam ocultos;
+          a vazão máx. recomendada abaixo já mostra o efeito do diâmetro). */}
+      {!emExecucao && (
+        <>
+          {/* Bitola pré-configurada: seleciona o DN e grava o diâmetro INTERNO tabelado (usado no cálculo de vazão). "Personalizado" libera o mm. */}
+          <div className="field">
+            <label>{t('form.bitola')}</label>
+            <select
+              value={props.bitola ?? ''}
+              aria-label={t('form.bitola')}
+              onChange={(e) => {
+                const b = bitolaPorDn(e.target.value);
+                if (b) upd({ bitola: b.dn, diametro: b.internoMm });
+                else upd({ bitola: undefined });
+              }}
+            >
+              <option value="">{t('form.personalizado')}</option>
+              {CATEGORIAS_TUBO.map((cat) => (
+                <optgroup key={cat} label={cat}>
+                  {CATALOGO_TUBOS.filter((b) => b.categoria === cat).map((b) => (
+                    <option key={b.dn} value={b.dn}>
+                      {rotuloBitola(b)}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
-            </optgroup>
-          ))}
-        </select>
-      </div>
-      {/* Diâmetro manual: só em "Personalizado" (sem bitola). Com bitola do
-          catálogo, o diâmetro interno vem tabelado — o campo manual some. */}
-      {!props.bitola && (
-        <Num
-          label={t('form.diametroInterno')}
-          unidade="mm"
-          value={props.diametro}
-          disabled={emExecucao}
-          step={0.1}
-          onChange={(v) => upd({ diametro: v, bitola: undefined })}
-        />
+            </select>
+          </div>
+          {/* Diâmetro manual: só em "Personalizado" (sem bitola). Com bitola do
+              catálogo, o diâmetro interno vem tabelado — o campo manual some. */}
+          {!props.bitola && (
+            <Num
+              label={t('form.diametroInterno')}
+              unidade="mm"
+              value={props.diametro}
+              step={0.1}
+              onChange={(v) => upd({ diametro: v, bitola: undefined })}
+            />
+          )}
+        </>
       )}
       {props.diametro > 0 && (
         <p className="telemetry" style={{ marginTop: -4 }}>
@@ -263,6 +258,7 @@ export function TuboForm({
           {t('form.registroAberto')}
         </Switch>
       )}
+      {!emExecucao && (
       <Avancado>
       {/* Pressão nominal do tubo (teto do golpe): em branco = usa o limite global. */}
       <Num
@@ -409,6 +405,7 @@ export function TuboForm({
         </>
       )}
       </Avancado>
+      )}
     </>
   );
 }
@@ -501,25 +498,27 @@ export function BombaForm({ props, emExecucao, upd, u, projeto, pecaId, dispatch
   };
   return (
     <>
-      {/* Modelo pré-configurado (catálogo): preenche vazão, altura e NPSH. */}
-      <div className="field">
-        <label>{t('form.modeloBomba')}</label>
-        <select
-          value={props.modeloBomba ?? ''}
-          disabled={emExecucao}
-          aria-label={t('form.modeloBomba')}
-          onChange={(e) => escolherModelo(e.target.value)}
-        >
-          <option value="">{t('form.personalizado')}</option>
-          {GRUPOS_BOMBA.map((g) => (
-            <optgroup key={g} label={t(`form.grupoBomba_${g}`)}>
-              {CATALOGO_BOMBAS.filter((m) => m.grupo === g).map((m) => (
-                <option key={m.id} value={m.id}>{m.nome}</option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
-      </div>
+      {/* Modelo pré-configurado (catálogo): preenche vazão, altura e NPSH.
+          Estrutural → só na edição. */}
+      {!emExecucao && (
+        <div className="field">
+          <label>{t('form.modeloBomba')}</label>
+          <select
+            value={props.modeloBomba ?? ''}
+            aria-label={t('form.modeloBomba')}
+            onChange={(e) => escolherModelo(e.target.value)}
+          >
+            <option value="">{t('form.personalizado')}</option>
+            {GRUPOS_BOMBA.map((g) => (
+              <optgroup key={g} label={t(`form.grupoBomba_${g}`)}>
+                {CATALOGO_BOMBAS.filter((m) => m.grupo === g).map((m) => (
+                  <option key={m.id} value={m.id}>{m.nome}</option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </div>
+      )}
       {modelo ? (
         // Modelo do catálogo escolhido → specs vêm dele (como a bitola do tubo):
         // os campos editáveis somem e mostramos os valores como readout.
@@ -540,8 +539,9 @@ export function BombaForm({ props, emExecucao, upd, u, projeto, pecaId, dispatch
           </p>
         </>
       ) : (
+        !emExecucao && (
         <>
-          <Num label={t('form.vazaoNominal')} unidade={u.vazao} unidades={projeto.unidades} dim="vazao" value={props.vazaoNominal} disabled={emExecucao} onChange={(v) => upd({ vazaoNominal: v, modeloBomba: undefined })} />
+          <Num label={t('form.vazaoNominal')} unidade={u.vazao} unidades={projeto.unidades} dim="vazao" value={props.vazaoNominal} onChange={(v) => upd({ vazaoNominal: v, modeloBomba: undefined })} />
           {/* Altura nominal deriva a curva automaticamente; a altura real da instalação reduz a vazão. */}
           <Num
             label={t('form.alturaNominal')}
@@ -549,7 +549,6 @@ export function BombaForm({ props, emExecucao, upd, u, projeto, pecaId, dispatch
             unidades={projeto.unidades}
             dim="comp"
             value={props.alturaNominal ?? (props.curva && props.curva.k > 0 ? props.vazaoNominal / props.curva.k : 0)}
-            disabled={emExecucao}
             step={0.5}
             onChange={(v) => upd({ alturaNominal: v > 0 ? v : undefined, curva: undefined, modeloBomba: undefined })}
           />
@@ -557,14 +556,14 @@ export function BombaForm({ props, emExecucao, upd, u, projeto, pecaId, dispatch
             {t('form.alturaNominalDica')}
           </p>
         </>
+        )
       )}
-      {/* Seletor de quadro: só aparece se existir algum quadro no projeto. */}
-      {quadros.length > 0 && (
+      {/* Seletor de quadro (estrutural): só na edição e se existir algum quadro. */}
+      {!emExecucao && quadros.length > 0 && (
         <div className="field">
           <label>{t('form.bombaQuadro')}</label>
           <select
             value={regidaPor?.id ?? ''}
-            disabled={emExecucao}
             aria-label={t('form.bombaQuadro')}
             onChange={(e) => escolherQuadro(e.target.value)}
           >
@@ -595,6 +594,7 @@ export function BombaForm({ props, emExecucao, upd, u, projeto, pecaId, dispatch
           </select>
         </div>
       )}
+      {!emExecucao && (
       <Avancado>
         {/* NPSH requerido (m): dado de catálogo. Com um modelo escolhido vem dele
             (some daqui, como as demais specs); em "Personalizado", editável. */}
@@ -628,6 +628,7 @@ export function BombaForm({ props, emExecucao, upd, u, projeto, pecaId, dispatch
           </Switch>
         )}
       </Avancado>
+      )}
     </>
   );
 }
@@ -732,6 +733,14 @@ export function FonteForm({ props, emExecucao, upd, u, unidades }: { props: Prop
 
 export function AlivioForm({ props, emExecucao, upd, unidades }: { props: PropsAlivio; emExecucao: boolean; upd: Upd; unidades: Unidades }) {
   const { t } = useTranslation();
+  // Na execução o setpoint é estrutural (travado) → vira leitura; some o orifício.
+  if (emExecucao) {
+    return (
+      <p className="telemetry" style={{ marginTop: 0 }}>
+        {t('form.pressaoAbertura')}: <strong>{exibirPressao(props.pressaoAbertura, unidades).toFixed(0)} {labelPressao(unidades)}</strong>
+      </p>
+    );
+  }
   return (
     <>
       {/* Setpoint de abertura (kPa canônico; exibido na unidade de pressão do projeto). */}
@@ -741,7 +750,6 @@ export function AlivioForm({ props, emExecucao, upd, unidades }: { props: PropsA
         unidades={unidades}
         dim="pressao"
         value={props.pressaoAbertura}
-        disabled={emExecucao}
         step={10}
         onChange={(v) => upd({ pressaoAbertura: v })}
       />
@@ -754,7 +762,6 @@ export function AlivioForm({ props, emExecucao, upd, unidades }: { props: PropsA
           label={t('form.diametroOrificio')}
           unidade="mm"
           value={props.diametro ?? 25}
-          disabled={emExecucao}
           step={1}
           onChange={(v) => upd({ diametro: v > 0 ? v : undefined })}
         />
@@ -829,12 +836,11 @@ export function SensorForm({
       >
         {t('form.sensorAtivo')}
       </Switch>
-      {quadros.length > 0 && (
+      {!emExecucao && quadros.length > 0 && (
         <div className="field">
           <label>{t('form.bombaQuadro')}</label>
           <select
             value={membroDe?.id ?? ''}
-            disabled={emExecucao}
             aria-label={t('form.bombaQuadro')}
             onChange={(e) => escolherQuadro(e.target.value)}
           >
@@ -860,6 +866,8 @@ export function SensorForm({
           )}
         </>
       ) : (
+        // Bombas-alvo e níveis são estruturais → só na edição.
+        !emExecucao && (
         <>
           <div className="field">
             <label>{t('form.bombasControladas')}</label>
@@ -873,7 +881,6 @@ export function SensorForm({
                   <input
                     type="checkbox"
                     checked={alvos.includes(b.id)}
-                    disabled={emExecucao}
                     aria-label={t('form.controlar', { nome })}
                     onChange={(e) => alternarAlvo(b.id, e.target.checked)}
                   />
@@ -889,7 +896,6 @@ export function SensorForm({
             unidades={projeto.unidades}
             dim="comp"
             value={props.nivelMinimo}
-            disabled={emExecucao}
             onChange={(v) => upd({ nivelMinimo: v })}
           />
           <Num
@@ -898,24 +904,23 @@ export function SensorForm({
             unidades={projeto.unidades}
             dim="comp"
             value={props.nivelMaximo}
-            disabled={emExecucao}
             onChange={(v) => upd({ nivelMaximo: v })}
           />
           <Avancado>
             <Switch
               checked={reversa}
-              disabled={emExecucao}
               ariaLabel={t('form.reversoLabel')}
               onChange={(v) => upd({ reversa: v })}
             >
               {t('form.reverso')}
             </Switch>
-            <Switch checked={props.histerese ?? false} disabled={emExecucao} ariaLabel={t('form.histerese')} onChange={(v) => upd({ histerese: v })}>
+            <Switch checked={props.histerese ?? false} ariaLabel={t('form.histerese')} onChange={(v) => upd({ histerese: v })}>
               {t('form.histerese')}
             </Switch>
-            <Num label={t('form.delay')} value={props.delay} disabled={emExecucao} onChange={(v) => upd({ delay: v })} />
+            <Num label={t('form.delay')} value={props.delay} onChange={(v) => upd({ delay: v })} />
           </Avancado>
         </>
+        )
       )}
     </>
   );
