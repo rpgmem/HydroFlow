@@ -1,8 +1,7 @@
 /**
  * HydroFlow — Constantes e relações físicas puras (SI)
  *
- * Funções determinísticas e sem estado, em unidades canônicas (SI). Base
- * compartilhada dos itens de física avançada (pressão, Reynolds, atrito,
+ * Funções determinísticas e sem estado, em unidades canônicas (SI). Base compartilhada dos itens de física avançada (pressão, Reynolds, atrito,
  * NPSH, golpe de aríete). Cresce por PR — aqui entram só as usadas até aqui.
  */
 
@@ -27,8 +26,7 @@ export function pressaoHidrostaticaKPa(colunaM: number, g: number = G_PADRAO_MS2
 }
 
 /**
- * Altura da coluna d'água (m) equivalente a uma pressão (kPa) — o inverso do
- * Teorema de Stevin: h = P/(ρ·g). Ex.: 98,1 kPa ≈ 10 m. Usada para converter o
+ * Altura da coluna d'água (m) equivalente a uma pressão (kPa) — o inverso do Teorema de Stevin: h = P/(ρ·g). Ex.: 98,1 kPa ≈ 10 m. Usada para converter o
  * setpoint da válvula de alívio em altura de coluna.
  */
 export function colunaPressaoM(pKPa: number, g: number = G_PADRAO_MS2): number {
@@ -36,8 +34,7 @@ export function colunaPressaoM(pKPa: number, g: number = G_PADRAO_MS2): number {
 }
 
 /**
- * Viscosidade dinâmica da água (Pa·s) em função da temperatura (°C). Correlação
- * empírica (tipo Vogel) válida ~0–100 °C: μ = 2,414e-5·10^(247,8/(T_K − 140)).
+ * Viscosidade dinâmica da água (Pa·s) em função da temperatura (°C). Correlação empírica (tipo Vogel) válida ~0–100 °C: μ = 2,414e-5·10^(247,8/(T_K − 140)).
  * Em 20 °C ≈ 1,00e-3 Pa·s.
  */
 export function muAgua(tC: number = TEMPERATURA_PADRAO_C): number {
@@ -71,8 +68,7 @@ export const RUGOSIDADE_PADRAO_MM = 0.0015;
 /**
  * Fator de atrito de Darcy `f` (adimensional) para o Darcy-Weisbach:
  *  - laminar (Re < 2000): f = 64/Re;
- *  - turbulento (Re > 4000): Swamee-Jain (aproximação explícita de Colebrook)
- *    f = 0,25 / [log10(ε/(3,7·D) + 5,74/Re^0,9)]²;
+ *  - turbulento (Re > 4000): Swamee-Jain (aproximação explícita de Colebrook) f = 0,25 / [log10(ε/(3,7·D) + 5,74/Re^0,9)]²;
  *  - transição (2000–4000): interpola linearmente entre os dois.
  * `epsMM` e `diametroMM` na MESMA unidade (mm) — só a razão ε/D importa.
  */
@@ -91,17 +87,14 @@ export function fatorAtritoDW(re: number, epsMM: number, diametroMM: number): nu
 }
 
 /**
- * Celeridade da onda de pressão (m/s) para o golpe de aríete — velocidade com
- * que a sobrepressão se propaga no tubo. Depende da elasticidade do fluido e do
- * tubo. PADRÃO = 500 m/s (PVC/plástico, o caso comum em redes prediais): o
- * plástico é elástico e AMORTECE o golpe. Tubos rígidos (metal/concreto)
+ * Celeridade da onda de pressão (m/s) para o golpe de aríete — velocidade com que a sobrepressão se propaga no tubo. Depende da elasticidade do fluido e do
+ * tubo. PADRÃO = 500 m/s (PVC/plástico, o caso comum em redes prediais): o plástico é elástico e AMORTECE o golpe. Tubos rígidos (metal/concreto)
  * propagam bem mais rápido — ver `CELERIDADE_MATERIAL_MS`.
  */
 export const CELERIDADE_GOLPE_MS = 500;
 
 /**
- * Celeridade do golpe por material (m/s). Plástico (PVC) é elástico e absorve o
- * golpe (~500); metálicos/rígidos propagam mais rápido (~1000–1300). Valores de
+ * Celeridade do golpe por material (m/s). Plástico (PVC) é elástico e absorve o golpe (~500); metálicos/rígidos propagam mais rápido (~1000–1300). Valores de
  * ordem de grandeza típicos para água. Chaves = `PropsTubo.material`.
  */
 export const CELERIDADE_MATERIAL_MS: Record<string, number> = {
@@ -113,8 +106,7 @@ export const CELERIDADE_MATERIAL_MS: Record<string, number> = {
 };
 
 /**
- * Celeridade do golpe (m/s) para um material de tubo. Sem material informado →
- * `CELERIDADE_GOLPE_MS` (500, PVC/plástico — o caso comum).
+ * Celeridade do golpe (m/s) para um material de tubo. Sem material informado → `CELERIDADE_GOLPE_MS` (500, PVC/plástico — o caso comum).
  */
 export function celeridadeGolpeMs(material?: string): number {
   return (material !== undefined && CELERIDADE_MATERIAL_MS[material]) || CELERIDADE_GOLPE_MS;
@@ -124,18 +116,14 @@ export function celeridadeGolpeMs(material?: string): number {
 export const LIMITE_GOLPE_PADRAO_KPA = 1000;
 
 /**
- * Fator de atenuação do golpe para paradas LENTAS (adimensional). O Joukowsky
- * cheio (ΔP = ρ·a·v) só vale para fechamento INSTANTÂNEO. Registros manuais
- * (operados à mão) e boias mecânicas (flutuador) fecham devagar, e a gravidade
- * cessa gradualmente — todos amortecem o golpe. O único evento genuinamente
- * abrupto é o DESARME de bomba; por isso só os tubos de linha de bomba usam o
- * surto cheio (fator 1) e os demais aplicam este fator (~0,25).
+ * Fator de atenuação do golpe para paradas LENTAS (adimensional). O Joukowsky cheio (ΔP = ρ·a·v) só vale para fechamento INSTANTÂNEO. Registros manuais
+ * (operados à mão) e boias mecânicas (flutuador) fecham devagar, e a gravidade cessa gradualmente — todos amortecem o golpe. O único evento genuinamente
+ * abrupto é o DESARME de bomba; por isso só os tubos de linha de bomba usam o surto cheio (fator 1) e os demais aplicam este fator (~0,25).
  */
 export const ATENUACAO_GOLPE_LENTO = 0.25;
 
 /**
- * Sobrepressão do golpe de aríete (kPa) numa PARADA SÚBITA do escoamento
- * (equação de Joukowsky): ΔP = ρ·a·Δv, com Δv = |v| (parada total). É a pior
+ * Sobrepressão do golpe de aríete (kPa) numa PARADA SÚBITA do escoamento (equação de Joukowsky): ΔP = ρ·a·Δv, com Δv = |v| (parada total). É a pior
  * sobrepressão possível ao fechar um registro / desligar uma bomba de repente.
  */
 export function sobrepressaoGolpeKPa(
@@ -146,23 +134,17 @@ export function sobrepressaoGolpeKPa(
 }
 
 /**
- * Pressão de vapor de saturação da água (kPa) em função da temperatura (°C),
- * pela equação de Tetens: P = 0,61078·exp(17,27·T/(T + 237,3)). Em 20 °C ≈
- * 2,34 kPa. É a pressão em que a água "ferve" na temperatura dada — o piso de
- * pressão abaixo do qual há cavitação na sucção da bomba.
+ * Pressão de vapor de saturação da água (kPa) em função da temperatura (°C), pela equação de Tetens: P = 0,61078·exp(17,27·T/(T + 237,3)). Em 20 °C ≈
+ * 2,34 kPa. É a pressão em que a água "ferve" na temperatura dada — o piso de pressão abaixo do qual há cavitação na sucção da bomba.
  */
 export function pvaporAguaKPa(tC: number = TEMPERATURA_PADRAO_C): number {
   return 0.61078 * Math.exp((17.27 * tC) / (tC + 237.3));
 }
 
 /**
- * NPSH disponível (m) na sucção de uma bomba — a energia líquida acima da
- * pressão de vapor na entrada, em metros de coluna d'água:
- *   NPSH_disp = (P_atm − P_vapor)/(ρ·g) + carga_sucção
- * `cargaSuccaoM` é a carga de sucção já LÍQUIDA das perdas: (cota + nível da
- * fonte) − cota da bomba − perdas por atrito na sucção (m). Positiva quando a
- * fonte está acima da bomba (afogada), negativa em sucção negativa (bomba
- * acima). Abaixo do NPSH REQUERIDO pela bomba, há risco de cavitação.
+ * NPSH disponível (m) na sucção de uma bomba — a energia líquida acima da pressão de vapor na entrada, em metros de coluna d'água:
+ *   NPSH_disp = (P_atm − P_vapor)/(ρ·g) + carga_sucção `cargaSuccaoM` é a carga de sucção já LÍQUIDA das perdas: (cota + nível da fonte) − cota da bomba − perdas por atrito
+ * na sucção (m). Positiva quando a fonte está acima da bomba (afogada), negativa em sucção negativa (bomba acima). Abaixo do NPSH REQUERIDO pela bomba, há risco de cavitação.
  */
 export function npshDisponivelM(
   cargaSuccaoM: number,

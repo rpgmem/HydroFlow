@@ -208,11 +208,8 @@ function minorMenorQue(versao: unknown, major: number, minor: number): boolean {
  * Migração de estrutura in-place — roda antes da validação para que saves
  * antigos cheguem no formato atual.
  *
- * - 1.0.0 → 1.1.0 (detectado pela FORMA, idempotente): a elevação do
- *   reservatório saiu de `props.cotaBase` para `peca.cota` (campo comum).
- * - 1.1.0 → 1.2.0 (detectado pela VERSÃO): as magnitudes passaram a ser
- *   gravadas em SI; converte os valores antigos das unidades de exibição
- *   salvas para SI.
+ * - 1.0.0 → 1.1.0 (detectado pela FORMA, idempotente): a elevação do reservatório saiu de `props.cotaBase` para `peca.cota` (campo comum).
+ * - 1.1.0 → 1.2.0 (detectado pela VERSÃO): as magnitudes passaram a ser gravadas em SI; converte os valores antigos das unidades de exibição salvas para SI.
  */
 function migrarEstrutura(dado: Record<string, unknown>): void {
   if (Array.isArray(dado.pecas)) {

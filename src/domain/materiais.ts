@@ -1,6 +1,5 @@
 /**
- * Materiais de tubo — presets que preenchem a rugosidade ε (Darcy-Weisbach) e o
- * coeficiente C (Hazen-Williams). Como a `bitola`, o `material` é só um rótulo de
+ * Materiais de tubo — presets que preenchem a rugosidade ε (Darcy-Weisbach) e o coeficiente C (Hazen-Williams). Como a `bitola`, o `material` é só um rótulo de
  * UI: selecionar grava `rugosidade` + `coefC`; o motor lê esses dois, não o material.
  *
  * Valores de referência (ε em mm; C de Hazen-Williams):

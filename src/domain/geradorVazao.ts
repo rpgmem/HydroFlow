@@ -107,8 +107,7 @@ function calcular(g: Gerador, t: number): number {
     }
 
     case 'diaria': {
-      // 2 picos num dia real (86.400 s). Cada pico é um trapézio (subida/patamar/
-      // descida em horas). O valor é o MÁXIMO entre a base e os dois picos.
+      // 2 picos num dia real (86.400 s). Cada pico é um trapézio (subida/patamar/descida em horas). O valor é o MÁXIMO entre a base e os dois picos.
       const T = 86400;
       const th = modPos(t, T);
       const base = g.base ?? 0;

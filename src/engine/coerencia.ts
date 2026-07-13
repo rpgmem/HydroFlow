@@ -1,18 +1,14 @@
 /**
  * HydroFlow — Avisos de COERÊNCIA física (não-bloqueantes).
  *
- * Diferente da validação de grafo (que BLOQUEIA a execução), aqui apenas
- * SINALIZAMOS incoerências de dimensionamento que o usuário pode querer ajustar:
+ * Diferente da validação de grafo (que BLOQUEIA a execução), aqui apenas SINALIZAMOS incoerências de dimensionamento que o usuário pode querer ajustar:
  *
- *  - Tomada acima do topo: a `alturaEntrada`/`alturaSaida` de um tubo passa da
- *    `alturaMaxima` do reservatório conectado → a água nunca alcança o bocal
+ *  - Tomada acima do topo: a `alturaEntrada`/`alturaSaida` de um tubo passa da `alturaMaxima` do reservatório conectado → a água nunca alcança o bocal
  *    (fluxo zero). Vale sempre.
- *  - Comprimento curto: com o atrito ligado, o `comprimento` (desenvolvido) do
- *    tubo é MENOR que o desnível entre suas pontas — fisicamente impossível
+ *  - Comprimento curto: com o atrito ligado, o `comprimento` (desenvolvido) do tubo é MENOR que o desnível entre suas pontas — fisicamente impossível
  *    (não dá para ligar dois pontos com um cano mais curto que a distância).
  *
- * Só considera pontas de elevação CONHECIDA (reservatório ou bomba); pontas em
- * junção / descarga ao ambiente ficam indefinidas e o aviso não dispara.
+ * Só considera pontas de elevação CONHECIDA (reservatório ou bomba); pontas em junção / descarga ao ambiente ficam indefinidas e o aviso não dispara.
  */
 import { GrafoIndex } from './grafo';
 import { COMPRIMENTO_PADRAO_M } from './hidraulica';
@@ -38,8 +34,7 @@ function vizinhoUnico(idx: GrafoIndex, tuboId: string, lado: 'up' | 'down'): Pec
 }
 
 /**
- * Desnível vertical (m, SI) entre as pontas de um tubo, quando as DUAS pontas
- * têm elevação conhecida (reservatório/bomba, vizinhos diretos). Senão `undefined`.
+ * Desnível vertical (m, SI) entre as pontas de um tubo, quando as DUAS pontas têm elevação conhecida (reservatório/bomba, vizinhos diretos). Senão `undefined`.
  */
 export function desnivelTuboM(idx: GrafoIndex, tubo: PecaDe<'tubo'>): number | undefined {
   const up = vizinhoUnico(idx, tubo.id, 'up');

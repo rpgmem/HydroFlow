@@ -353,11 +353,9 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     if (v > velRef + 1e-6) tubosVelozes.push(p.id);
   }
 
-  // Risco de golpe de aríete (indicador PERMANENTE): a sobrepressão de Joukowsky
-  // numa parada súbita (ΔP = ρ·a·v) passaria do teto de pressão do tubo. Só um
+  // Risco de golpe de aríete (indicador PERMANENTE): a sobrepressão de Joukowsky numa parada súbita (ΔP = ρ·a·v) passaria do teto de pressão do tubo. Só um
   // aviso — não altera a física (o motor é quase-estático).
-  // Só o DESARME de bomba é abrupto (surto cheio); registro/boia/gravidade fecham
-  // devagar → surto atenuado. Por isso os tubos fora de linha de bomba usam o fator.
+  // Só o DESARME de bomba é abrupto (surto cheio); registro/boia/gravidade fecham devagar → surto atenuado. Por isso os tubos fora de linha de bomba usam o fator.
   const limiteGolpe = proj.configuracaoSimulacao.limiteGolpeArieteKPa ?? LIMITE_GOLPE_PADRAO_KPA;
   const tubosBomba = coletarTubosDeBomba(idx);
   const golpeAriete: string[] = [];
@@ -372,12 +370,9 @@ export function tick(projeto: ProjetoSimulacao, tempoAtual = 0): ResultadoTick {
     if (fator * sobrepressaoGolpeKPa(v, celeridadeGolpeMs(p.props.material)) > teto) golpeAriete.push(p.id);
   }
 
-  // Risco de cavitação (NPSH): para cada bomba LIGADA com NPSH requerido
-  // informado, o NPSH disponível na sucção — pressão atmosférica menos a de
-  // vapor da água na temperatura, mais a carga de sucção (cota + nível da fonte
-  // − cota da bomba − perdas por atrito na sucção) — precisa superar o exigido
-  // pela bomba. Abaixo disso, a pressão na entrada cai à de vapor e a água
-  // "ferve" (cavitação). Só um aviso — não altera a física.
+  // Risco de cavitação (NPSH): para cada bomba LIGADA com NPSH requerido informado, o NPSH disponível na sucção — pressão atmosférica menos a de
+  // vapor da água na temperatura, mais a carga de sucção (cota + nível da fonte − cota da bomba − perdas por atrito na sucção) — precisa superar o exigido
+  // pela bomba. Abaixo disso, a pressão na entrada cai à de vapor e a água "ferve" (cavitação). Só um aviso — não altera a física.
   const pvapor = pvaporAguaKPa(proj.configuracaoSimulacao.temperaturaC ?? TEMPERATURA_PADRAO_C);
   const cavitacao: string[] = [];
   for (const p of proj.pecas) {

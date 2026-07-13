@@ -1,14 +1,11 @@
 /**
  * HydroFlow — Conversão de magnitudes para SI (armazenamento canônico)
  *
- * A partir do schema 1.2.0 todos os números do projeto são gravados em SI
- * (metros, m³, m³/s). Projetos antigos (1.0.0/1.1.0) gravavam nas unidades de
- * EXIBIÇÃO escolhidas — este módulo converte esses valores para SI usando os
- * fatores da unidade salva. É também usado pelo projeto-exemplo (autorado em
+ * A partir do schema 1.2.0 todos os números do projeto são gravados em SI (metros, m³, m³/s). Projetos antigos (1.0.0/1.1.0) gravavam nas unidades de
+ * EXIBIÇÃO escolhidas — este módulo converte esses valores para SI usando os fatores da unidade salva. É também usado pelo projeto-exemplo (autorado em
  * litros por legibilidade) para produzir o mesmo armazenamento canônico.
  *
- * Só campos de MAGNITUDE são convertidos: comprimentos (×kL) e vazões/volumes
- * (×kV). Diâmetros (sempre mm), tempos, frações, contagens, ângulos e
+ * Só campos de MAGNITUDE são convertidos: comprimentos (×kL) e vazões/volumes (×kV). Diâmetros (sempre mm), tempos, frações, contagens, ângulos e
  * coeficientes NÃO são tocados.
  */
 
@@ -33,9 +30,7 @@ function converterNivelControle(nc: unknown, kL: number): void {
 }
 
 /**
- * Converte todas as magnitudes de um projeto (objeto cru) das unidades de
- * EXIBIÇÃO (fatores kL/kV) para SI, in-place. `kL` = metros por comprimento,
- * `kV` = m³ por volume/vazão.
+ * Converte todas as magnitudes de um projeto (objeto cru) das unidades de EXIBIÇÃO (fatores kL/kV) para SI, in-place. `kL` = metros por comprimento, `kV` = m³ por volume/vazão.
  */
 export function converterMagnitudesParaSI(
   dado: Record<string, unknown>,

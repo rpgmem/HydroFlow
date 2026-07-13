@@ -158,8 +158,7 @@ export class GrafoIndex {
 }
 
 /**
- * IDs dos tubos que carregam vazão de BOMBA — a cadeia de sucção e de recalque
- * de cada bomba do projeto. São os tubos sujeitos a parada ABRUPTA (o desarme
+ * IDs dos tubos que carregam vazão de BOMBA — a cadeia de sucção e de recalque de cada bomba do projeto. São os tubos sujeitos a parada ABRUPTA (o desarme
  * da bomba é súbito); os demais tubos param devagar (registro/boia/gravidade).
  * Usado pelo alerta de golpe de aríete para atenuar os tubos de fechamento lento.
  */

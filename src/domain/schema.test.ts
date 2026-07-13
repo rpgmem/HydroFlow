@@ -72,8 +72,7 @@ describe('parsing de schema válido', () => {
   });
 
   it('migra 1.1.0 → 1.2.0: converte magnitudes de exibição para SI', () => {
-    // Projeto salvo em litros/m (exibição): a vazão vem em L/s e deve virar m³/s;
-    // comprimentos em m ficam iguais (kL=1). Diâmetro (mm) não converte.
+    // Projeto salvo em litros/m (exibição): a vazão vem em L/s e deve virar m³/s; comprimentos em m ficam iguais (kL=1). Diâmetro (mm) não converte.
     const antigo = {
       nome: 'Litros',
       versao: '1.1.0',

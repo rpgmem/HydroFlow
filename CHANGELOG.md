@@ -6,20 +6,9 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 
 ### Alterado
 
-- **Consumo/Fonte**: os parâmetros numéricos do gerador de vazão passam para a
-  seção **"Opções avançadas"** (como as demais peças); o seletor de perfil e a
-  prévia da onda continuam visíveis por padrão.
-- **Inspetor na execução**: a configuração estrutural (nome, cota, dimensionamento,
-  bitola/diâmetro, modelo/specs da bomba, níveis do sensor, geometria do
-  reservatório, parâmetros do gerador, "Opções avançadas") agora fica **oculta**
-  em vez de apenas desabilitada. Permanecem só os **comandos de operação**
-  (registro, saída de consumo, sensor on/off, modo da bomba/quadro) e as
-  **leituras ao vivo** (vazão, Reynolds, golpe, pressão na base, prévia). A
-  válvula de alívio mostra o setpoint como leitura.
-- **Menu ⚙ Opções**: cada seção (Idioma, Unidades, Exibição, Física, Projeto)
-  vira um grupo **recolhível**; as curtas/comuns nascem abertas e as
-  longas/raras (Física, Projeto) fechadas, reduzindo bastante a altura do menu.
-  O menu ganha rolagem própria como rede de segurança.
+- **Consumo/Fonte**: os parâmetros numéricos do gerador de vazão passam para a seção **"Opções avançadas"** (como as demais peças); o seletor de perfil e a prévia da onda continuam visíveis por padrão.
+- **Inspetor na execução**: a configuração estrutural (nome, cota, dimensionamento, bitola/diâmetro, modelo/specs da bomba, níveis do sensor, geometria do reservatório, parâmetros do gerador, "Opções avançadas") agora fica **oculta** em vez de apenas desabilitada. Permanecem só os **comandos de operação** (registro, saída de consumo, sensor on/off, modo da bomba/quadro) e as **leituras ao vivo** (vazão, Reynolds, golpe, pressão na base, prévia). A válvula de alívio mostra o setpoint como leitura.
+- **Menu ⚙ Opções**: cada seção (Idioma, Unidades, Exibição, Física, Projeto) vira um grupo **recolhível**; as curtas/comuns nascem abertas e as longas/raras (Física, Projeto) fechadas, reduzindo bastante a altura do menu. O menu ganha rolagem própria como rede de segurança.
 
 ### Interno
 
@@ -30,164 +19,100 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 
 ### Alterado
 
-- **Projeto-exemplo** afinado com os valores do catálogo de bombas: a **Bomba
-  Recalque** passa a usar o modelo **Centrífuga 10 CV** (`sup-centr-10`: 45 m³/h
-  @ 42 m, NPSHr 4,8 m) e a **Bomba Incêndio** a **Centrífuga 7,5 CV**
-  (`sup-centr-7-5`: 35 m³/h @ 38 m, NPSHr 4,2 m). Os **Hidrantes** recebem vazão
-  fixa de 5 L/s (ainda fechados) e o **Cavalete Incêndio** passa a **cobre**.
-- Cotas de terreno acrescentadas à **Concessionária** (−0,6 m) e ao **Registro
-  Hidrômetro** (+0,6 m); pequenos reposicionamentos no canvas (C2 Meio, Boia
-  Manual, Registro Hidrômetro, Limpeza C3, Concessionária) — só layout.
+- **Projeto-exemplo** afinado com os valores do catálogo de bombas: a **Bomba Recalque** passa a usar o modelo **Centrífuga 10 CV** (`sup-centr-10`: 45 m³/h @ 42 m, NPSHr 4,8 m) e a **Bomba Incêndio** a **Centrífuga 7,5 CV** (`sup-centr-7-5`: 35 m³/h @ 38 m, NPSHr 4,2 m). Os **Hidrantes** recebem vazão fixa de 5 L/s (ainda fechados) e o **Cavalete Incêndio** passa a **cobre**.
+- Cotas de terreno acrescentadas à **Concessionária** (−0,6 m) e ao **Registro Hidrômetro** (+0,6 m); pequenos reposicionamentos no canvas (C2 Meio, Boia Manual, Registro Hidrômetro, Limpeza C3, Concessionária) — só layout.
 
 ### Adicionado
 
-- Termo **SI** (Sistema Internacional de Unidades) agora tem **link** na Ajuda
-  (⚙ Opções → Unidades) e no README, apontando para a Wikipedia.
+- Termo **SI** (Sistema Internacional de Unidades) agora tem **link** na Ajuda (⚙ Opções → Unidades) e no README, apontando para a Wikipedia.
 
 ### Notas
 
-- Com a bomba de recalque mais robusta (10 CV) e o tubo de recalque em DN60, o
-  desarme abrupto da bomba passa a acionar o alerta de **golpe de aríete** no
-  `Recalque → C1` — comportamento físico esperado para esse ponto de operação.
+- Com a bomba de recalque mais robusta (10 CV) e o tubo de recalque em DN60, o desarme abrupto da bomba passa a acionar o alerta de **golpe de aríete** no `Recalque → C1` — comportamento físico esperado para esse ponto de operação.
 
 ## [1.63.0] — Modelo de bomba: comportamento tipo-tubo + potência em W
 
 ### Alterado
 
-- No inspetor da bomba, escolher um **Modelo** agora **esconde** os campos de
-  vazão/altura/NPSH (como a bitola do tubo esconde o diâmetro manual) e mostra um
-  **readout** com os valores (vazão · altura · NPSH) e a potência. Em
-  **"Personalizado"** os campos voltam a ser editáveis.
-- Catálogo ganha a coluna **potência em Watts** (`potenciaW`), derivada da CV
-  (`CV_PARA_W = 735,49875`) — só referência/readout. Ex.: 1,0 CV = 735 W.
+- No inspetor da bomba, escolher um **Modelo** agora **esconde** os campos de vazão/altura/NPSH (como a bitola do tubo esconde o diâmetro manual) e mostra um **readout** com os valores (vazão · altura · NPSH) e a potência. Em **"Personalizado"** os campos voltam a ser editáveis.
+- Catálogo ganha a coluna **potência em Watts** (`potenciaW`), derivada da CV (`CV_PARA_W = 735,49875`) — só referência/readout. Ex.: 1,0 CV = 735 W.
 
 ### Notas
 
-- A "Faixa de Operação" segue como **readout** (não entra no cálculo): a vazão
-  real emerge da curva linear `Q = vazaoNominal·(1 − Δh/alturaNominal)` conforme
-  a altura que a instalação impõe — a "perda de vazão por altura" é a inclinação
-  `k = vazão/altura`, que o motor já deriva a cada tick (nada a pré-calcular).
+- A "Faixa de Operação" segue como **readout** (não entra no cálculo): a vazão real emerge da curva linear `Q = vazaoNominal·(1 − Δh/alturaNominal)` conforme a altura que a instalação impõe — a "perda de vazão por altura" é a inclinação `k = vazão/altura`, que o motor já deriva a cada tick (nada a pré-calcular).
 
 ## [1.62.0] — Catálogo de modelos de bomba (presets)
 
 ### Adicionado
 
-- **Catálogo de bombas** (`src/domain/bombasCatalogo.ts`) com dois grupos —
-  **Superfície** (periférica/centrífuga/injetora/multiestágio) e **Submergível**
-  (submersível/submersa). Como a bitola dos tubos, escolher um **Modelo** no
-  inspetor da bomba preenche `vazaoNominal`, `alturaNominal` e `npshRequerido`;
-  editar as specs na mão limpa o modelo (→ "Personalizado"). Um readout mostra a
-  potência (CV) e a aplicação típica.
-- Valores JÁ EM SI: a vazão vem em m³/s (fonte legível como `m³/h ÷ 3600`); altura
-  e NPSH em metros. Submergíveis com **NPSH 0,30 m** (garante operação afogada);
-  injetora sem NPSH (N/A). Metadados (tipo, fase, aplicação, faixa) só para exibição.
+- **Catálogo de bombas** (`src/domain/bombasCatalogo.ts`) com dois grupos — **Superfície** (periférica/centrífuga/injetora/multiestágio) e **Submergível** (submersível/submersa). Como a bitola dos tubos, escolher um **Modelo** no inspetor da bomba preenche `vazaoNominal`, `alturaNominal` e `npshRequerido`; editar as specs na mão limpa o modelo (→ "Personalizado"). Um readout mostra a potência (CV) e a aplicação típica.
+- Valores JÁ EM SI: a vazão vem em m³/s (fonte legível como `m³/h ÷ 3600`); altura e NPSH em metros. Submergíveis com **NPSH 0,30 m** (garante operação afogada); injetora sem NPSH (N/A). Metadados (tipo, fase, aplicação, faixa) só para exibição.
 - **Domínio:** `PropsBomba.modeloBomba?` (preset de UI; o motor lê só as specs).
 
 ## [1.61.0] — Polimento do inspetor (accordion) + pentágono da válvula de alívio
 
 ### Alterado
 
-- **Válvula de alívio** desenhada como **pentágono** (forma própria, distinta do
-  triângulo do Consumo) — canvas, legenda e ícone da paleta (⬠).
-- **Inspetor mais simples:** cada peça mais rica ganha uma seção recolhível
+- **Válvula de alívio** desenhada como **pentágono** (forma própria, distinta do triângulo do Consumo) — canvas, legenda e ícone da paleta (⬠).
+- **Inspetor mais simples:** cada peça mais rica ganha uma seção recolhível 
   **"Opções avançadas"** (recolhida por padrão), deixando fora só o essencial:
-  - **Tubo** básico: bitola, registro. Avançado: pressão nominal, atrito
-    (comprimento/material/C/ε), tomadas, retenção, boia, ladrão.
-  - **Bomba** básico: vazão nominal, altura nominal, controle/quadro. Avançado:
-    NPSH requerido, revezamento.
-  - **Sensor** básico: nível mín/máx, bomba(s)-alvo/quadro. Avançado: reverso,
-    histerese, delay.
+  - **Tubo** básico: bitola, registro. Avançado: pressão nominal, atrito (comprimento/material/C/ε), tomadas, retenção, boia, ladrão.
+  - **Bomba** básico: vazão nominal, altura nominal, controle/quadro. Avançado: NPSH requerido, revezamento.
+  - **Sensor** básico: nível mín/máx, bomba(s)-alvo/quadro. Avançado: reverso, histerese, delay.
   - **Válvula de alívio** básico: pressão de abertura. Avançado: diâmetro do orifício.
 - **Cota (elevação)** deixa de aparecer em **quadro** e **sensor** (onde é no-op).
-- **Diâmetro interno (mm)** do tubo só aparece em **"Personalizado"** — com uma
-  bitola do catálogo, o diâmetro vem tabelado e o campo manual some.
+- **Diâmetro interno (mm)** do tubo só aparece em **"Personalizado"** — com uma bitola do catálogo, o diâmetro vem tabelado e o campo manual some.
 
 ## [1.60.0] — Comprimento sugerido do tubo na conexão
 
 ### Adicionado
 
-- Ao criar uma conexão que deixa **ambas as pontas** de um tubo com elevação
-  conhecida (reservatório/bomba), se o `comprimento` estiver em branco ele é
-  **preenchido automaticamente com o desnível** entre as pontas (mínimo coerente,
-  arredondado para cima). **Nunca sobrescreve** um comprimento já informado; se o
-  desnível for indefinido (junção/ambiente) ou ~0, não faz nada. Reusa
-  `coerencia.desnivelTuboM`.
+- Ao criar uma conexão que deixa **ambas as pontas** de um tubo com elevação conhecida (reservatório/bomba), se o `comprimento` estiver em branco ele é **preenchido automaticamente com o desnível** entre as pontas (mínimo coerente, arredondado para cima). **Nunca sobrescreve** um comprimento já informado; se o desnível for indefinido (junção/ambiente) ou ~0, não faz nada. Reusa `coerencia.desnivelTuboM`.
 
 ## [1.59.0] — Avisos de coerência de tubos (comprimento/tomada) + ajuda no inspetor
 
 ### Adicionado
 
-- **Avisos de coerência** (não bloqueiam a execução) — `src/engine/coerencia.ts`
-  (`avisosCoerencia`) sinaliza, na edição, num painel **âmbar**:
-  - **comprimento < desnível** entre as pontas do tubo (com atrito ligado) —
-    fisicamente impossível (o cano não alcança);
-  - **tomada acima do topo** do reservatório conectado (`alturaEntrada`/
-    `alturaSaida` > `alturaMaxima`) — a água nunca chega ao bocal.
-  Só considera pontas de elevação conhecida (reservatório/bomba); junção e
-  descarga ao ambiente não disparam (degrada com elegância).
-- **Ajuda no inspetor do tubo:** mostra o **desnível entre as pontas** e, quando
-  o comprimento é curto, destaca em âmbar com um botão **"usar como comprimento
-  mínimo"**. `desnivelTuboM(idx, tubo)` é reutilizado pelo motor e pela UI.
+- **Avisos de coerência** (não bloqueiam a execução) — `src/engine/coerencia.ts` (`avisosCoerencia`) sinaliza, na edição, num painel **âmbar**:
+  - **comprimento < desnível** entre as pontas do tubo (com atrito ligado) — fisicamente impossível (o cano não alcança);
+  - **tomada acima do topo** do reservatório conectado (`alturaEntrada`/ `alturaSaida` > `alturaMaxima`) — a água nunca chega ao bocal.
+  Só considera pontas de elevação conhecida (reservatório/bomba); junção e descarga ao ambiente não disparam (degrada com elegância).
+- **Ajuda no inspetor do tubo:** mostra o **desnível entre as pontas** e, quando o comprimento é curto, destaca em âmbar com um botão **"usar como comprimento mínimo"**. `desnivelTuboM(idx, tubo)` é reutilizado pelo motor e pela UI.
 - i18n pt/en, README.
 
 ## [1.58.0] — Golpe de aríete: fechamento lento atenua (só bomba é abrupta)
 
 ### Alterado
 
-- O alerta de golpe passa a considerar que só o **desarme de bomba** é uma parada
-  **abrupta** (Joukowsky cheio). Registros manuais, boias mecânicas e a gravidade
-  fecham/cessam **devagar** → surto **atenuado** por `ATENUACAO_GOLPE_LENTO` (0,25).
-  Na prática, só os tubos de **linha de bomba** (sucção + recalque) usam o surto
-  cheio; os demais precisam de ~4× a velocidade para acender.
-- `src/engine/grafo.ts` ganha `coletarTubosDeBomba(idx)` (cadeia de sucção/recalque
-  de cada bomba); o motor aplica o fator no alerta. O inspetor do tubo mostra o
-  surto **efetivo** e a nota "fechamento lento (atenuado)" fora das linhas de bomba.
+- O alerta de golpe passa a considerar que só o **desarme de bomba** é uma parada **abrupta** (Joukowsky cheio). Registros manuais, boias mecânicas e a gravidade fecham/cessam **devagar** → surto **atenuado** por `ATENUACAO_GOLPE_LENTO` (0,25). Na prática, só os tubos de **linha de bomba** (sucção + recalque) usam o surto cheio; os demais precisam de ~4× a velocidade para acender.
+- `src/engine/grafo.ts` ganha `coletarTubosDeBomba(idx)` (cadeia de sucção/recalque de cada bomba); o motor aplica o fator no alerta. O inspetor do tubo mostra o surto **efetivo** e a nota "fechamento lento (atenuado)" fora das linhas de bomba.
 
 ### Corrigido
 
-- No exemplo, tubos de gravidade com boia/registro (ex.: o `bypass`) deixam de
-  acender golpe por modulação de velocidade — só as linhas de bomba realmente
-  sujeitas a parada súbita permanecem sinalizadas. Cobertura de teste (gravidade
-  atenuada vs. linha de bomba abrupta, na mesma faixa de velocidade).
+- No exemplo, tubos de gravidade com boia/registro (ex.: o `bypass`) deixam de acender golpe por modulação de velocidade — só as linhas de bomba realmente sujeitas a parada súbita permanecem sinalizadas. Cobertura de teste (gravidade atenuada vs. linha de bomba abrupta, na mesma faixa de velocidade).
 
 ## [1.57.0] — Celeridade do golpe de aríete por material
 
 ### Alterado
 
-- A **celeridade** da onda de golpe (Joukowsky `ΔP = ρ·a·v`) passa a depender do
-  **material** do tubo. O padrão cai de `1000` → **`500 m/s`** (PVC/plástico, o
-  caso comum em redes prediais — o plástico é elástico e amortece o golpe);
-  materiais rígidos usam valores maiores (aço ~1200, ferro ~1100, cobre ~1300,
-  concreto ~1000). Antes, a celeridade fixa de 1000 m/s (tubo rígido)
-  **superestimava** a sobrepressão em ~2× para o PVC, acendendo o alerta em
-  velocidades normais (> 1 m/s). Agora o alerta só dispara acima de ~2 m/s em
-  PVC, alinhado ao limite de dimensionamento (3 m/s).
-- `src/engine/fisica.ts` ganha `CELERIDADE_MATERIAL_MS` e `celeridadeGolpeMs(material)`;
-  o motor e a telemetria do inspetor passam a celeridade do material ao Joukowsky.
+- A **celeridade** da onda de golpe (Joukowsky `ΔP = ρ·a·v`) passa a depender do **material** do tubo. O padrão cai de `1000` → **`500 m/s`** (PVC/plástico, o caso comum em redes prediais — o plástico é elástico e amortece o golpe); materiais rígidos usam valores maiores (aço ~1200, ferro ~1100, cobre ~1300, concreto ~1000). Antes, a celeridade fixa de 1000 m/s (tubo rígido) **superestimava** a sobrepressão em ~2× para o PVC, acendendo o alerta em velocidades normais (> 1 m/s). Agora o alerta só dispara acima de ~2 m/s em PVC, alinhado ao limite de dimensionamento (3 m/s).
+- `src/engine/fisica.ts` ganha `CELERIDADE_MATERIAL_MS` e `celeridadeGolpeMs(material)`; o motor e a telemetria do inspetor passam a celeridade do material ao Joukowsky.
 
 ### Corrigido
 
-- No projeto exemplo, a `boia_manual` (PVC, ~1,3 m/s no pico da concessionária
-  senoidal) **parava de piscar** o alerta de golpe a cada ciclo — a sobrepressão
-  real de um cano de PVC (~650 kPa) fica abaixo do teto PN10. Regressão coberta por teste.
+- No projeto exemplo, a `boia_manual` (PVC, ~1,3 m/s no pico da concessionária senoidal) **parava de piscar** o alerta de golpe a cada ciclo — a sobrepressão real de um cano de PVC (~650 kPa) fica abaixo do teto PN10. Regressão coberta por teste.
 
 ## [1.56.2] — Coerência do comprimento da sucção do incêndio (exemplo)
 
 ### Corrigido
 
-- No projeto exemplo, o `cavalete_incendio` (sucção da Bomba Incêndio) estava com
-  o comprimento padrão de 1 m, incoerente com o desnível: a bomba puxa do C2 Meio
-  (base na cota 9,5 m). Ajustado para **13,5 m** (~4 m de sucção, como o recalque,
-  + 9,5 m de subida até a base do reservatório). Só afeta o atrito; não muda a
-  topologia nem o comportamento (o ramo de incêndio fica com os hidrantes fechados).
+- No projeto exemplo, o `cavalete_incendio` (sucção da Bomba Incêndio) estava com o comprimento padrão de 1 m, incoerente com o desnível: a bomba puxa do C2 Meio (base na cota 9,5 m). Ajustado para **13,5 m** (~4 m de sucção, como o recalque, + 9,5 m de subida até a base do reservatório). Só afeta o atrito; não muda a topologia nem o comportamento (o ramo de incêndio fica com os hidrantes fechados).
 
 ## [1.56.1] — Link de Simon Stevin
 
 ### Alterado
 
-- **"Teorema de Stevin"** vira link para **Simon Stevin** (a pessoa) na Ajuda e
-  no README — espelha o padrão do golpe de aríete (conceito + Joukowsky). O link
-  do conceito ("Pressão na base" → pressão hidrostática) segue como antes.
+- **"Teorema de Stevin"** vira link para **Simon Stevin** (a pessoa) na Ajuda e no README — espelha o padrão do golpe de aríete (conceito + Joukowsky). O link do conceito ("Pressão na base" → pressão hidrostática) segue como antes.
 
 ## [1.56.0] — Válvula de alívio (peça nova)
 
@@ -195,27 +120,14 @@ Oitava e última etapa da fundação de física avançada ([#65](https://github.
 
 ### Adicionado
 
-- **Válvula de alívio** (peça nova `alivio`) — proteção de pressão ligada a
-  jusante de um reservatório. Abre e descarrega ao ambiente quando a pressão
-  local (coluna acima da `cota` da válvula) passa do setpoint `pressaoAbertura`
-  (kPa). A descarga é **Torricelli pelo orifício** (`diametro`, default 25 mm)
-  sobre o excedente acima do setpoint — **autolimitante**: drena a origem até a
-  pressão voltar ao setpoint. Fica **vermelha** no canvas e registra no log ao abrir.
-- `src/engine/fisica.ts` ganha `colunaPressaoM(P)` (inverso de Stevin, converte
-  o setpoint em altura de coluna).
-- **Stack completo de peça nova:** domínio (tipo/props/guard/factory/schema),
-  motor (`calcularAlivio` em `vazaoPecas.ts` + campo `aliviosAtivos`), UI
-  (paleta, canvas — triângulo para cima, inspetor, legenda), i18n pt/en, Ajuda
-  e README com link.
+- **Válvula de alívio** (peça nova `alivio`) — proteção de pressão ligada a jusante de um reservatório. Abre e descarrega ao ambiente quando a pressão local (coluna acima da `cota` da válvula) passa do setpoint `pressaoAbertura` (kPa). A descarga é **Torricelli pelo orifício** (`diametro`, default 25 mm) sobre o excedente acima do setpoint — **autolimitante**: drena a origem até a pressão voltar ao setpoint. Fica **vermelha** no canvas e registra no log ao abrir.
+- `src/engine/fisica.ts` ganha `colunaPressaoM(P)` (inverso de Stevin, converte o setpoint em altura de coluna).
+- **Stack completo de peça nova:** domínio (tipo/props/guard/factory/schema), motor (`calcularAlivio` em `vazaoPecas.ts` + campo `aliviosAtivos`), UI (paleta, canvas — triângulo para cima, inspetor, legenda), i18n pt/en, Ajuda e README com link.
 
 ### Notas
 
-- A válvula NÃO altera a lógica das outras peças — só protege o reservatório de
-  origem drenando o excedente. Reivindica os tubos do caminho (como o consumo)
-  para não serem tratados como dreno livre.
-- Conclui o roteiro de física avançada da issue #65 (unidades canônicas, cota
-  universal, Stevin, Reynolds+temperatura, golpe de aríete, Darcy-Weisbach,
-  NPSH/cavitação e válvula de alívio).
+- A válvula NÃO altera a lógica das outras peças — só protege o reservatório de origem drenando o excedente. Reivindica os tubos do caminho (como o consumo) para não serem tratados como dreno livre.
+- Conclui o roteiro de física avançada da issue #65 (unidades canônicas, cota universal, Stevin, Reynolds+temperatura, golpe de aríete, Darcy-Weisbach, NPSH/cavitação e válvula de alívio).
 
 ## [1.55.0] — NPSH / cavitação (alerta)
 
@@ -223,22 +135,14 @@ Sétima etapa da fundação de física avançada ([#65](https://github.com/rpgme
 
 ### Adicionado
 
-- **Alerta de cavitação (NPSH)** — para cada bomba com `npshRequerido` informado,
-  o motor compara o **NPSH disponível** na sucção — `(P_atm − P_vapor)/(ρ·g) +
-  carga_sucção` (carga de sucção = `cota + nivel` da fonte − `cota` da bomba −
-  perdas por atrito na sucção) — com o requerido. Abaixo disso a bomba fica
-  **âmbar** no canvas e o log registra o risco. Opt-in por bomba (em branco = sem
-  checagem).
-- `src/engine/fisica.ts` ganha `pvaporAguaKPa(T)` (pressão de vapor da água por
-  **Tetens**, cresce com a temperatura) e `npshDisponivelM(...)`.
+- **Alerta de cavitação (NPSH)** — para cada bomba com `npshRequerido` informado, o motor compara o **NPSH disponível** na sucção — `(P_atm − P_vapor)/(ρ·g) + carga_sucção` (carga de sucção = `cota + nivel` da fonte − `cota` da bomba − perdas por atrito na sucção) — com o requerido. Abaixo disso a bomba fica **âmbar** no canvas e o log registra o risco. Opt-in por bomba (em branco = sem checagem).
+- `src/engine/fisica.ts` ganha `pvaporAguaKPa(T)` (pressão de vapor da água por **Tetens**, cresce com a temperatura) e `npshDisponivelM(...)`.
 - **Domínio:** `PropsBomba.npshRequerido?` (m). Usa a `cota` universal da bomba.
-- **UI:** campo **NPSH requerido** no inspetor da bomba; item na Legenda; item na
-  Ajuda e no README com links (NPSH, pressão de vapor).
+- **UI:** campo **NPSH requerido** no inspetor da bomba; item na Legenda; item na Ajuda e no README com links (NPSH, pressão de vapor).
 
 ### Notas
 
-- É só um **alerta** — não altera a física (o motor é quase-estático). O caminho
-  de vazão fica inalterado.
+- É só um **alerta** — não altera a física (o motor é quase-estático). O caminho de vazão fica inalterado.
 
 ## [1.54.0] — Darcy-Weisbach (modelo de atrito alternativo)
 
@@ -246,16 +150,9 @@ Sexta etapa da fundação de física avançada ([#65](https://github.com/rpgmem/
 
 ### Adicionado
 
-- **Modelo de atrito Darcy-Weisbach** (⚙ Opções, com o atrito ligado): `hf = f·(L/D)·v²/2g`,
-  com `f` por **Swamee-Jain** (laminar `64/Re`; turbulento explícito; transição
-  interpolada). Usa a **rugosidade ε** de cada tubo e a **viscosidade μ(T)**. O
-  Hazen-Williams segue como padrão (comportamento inalterado).
-- **Material do tubo** (preset, como a bitola): PVC, cobre, aço, ferro fundido,
-  concreto — preenche a rugosidade ε e o coeficiente C. O inspetor do tubo mostra
-  ε (Darcy) ou C (Hazen-Williams) conforme o modelo.
-- `src/engine/fisica.ts` ganha `fatorAtritoDW`; `hidraulica.ts` ganha
-  `hfDarcyWeisbachM` e o ramo DW no solver de vazão. Ajuda e README atualizados
-  (Darcy-Weisbach sai de "fora de escopo").
+- **Modelo de atrito Darcy-Weisbach** (⚙ Opções, com o atrito ligado): `hf = f·(L/D)·v²/2g`, com `f` por **Swamee-Jain** (laminar `64/Re`; turbulento explícito; transição interpolada). Usa a **rugosidade ε** de cada tubo e a **viscosidade μ(T)**. O Hazen-Williams segue como padrão (comportamento inalterado).
+- **Material do tubo** (preset, como a bitola): PVC, cobre, aço, ferro fundido, concreto — preenche a rugosidade ε e o coeficiente C. O inspetor do tubo mostra ε (Darcy) ou C (Hazen-Williams) conforme o modelo.
+- `src/engine/fisica.ts` ganha `fatorAtritoDW`; `hidraulica.ts` ganha `hfDarcyWeisbachM` e o ramo DW no solver de vazão. Ajuda e README atualizados (Darcy-Weisbach sai de "fora de escopo").
 
 ## [1.53.0] — Golpe de aríete (alerta) + comprimentos coerentes no exemplo
 
@@ -264,37 +161,25 @@ Quinta etapa da fundação de física avançada ([#65](https://github.com/rpgmem
 ### Adicionado
 
 - **Alerta de golpe de aríete** em dois níveis:
-  - **Risco permanente** (determinístico): o tubo fica **vermelho** quando a
-    sobrepressão de Joukowsky numa parada súbita (`ΔP = ρ·a·v`, `a ≈ 1000 m/s`)
-    passaria do teto de pressão. Novo campo `golpeAriete` no resultado do tick.
-  - **Evento pontual**: o log registra o instante em que um tubo com risco tem a
-    vazão **interrompida bruscamente** (fechamento/desligamento).
-- **Teto de pressão** configurável: global em ⚙ Opções (`limiteGolpeArieteKPa`,
-  padrão ≈ PN10 = 1000 kPa) e **por tubo** (`pressaoNominal`). O inspetor do tubo
-  mostra a sobrepressão do golpe durante a execução.
-- `src/engine/fisica.ts` ganha `sobrepressaoGolpeKPa` e a celeridade padrão.
-  Ajuda, README e legenda com o item do golpe de aríete (link).
+  - **Risco permanente** (determinístico): o tubo fica **vermelho** quando a sobrepressão de Joukowsky numa parada súbita (`ΔP = ρ·a·v`, `a ≈ 1000 m/s`) passaria do teto de pressão. Novo campo `golpeAriete` no resultado do tick.
+  - **Evento pontual**: o log registra o instante em que um tubo com risco tem a vazão **interrompida bruscamente** (fechamento/desligamento).
+- **Teto de pressão** configurável: global em ⚙ Opções (`limiteGolpeArieteKPa`, padrão ≈ PN10 = 1000 kPa) e **por tubo** (`pressaoNominal`). O inspetor do tubo mostra a sobrepressão do golpe durante a execução.
+- `src/engine/fisica.ts` ganha `sobrepressaoGolpeKPa` e a celeridade padrão. 
+- Ajuda, README e legenda com o item do golpe de aríete (link).
 
 ### Alterado
 
-- **Projeto exemplo:** comprimentos coerentes com as elevações nos tubos que
-  descem dos tanques altos — `consumo_c1` 18 m, `consumo_c2` 14 m, `bypass` 5 m
-  (relevante com o atrito ligado).
+- **Projeto exemplo:** comprimentos coerentes com as elevações nos tubos que descem dos tanques altos — `consumo_c1` 18 m, `consumo_c2` 14 m, `bypass` 5 m (relevante com o atrito ligado).
 
 ## [1.52.0] — Linha do "zero do terreno" no canvas
 
 ### Adicionado
 
-- **Linha do terreno (cota 0)** no construtor: uma horizontal tracejada suave,
-  atrás das peças, marcando o zero do terreno como guia de layout (organize as
-  peças acima dela). No projeto exemplo coincide com a base do reservatório
-  inferior.
+- **Linha do terreno (cota 0)** no construtor: uma horizontal tracejada suave, atrás das peças, marcando o zero do terreno como guia de layout (organize as peças acima dela). No projeto exemplo coincide com a base do reservatório inferior.
 
 ### Corrigido
 
-- **Projeto exemplo:** o tubo `Boia Manual` tinha `comprimento: 0` (sem perda de
-  carga com o atrito ligado); ajustado para **8,5 m**, coerente com a tomada em
-  8,5 m do reservatório inferior.
+- **Projeto exemplo:** o tubo `Boia Manual` tinha `comprimento: 0` (sem perda de carga com o atrito ligado); ajustado para **8,5 m**, coerente com a tomada em 8,5 m do reservatório inferior.
 
 ## [1.51.0] — Número de Reynolds e temperatura da água
 
@@ -302,13 +187,9 @@ Quarta etapa da fundação de física avançada ([#65](https://github.com/rpgmem
 
 ### Adicionado
 
-- **Número de Reynolds** no inspetor do tubo (durante a execução): `Re = ρ·v·D/μ`
-  com o **regime** (laminar < 2000 / transição / turbulento > 4000).
-- **Temperatura da água** configurável em ⚙ Opções (padrão **20 °C**, exibível em
-  **°C / °F / K**) — afeta a **viscosidade** `μ(T)` do Reynolds (e, adiante, a
-  pressão de vapor do NPSH). Armazenamento canônico em °C.
-- `src/engine/fisica.ts` ganha `muAgua(T)` (correlação empírica), `reynolds()` e
-  `regimeReynolds()`. Ajuda e README com o item de Reynolds (link).
+- **Número de Reynolds** no inspetor do tubo (durante a execução): `Re = ρ·v·D/μ` com o **regime** (laminar < 2000 / transição / turbulento > 4000).
+- **Temperatura da água** configurável em ⚙ Opções (padrão **20 °C**, exibível em **°C / °F / K**) — afeta a **viscosidade** `μ(T)` do Reynolds (e, adiante, a pressão de vapor do NPSH). Armazenamento canônico em °C.
+- `src/engine/fisica.ts` ganha `muAgua(T)` (correlação empírica), `reynolds()` e `regimeReynolds()`. Ajuda e README com o item de Reynolds (link).
 
 ## [1.50.0] — Pressão hidrostática (Stevin) e unidade de pressão
 
@@ -316,12 +197,9 @@ Terceira etapa da fundação de física avançada ([#65](https://github.com/rpgm
 
 ### Adicionado
 
-- **Base física** `src/engine/fisica.ts` — constantes (densidade da água, g,
-  pressão atmosférica) e relações puras em SI (a primeira: pressão hidrostática).
-- **Pressão na base (Teorema de Stevin)** no inspetor do reservatório:
-  `P = ρ·g·nível`, exibida na unidade escolhida. Só leitura — não altera a vazão.
-- **Unidade de pressão** configurável em ⚙ Opções: **kPa** (canônico), **m.c.a.**
-  ou **psi**. A conversão é só de exibição (armazenamento sempre em kPa).
+- **Base física** `src/engine/fisica.ts` — constantes (densidade da água, g, pressão atmosférica) e relações puras em SI (a primeira: pressão hidrostática).
+- **Pressão na base (Teorema de Stevin)** no inspetor do reservatório: `P = ρ·g·nível`, exibida na unidade escolhida. Só leitura — não altera a vazão.
+- **Unidade de pressão** configurável em ⚙ Opções: **kPa** (canônico), **m.c.a.** ou **psi**. A conversão é só de exibição (armazenamento sempre em kPa).
 - Ajuda e README ganham o item de pressão na base, com link.
 
 ## [1.49.0] — Unidades canônicas (SI): trocar a unidade preserva o valor físico
@@ -330,92 +208,56 @@ Segunda etapa da fundação de física avançada ([#65](https://github.com/rpgme
 
 ### Alterado
 
-- **Armazenamento canônico em SI** (metros, m³, m³/s): todas as magnitudes do
-  projeto passam a ser gravadas em unidade canônica. O campo `unidades` vira
-  apenas a **preferência de EXIBIÇÃO** — a UI converte SI↔exibição e o motor
-  calcula sempre em SI. Assim, **trocar a unidade de exibição preserva o valor
-  físico** (antes o número era reinterpretado, mudando o significado).
-- **Schema `1.1.0` → `1.2.0`** com migração automática ao carregar: converte as
-  magnitudes de projetos antigos (das unidades de exibição salvas) para SI —
-  comprimentos, vazões/volumes, níveis, `curva.k` (unidade composta) e
-  `vazaoAlocada`. Tempos, frações, contagens e diâmetros (mm) não são tocados.
-  Projetos salvos anteriormente abrem com o mesmo comportamento físico.
+- **Armazenamento canônico em SI** (metros, m³, m³/s): todas as magnitudes do projeto passam a ser gravadas em unidade canônica. O campo `unidades` vira apenas a **preferência de EXIBIÇÃO** — a UI converte SI↔exibição e o motor calcula sempre em SI. Assim, **trocar a unidade de exibição preserva o valor físico** (antes o número era reinterpretado, mudando o significado).
+- **Schema `1.1.0` → `1.2.0`** com migração automática ao carregar: converte as magnitudes de projetos antigos (das unidades de exibição salvas) para SI — comprimentos, vazões/volumes, níveis, `curva.k` (unidade composta) e `vazaoAlocada`. Tempos, frações, contagens e diâmetros (mm) não são tocados. Projetos salvos anteriormente abrem com o mesmo comportamento físico.
 
 Primeira etapa da fundação de física avançada ([#65](https://github.com/rpgmem/HydroFlow/issues/65)).
 
 ### Alterado
 
-- **`cota` (elevação)** passou a ser um campo comum a **todas as peças** (base
-  `Peca`), editável no inspetor. Unifica o antigo `cotaBase` do reservatório —
-  no reservatório dirige a carga hidráulica (carga = cota + nível); nas demais
-  peças serve para converter carga↔pressão local, NPSH e cavitação (não altera a
-  vazão), preparando os próximos itens do roadmap.
-- **Schema `1.0.0` → `1.1.0`** com migração automática e idempotente ao carregar
-  (move `props.cotaBase` → `peca.cota`); projetos antigos abrem sem perda.
+- **`cota` (elevação)** passou a ser um campo comum a **todas as peças** (base `Peca`), editável no inspetor. Unifica o antigo `cotaBase` do reservatório — no reservatório dirige a carga hidráulica (carga = cota + nível); nas demais peças serve para converter carga↔pressão local, NPSH e cavitação (não altera a vazão), preparando os próximos itens do roadmap.
+- **Schema `1.0.0` → `1.1.0`** com migração automática e idempotente ao carregar (move `props.cotaBase` → `peca.cota`); projetos antigos abrem sem perda.
 
 ## [1.47.0] — Links da Wikipedia nos termos físicos (Ajuda e README)
 
 ### Adicionado
 
-- **Links de referência** nos termos físicos da **Ajuda** e do **README**, com a URL
-  correta por idioma (pt → pt.wikipedia, en → en.wikipedia): Torricelli, vazão,
-  continuidade, **vasos comunicantes**, Gauss-Seidel, conservação de massa,
-  Hazen-Williams, **perda de carga**, **bomba (centrífuga)**, válvula de retenção,
-  aceleração da gravidade (g), **carga hidráulica**, **Navier-Stokes**,
-  **Darcy-Weisbach** e **CFD (Fluidodinâmica Computacional)** — a sigla agora
-  aparece por extenso na introdução. (Carga hidráulica aponta para o artigo em
-  inglês por não haver equivalente na Wikipédia em português.)
+- **Links de referência** nos termos físicos da **Ajuda** e do **README**, com a URL correta por idioma (pt → pt.wikipedia, en → en.wikipedia): Torricelli, vazão, continuidade, **vasos comunicantes**, Gauss-Seidel, conservação de massa, Hazen-Williams, **perda de carga**, **bomba (centrífuga)**, válvula de retenção, aceleração da gravidade (g), **carga hidráulica**, **Navier-Stokes**, **Darcy-Weisbach** e **CFD (Fluidodinâmica Computacional)** — a sigla agora aparece por extenso na introdução. (Carga hidráulica aponta para o artigo em inglês por não haver equivalente na Wikipédia em português.)
 
 ### Corrigido
 
-- **`checkValve`** deixou de aparecer em inglês na interface em português: agora é
-  **"Válvula de retenção"**.
+- **`checkValve`** deixou de aparecer em inglês na interface em português: agora é **"Válvula de retenção"**.
 
 ## [1.46.0] — Ícone da Ajuda, velocidade no mobile e mais física na Ajuda
 
 ### Adicionado
 
-- **Física na Ajuda**: novos itens sobre **junções** (carga do nó por Gauss-Seidel,
-  conservação de massa), **bomba** (ponto de operação Q = Qₙ·(1 − Δh/Hₙ), acoplado
-  ao atrito da rede), **transbordo + proteção a seco** e **tomada em altura**.
+- **Física na Ajuda**: novos itens sobre **junções** (carga do nó por Gauss-Seidel, conservação de massa), **bomba** (ponto de operação Q = Qₙ·(1 − Δh/Hₙ), acoplado ao atrito da rede), **transbordo + proteção a seco** e **tomada em altura**.
 
 ### Alterado
 
 - **Botão de Ajuda** ganhou ícone (❓).
-- **Velocidade no mobile**: os botões 1×/5×/30×/120× viram um **seletor** compacto
-  (poupa espaço); no desktop seguem inline.
+- **Velocidade no mobile**: os botões 1×/5×/30×/120× viram um **seletor** compacto (poupa espaço); no desktop seguem inline.
 
 ## [1.45.1] — TypeScript 6
 
 ### Alterado
 
-- **TypeScript atualizado para 6.0.x** (`^6.0.3`). `typecheck`, `lint`, testes (237)
-  e `build` seguem verdes. O **7.x** ainda não entra porque o `@typescript-eslint`
-  8.x exige `typescript < 6.1.0` (o parser não suporta o port nativo) — quando o
-  typescript-eslint liberar o 7, a subida deve ser direta.
+- **TypeScript atualizado para 6.0.x** (`^6.0.3`). `typecheck`, `lint`, testes (237) e `build` seguem verdes. O **7.x** ainda não entra porque o `@typescript-eslint` 8.x exige `typescript < 6.1.0` (o parser não suporta o port nativo) — quando o typescript-eslint liberar o 7, a subida deve ser direta.
 
 ## [1.45.0] — Página de Ajuda
 
 ### Adicionado
 
-- **Ajuda** (botão na barra, só na edição e no desktop) — modal com **como usar**,
-  **interface e conexões** (portas/ponto ciano, referência de sensor/quadro,
-  navegação, log/legenda, mobile), **peças e regras**, **física simplificada**
-  (fórmulas + constantes do código), **opções** e **dados técnicos/persistência**.
-  i18n pt/en.
+- **Ajuda** (botão na barra, só na edição e no desktop) — modal com **como usar**, **interface e conexões** (portas/ponto ciano, referência de sensor/quadro, navegação, log/legenda, mobile), **peças e regras**, **física simplificada** (fórmulas + constantes do código), **opções** e **dados técnicos/persistência**. i18n pt/en.
 
 ## [1.44.0] — Números na bomba + revezamento só no quadro
 
 ### Alterado
 
-- **Bombas mostram o número da unidade no editor**: a bomba única exibe **"1"** e a
-  dupla exibe **"1" / "2"** já no modo edição (antes a única não mostrava número).
-- **Revezamento no canvas segue a fonte da verdade real**: quando a bomba é regida
-  por um quadro, o desenho (círculo simples × dividido) usa o revezamento do
-  **canal do quadro**, não o `props.revezamento` congelado da bomba.
-- **Inspetor da bomba**: o switch **"Bomba dupla (revezamento)"** some quando a bomba
-  é regida por um quadro — o controle fica **só no quadro** (fonte da verdade),
-  evitando um toggle que não tinha efeito.
+- **Bombas mostram o número da unidade no editor**: a bomba única exibe **"1"** e a dupla exibe **"1" / "2"** já no modo edição (antes a única não mostrava número).
+- **Revezamento no canvas segue a fonte da verdade real**: quando a bomba é regida por um quadro, o desenho (círculo simples × dividido) usa o revezamento do **canal do quadro**, não o `props.revezamento` congelado da bomba.
+- **Inspetor da bomba**: o switch **"Bomba dupla (revezamento)"** some quando a bomba é regida por um quadro — o controle fica **só no quadro** (fonte da verdade), evitando um toggle que não tinha efeito.
 
 ## [1.43.0] — Correção do sinal de fluxo + normalizar renumera conexões
 

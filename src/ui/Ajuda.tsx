@@ -1,16 +1,13 @@
 /**
- * Página de Ajuda: como usar o simulador, as regras principais das peças, a
- * física simplificada e os dados técnicos relevantes. Modal centralizado com
+ * Página de Ajuda: como usar o simulador, as regras principais das peças, a física simplificada e os dados técnicos relevantes. Modal centralizado com
  * backdrop e conteúdo rolável — todo o texto vem do i18n (pt/en).
  *
  * Termos físicos ganham LINK (Wikipedia). O `href` é por idioma (vem do i18n:
- * pt → pt.wikipedia, en → en.wikipedia); o texto do link fica marcado com
- * `<0>…</0>`/`<1>…</1>` no i18n e casado aqui pela ordem em LINKS.
+ * pt → pt.wikipedia, en → en.wikipedia); o texto do link fica marcado com `<0>…</0>`/`<1>…</1>` no i18n e casado aqui pela ordem em LINKS.
  */
 import { Trans, useTranslation } from 'react-i18next';
 
-// Cada seção é um título + uma lista de itens (chaves i18n). Manter a ORDEM das
-// chaves em sincronia com pt.ts/en.ts.
+// Cada seção é um título + uma lista de itens (chaves i18n). Manter a ORDEM das chaves em sincronia com pt.ts/en.ts.
 const SECOES: { titulo: string; itens: string[] }[] = [
   {
     titulo: 'ajuda.secComoUsar',

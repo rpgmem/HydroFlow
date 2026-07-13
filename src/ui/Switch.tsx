@@ -1,6 +1,5 @@
 /**
- * Interruptor on/off (toggle) reutilizável. Por baixo é um `<input type="checkbox">`
- * real — só o VISUAL muda (trilho + botão deslizante), então rótulos acessíveis
+ * Interruptor on/off (toggle) reutilizável. Por baixo é um `<input type="checkbox">` real — só o VISUAL muda (trilho + botão deslizante), então rótulos acessíveis
  * (aria-label / texto) e os testes por papel "checkbox" continuam funcionando.
  */
 interface Props {

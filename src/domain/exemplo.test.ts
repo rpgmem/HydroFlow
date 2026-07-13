@@ -34,8 +34,7 @@ describe('projeto de exemplo (reservatórios empilhados)', () => {
   });
 
   it('a bomba de recalque liga no nível inicial (recalca para o superior)', () => {
-    // Estado inicial de operação: inferior alto (liberado pela boia reversa) e
-    // superior abaixo do máximo → a bomba está ligada recalcando, sem rodar a seco.
+    // Estado inicial de operação: inferior alto (liberado pela boia reversa) e superior abaixo do máximo → a bomba está ligada recalcando, sem rodar a seco.
     const r = rodarTicks(projetoExemplo(), 1);
     const bomba = r.projeto.pecas.find((x) => x.id === 'bomba_recalque')!;
     expect((bomba.props as { ligada?: boolean }).ligada).toBe(true);
@@ -52,8 +51,7 @@ describe('projeto de exemplo (reservatórios empilhados)', () => {
   });
 
   it('a boia_manual (PVC, ~1,3 m/s no pico) não dispara golpe de aríete', () => {
-    // Regressão: com a celeridade de PVC (~500 m/s), a sobrepressão de Joukowsky
-    // no cano de enchimento (v ≲ 1,3 m/s → ~650 kPa) fica abaixo do teto (PN10 =
+    // Regressão: com a celeridade de PVC (~500 m/s), a sobrepressão de Joukowsky no cano de enchimento (v ≲ 1,3 m/s → ~650 kPa) fica abaixo do teto (PN10 =
     // 1000 kPa). Antes (celeridade 1000 m/s) o alerta piscava com a senoide.
     let estado = projetoExemplo();
     let tempo = 0;
@@ -68,8 +66,7 @@ describe('projeto de exemplo (reservatórios empilhados)', () => {
   });
 
   it('o sensor reverso do inferior desliga a bomba quando a sucção esvazia', () => {
-    // Proteção da origem: forçando o inferior no mínimo do sensor reverso (2 m),
-    // o 'desligar' vence e a bomba para — sem rodar a seco.
+    // Proteção da origem: forçando o inferior no mínimo do sensor reverso (2 m), o 'desligar' vence e a bomba para — sem rodar a seco.
     const proj = projetoExemplo();
     const inf = proj.pecas.find((x) => x.id === 'inferior_75_000_l')!;
     (inf.props as { nivel?: number }).nivel = 2;

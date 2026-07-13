@@ -1,8 +1,6 @@
 /**
- * Unidades: o ARMAZENAMENTO é canônico em SI (metros, m³, m³/s). O campo
- * `unidades` do projeto é apenas a PREFERÊNCIA DE EXIBIÇÃO — a UI converte
- * SI↔exibição com os helpers abaixo, e o motor trabalha sempre em SI
- * (`UNIDADES_CANONICAS`). Estas funções rotulam campos/telemetria e convertem.
+ * Unidades: o ARMAZENAMENTO é canônico em SI (metros, m³, m³/s). O campo `unidades` do projeto é apenas a PREFERÊNCIA DE EXIBIÇÃO — a UI converte
+ * SI↔exibição com os helpers abaixo, e o motor trabalha sempre em SI (`UNIDADES_CANONICAS`). Estas funções rotulam campos/telemetria e convertem.
  */
 import type { Unidades } from './types';
 

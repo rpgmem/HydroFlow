@@ -98,10 +98,8 @@ export function Inspector({ peca, projeto, emExecucao, vazao, historico, dispatc
         />
       )}
 
-      {/* Em execução, só os COMANDOS de operação aparecem (registro, modo da
-          bomba/quadro, saída de consumo, sensor on/off) junto das leituras ao
-          vivo; a configuração estrutural (nome, cota, dimensionamento) fica
-          OCULTA — cada formulário esconde a sua. Assim o operador comanda a
+      {/* Em execução, só os COMANDOS de operação aparecem (registro, modo da bomba/quadro, saída de consumo, sensor on/off) junto das leituras ao
+          vivo; a configuração estrutural (nome, cota, dimensionamento) fica OCULTA — cada formulário esconde a sua. Assim o operador comanda a
           simulação sem alterar a estrutura/dimensionamento. */}
       <fieldset className="inspetor-campos">
         {/* Nome e cota são estruturais → só na edição. */}

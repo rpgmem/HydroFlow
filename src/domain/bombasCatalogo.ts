@@ -1,16 +1,13 @@
 /**
  * HydroFlow — Catálogo de modelos de bomba (presets).
  *
- * Como o catálogo de bitolas dos tubos ou os presets de material: escolher um
- * MODELO preenche as specs da bomba (`vazaoNominal`, `alturaNominal`,
+ * Como o catálogo de bitolas dos tubos ou os presets de material: escolher um MODELO preenche as specs da bomba (`vazaoNominal`, `alturaNominal`,
  * `npshRequerido`). O motor lê só essas props — o modelo é rótulo/UI.
  *
- * Valores JÁ EM SI (unidade canônica): a vazão está em m³/s (a fonte mantém o
- * m³/h legível como `X / 3600`); altura e NPSH em metros. Dados de placa típicos
+ * Valores JÁ EM SI (unidade canônica): a vazão está em m³/s (a fonte mantém o m³/h legível como `X / 3600`); altura e NPSH em metros. Dados de placa típicos
  * (ordem de grandeza) para dois grupos: bombas de SUPERFÍCIE e SUBMERGÍVEIS.
  *
- * Simplificação: o par (vazão nominal, altura nominal) alimenta a curva LINEAR
- * do modelo (entrega a vazão a 0 m, zera na altura nominal) — os datasheets
+ * Simplificação: o par (vazão nominal, altura nominal) alimenta a curva LINEAR do modelo (entrega a vazão a 0 m, zera na altura nominal) — os datasheets
  * trazem uma curva Q–H completa; aqui usamos o ponto nominal como âncora.
  */
 
@@ -43,8 +40,7 @@ export interface ModeloBomba {
 }
 
 /**
- * Catálogo. `vazaoNominal` mantém a fonte legível como `m³/h / 3600`.
- * NPSH: bombas de superfície pelo dado de placa; submergíveis = 0,30 m (garante
+ * Catálogo. `vazaoNominal` mantém a fonte legível como `m³/h / 3600`. NPSH: bombas de superfície pelo dado de placa; submergíveis = 0,30 m (garante
  * que sejam operadas afogadas); injetora = N/A (undefined).
  */
 /** 1 CV (cavalo-vapor métrico) em Watts. */

@@ -21,8 +21,7 @@ export interface UniLabel {
 }
 
 /**
- * Seção recolhível "Opções avançadas" (nativa, acessível). Mantém fora dela só o
- * que um usuário comum precisa para montar um sistema simples; o resto recolhe.
+ * Seção recolhível "Opções avançadas" (nativa, acessível). Mantém fora dela só o que um usuário comum precisa para montar um sistema simples; o resto recolhe.
  * Compartilhada pelos formulários (forms.tsx) e pelo gerador (GeradorForm).
  */
 export function Avancado({ children }: { children: ReactNode }) {
@@ -39,8 +38,7 @@ export function Avancado({ children }: { children: ReactNode }) {
 export type Upd = (p: Record<string, unknown>) => void;
 
 /**
- * Campo numérico. Quando `dim` + `unidades` são informados, o `value`/`onChange`
- * são em SI (canônico) e o campo converte para/da unidade de EXIBIÇÃO; sem eles,
+ * Campo numérico. Quando `dim` + `unidades` são informados, o `value`/`onChange` são em SI (canônico) e o campo converte para/da unidade de EXIBIÇÃO; sem eles,
  * o valor é usado como está (campos adimensionais: mm, segundos, contagens…).
  */
 export function Num({

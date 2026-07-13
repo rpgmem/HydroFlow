@@ -163,17 +163,13 @@ export interface PropsBomba {
    */
   alturaNominal?: number;
   /**
-   * Modelo do catálogo (`bombasCatalogo.ts`) — apenas um PRESET de UI (como a
-   * `bitola` do tubo): selecionar preenche `vazaoNominal`, `alturaNominal` e
-   * `npshRequerido`. O motor lê essas props, não o modelo. Editar as specs na
-   * mão limpa o modelo (→ "Personalizado"). Ausente = personalizado.
+   * Modelo do catálogo (`bombasCatalogo.ts`) — apenas um PRESET de UI (como a `bitola` do tubo): selecionar preenche `vazaoNominal`, `alturaNominal` e
+   * `npshRequerido`. O motor lê essas props, não o modelo. Editar as specs na mão limpa o modelo (→ "Personalizado"). Ausente = personalizado.
    */
   modeloBomba?: string;
   /**
-   * NPSH requerido (m) — a carga mínima de sucção que a bomba exige para não
-   * cavitar (dado de catálogo). Informado, LIGA o alerta de cavitação: quando o
-   * NPSH disponível na sucção cai abaixo deste valor, a bomba fica destacada e
-   * o log registra o risco. Usa a `cota` da bomba (elevação) na carga de sucção.
+   * NPSH requerido (m) — a carga mínima de sucção que a bomba exige para não cavitar (dado de catálogo). Informado, LIGA o alerta de cavitação: quando o
+   * NPSH disponível na sucção cai abaixo deste valor, a bomba fica destacada e o log registra o risco. Usa a `cota` da bomba (elevação) na carga de sucção.
    * Em branco = sem checagem.
    */
   npshRequerido?: number;
@@ -310,12 +306,9 @@ export interface PropsJuncao {
 }
 
 /**
- * Válvula de alívio: peça de PROTEÇÃO que limita a pressão. Ligada a jusante de
- * um reservatório (por um tubo ou direto), ela ABRE e descarrega ao ambiente
- * quando a pressão local — coluna acima da própria `cota` — passa de
- * `pressaoAbertura` (kPa). A descarga é autolimitante (Torricelli pelo orifício,
- * sobre o excedente acima do setpoint): drena até a pressão voltar ao setpoint.
- * Só protege o reservatório de origem; não altera a lógica das outras peças.
+ * Válvula de alívio: peça de PROTEÇÃO que limita a pressão. Ligada a jusante de um reservatório (por um tubo ou direto), ela ABRE e descarrega ao ambiente
+ * quando a pressão local — coluna acima da própria `cota` — passa de `pressaoAbertura` (kPa). A descarga é autolimitante (Torricelli pelo orifício,
+ * sobre o excedente acima do setpoint): drena até a pressão voltar ao setpoint. Só protege o reservatório de origem; não altera a lógica das outras peças.
  */
 export interface PropsAlivio {
   /** Pressão de abertura / setpoint (kPa). Acima dela a válvula descarrega. */
@@ -409,10 +402,8 @@ export interface Peca {
   y: number;
   rotacao?: number; // tubo/bomba
   /**
-   * Elevação física da peça (m) no mesmo datum para todo o projeto — permite
-   * empilhamento. No reservatório é a cota da BASE (dirige a carga hidráulica:
-   * carga = cota + nível). Nas demais peças serve só para converter carga↔pressão
-   * local, NPSH e cavitação — NÃO altera a vazão. Ausente = 0.
+   * Elevação física da peça (m) no mesmo datum para todo o projeto — permite empilhamento. No reservatório é a cota da BASE (dirige a carga hidráulica:
+   * carga = cota + nível). Nas demais peças serve só para converter carga↔pressão local, NPSH e cavitação — NÃO altera a vazão. Ausente = 0.
    */
   cota?: number;
   /** Portas nomeadas — reservatório/junção definem (ex.: ['topo', 'base']). */

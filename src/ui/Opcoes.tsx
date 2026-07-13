@@ -16,10 +16,8 @@ import { Switch } from './Switch';
 export type FormatoTempo = 'segundos' | 'horario' | 'ambos';
 
 /**
- * Seção recolhível do menu de Opções. Cada grupo (idioma, unidades, exibição,
- * física, projeto) vira um `<details>` para o menu não ficar muito alto — os
- * grupos curtos/comuns nascem abertos e os longos/raros (física, projeto),
- * fechados. Controlado por estado próprio para permitir alternar livremente.
+ * Seção recolhível do menu de Opções. Cada grupo (idioma, unidades, exibição, física, projeto) vira um `<details>` para o menu não ficar muito alto — os
+ * grupos curtos/comuns nascem abertos e os longos/raros (física, projeto), fechados. Controlado por estado próprio para permitir alternar livremente.
  */
 function Secao({ titulo, aberto = false, children }: { titulo: string; aberto?: boolean; children: ReactNode }) {
   const [open, setOpen] = useState(aberto);
