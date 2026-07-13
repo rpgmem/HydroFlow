@@ -34,8 +34,9 @@ function reservatorio(id: string, rotulo: string, x: number, y: number, cota: nu
   return { id, tipo: 'reservatorio', x, y, cota, portas: ['topo', 'base'], props, rotulo };
 }
 
-function tubo(id: string, rotulo: string, x: number, y: number, props: PropsTubo): Peca {
-  return { id, tipo: 'tubo', x, y, portas: ['entrada', 'saida'], props, rotulo };
+function tubo(id: string, rotulo: string, x: number, y: number, props: PropsTubo, cota?: number): Peca {
+  const base: Peca = { id, tipo: 'tubo', x, y, portas: ['entrada', 'saida'], props, rotulo };
+  return cota !== undefined ? { ...base, cota } : base;
 }
 
 function juncao(
@@ -73,7 +74,7 @@ export function projetoExemplo(): ProjetoSimulacao {
         alturaMaxima: 9.5,
         nivel: 2.5,
       } as PropsReservatorio),
-      reservatorio('c2_meio_55_000_l', 'C2 Meio (55.000 L)', 480, 280, 9.5, {
+      reservatorio('c2_meio_55_000_l', 'C2 Meio (55.000 L)', 480, 320, 9.5, {
         formato: 'cilindro',
         raio: 1.6,
         alturaMaxima: 6.8387,
@@ -90,10 +91,11 @@ export function projetoExemplo(): ProjetoSimulacao {
         id: 'concessionaria',
         tipo: 'fonte',
         x: 240,
-        y: 580,
+        y: 660,
         portas: ['saida'],
         props: { gerador: { perfil: 'senoidal', min: 2, max: 10, periodo: 60 } } as PropsFonte,
         rotulo: 'Concessionária',
+        cota: -0.6,
       },
       {
         id: 'bomba_recalque',
@@ -102,12 +104,15 @@ export function projetoExemplo(): ProjetoSimulacao {
         y: 320,
         portas: ['entrada', 'saida'],
         props: {
-          vazaoNominal: 50,
-          // Altura nominal de recalque 25 m: a curva é derivada e a altura real
+          // Modelo do catálogo: Centrífuga 10 CV (45 m³/h @ 42 m, NPSHr 4,8 m).
+          modeloBomba: 'sup-centr-10',
+          vazaoNominal: 12.5, // 45 m³/h ÷ 3,6 (autorado em L/s → SI)
+          // Altura nominal de recalque 42 m: a curva é derivada e a altura real
           // da instalação (~16–21 m até o superior) reduz bastante a vazão; com o
           // atrito ligado, a perda de sucção/recalque reduz ainda mais (ponto de
           // operação). Mostra o efeito da altura e do atrito juntos.
-          alturaNominal: 25,
+          alturaNominal: 42,
+          npshRequerido: 4.8,
           sensores: ['boia_eletronica_c1', 'boia_eletronica_inferior'],
           ligada: false,
           revezamento: true,
@@ -161,7 +166,7 @@ export function projetoExemplo(): ProjetoSimulacao {
         rotulo: 'Boia Eletrônica (inferior)',
       },
       // ---- Boia manual + bypass + ladrões -----------------------------------
-      tubo('boia_manual', 'Boia Manual', 360, 580, { bitola: 'DN110', diametro: 97.8, registro: { aberto: true }, boia: { nivelMinimo: 7, nivelMaximo: 8.5 }, alturaSaida: 8.5, comprimento: 8.5 }),
+      tubo('boia_manual', 'Boia Manual', 360, 520, { bitola: 'DN110', diametro: 97.8, registro: { aberto: true }, boia: { nivelMinimo: 7, nivelMaximo: 8.5 }, alturaSaida: 8.5, comprimento: 8.5 }),
       tubo('bypass_boia_manual', 'bypass Boia Manual', 600, 220, { bitola: 'DN32', diametro: 27.8, registro: { aberto: true }, boia: { nivelMinimo: 5, nivelMaximo: 5.5 }, alturaEntrada: 2, alturaSaida: 6, comprimento: 5 }),
       tubo('ladrao_c1', 'Ladrão (C1)', 360, 80, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true }, ladrao: { nivel: 6.5 } }),
       tubo('ladrao_c2', 'Ladrão (C2)', 360, 260, { bitola: 'DN50', diametro: 44.0, registro: { aberto: true }, ladrao: { nivel: 6.5 } }),
@@ -173,7 +178,15 @@ export function projetoExemplo(): ProjetoSimulacao {
         x: 840,
         y: 400,
         portas: ['entrada', 'saida'],
-        props: { vazaoNominal: 10, sensores: ['boia_eletronica_c2'], ligada: false } as PropsBomba,
+        props: {
+          // Modelo do catálogo: Centrífuga 7,5 CV (35 m³/h @ 38 m, NPSHr 4,2 m).
+          modeloBomba: 'sup-centr-7-5',
+          vazaoNominal: 35 / 3.6, // 35 m³/h ÷ 3,6 (autorado em L/s → SI)
+          alturaNominal: 38,
+          npshRequerido: 4.2,
+          sensores: ['boia_eletronica_c2'],
+          ligada: false,
+        } as PropsBomba,
         rotulo: 'Bomba Incêndio',
       },
       {
@@ -182,13 +195,13 @@ export function projetoExemplo(): ProjetoSimulacao {
         x: 840,
         y: 320,
         portas: ['entrada'],
-        props: { gerador: { perfil: 'fixo', vazao: 0 }, aberto: false } as PropsConsumo,
+        props: { gerador: { perfil: 'fixo', vazao: 5 }, aberto: false } as PropsConsumo,
         rotulo: 'Hidrantes',
       },
       // Sucção da bomba de incêndio: puxa do C2 Meio (base na cota 9,5). O
       // comprimento desenvolvido = ~4 m (como a sucção do recalque) + os 9,5 m
       // de subida até a base do reservatório → 13,5 m (coerente com o desnível).
-      tubo('cavalete_incendio', 'Cavalete Incêndio', 720, 400, { bitola: 'DN60', diametro: 53.4, registro: { aberto: true }, comprimento: 13.5 }),
+      tubo('cavalete_incendio', 'Cavalete Incêndio', 720, 400, { bitola: 'DN60', diametro: 53.4, registro: { aberto: true }, comprimento: 13.5, material: 'cobre' }),
       {
         // Boia NORMAL no meio (igual à do C1): pede LIGAR quando baixa (≤ 4,6 m) e
         // DESLIGAR quando cheia (≥ 5,5 m).
@@ -219,12 +232,12 @@ export function projetoExemplo(): ProjetoSimulacao {
         canais: [{ bomba: 'bomba_incendio', modo: 'auto' }],
       } as PropsQuadro),
       // ---- Registros de linha (hidrômetro na entrada; consumo na saída) ------
-      tubo('registro_hidrometro', 'Registro Hidrômetro', 240, 500, { bitola: 'DN110', diametro: 97.8, registro: { aberto: true } }),
+      tubo('registro_hidrometro', 'Registro Hidrômetro', 240, 560, { bitola: 'DN110', diametro: 97.8, registro: { aberto: true } }, 0.6),
       tubo('registro_consumo', 'Registro Consumo', 720, 140, { bitola: 'DN160', diametro: 147.0, registro: { aberto: true } }),
       // ---- Drenos de limpeza por reservatório (registro fechado) ------------
       tubo('limpeza_c1', 'Limpeza (C1)', 360, 200, { bitola: 'DN110', diametro: 97.8, registro: { aberto: false } }),
       tubo('limpeza_c2', 'Limpeza (C2)', 360, 380, { bitola: 'DN110', diametro: 97.8, registro: { aberto: false } }),
-      tubo('limpeza_c3', 'Limpeza (C3)', 360, 520, { bitola: 'DN110', diametro: 97.8, registro: { aberto: false } }),
+      tubo('limpeza_c3', 'Limpeza (C3)', 360, 580, { bitola: 'DN110', diametro: 97.8, registro: { aberto: false } }),
     ],
     // IDs de conexão sequenciais (c_1…c_N) — só estética; conexão não é referenciada
     // por peça alguma, então a numeração é livre.

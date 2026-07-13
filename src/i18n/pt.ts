@@ -395,9 +395,10 @@ export const pt = {
     linkCFD: 'https://pt.wikipedia.org/wiki/Fluidodin%C3%A2mica_computacional',
     // Sem artigo dedicado na pt.wikipedia — aponta para o artigo em inglês.
     linkCargaHidraulica: 'https://en.wikipedia.org/wiki/Hydraulic_head',
+    linkSI: 'https://pt.wikipedia.org/wiki/Sistema_Internacional_de_Unidades',
     secOpcoes: 'Opções (⚙)',
     opc1: 'Idioma: Português (padrão) ou Inglês — detecção automática do navegador e troca manual, lembrada no dispositivo.',
-    opc2: 'Unidades: volume (litros ou m³) e comprimento (m ou cm), aplicadas a todo o projeto.',
+    opc2: 'Unidades: volume (litros ou m³) e comprimento (m ou cm), aplicadas a todo o projeto. O armazenamento é sempre canônico em <0>SI</0> (m, m³, m³/s) — a unidade é só preferência de exibição, então trocá-la preserva o valor físico.',
     opc3: 'Exibição: tema claro/escuro e o formato do tempo na simulação (segundos, horário 24 h ou ambos).',
     opc4: 'Física: liga/desliga a perda de carga por atrito (Hazen-Williams) e ajusta a velocidade de referência do alerta de dimensionamento.',
     opc5: 'Projeto: "Normalizar IDs pelos nomes" reescreve os ids das peças e renumera as conexões (exige nomes únicos).',
